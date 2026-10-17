@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import hashlib
-import math
 import secrets
 from datetime import timedelta
 from typing import Annotated
@@ -11,6 +10,8 @@ from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
 from pymongo.database import Database
 
+from backend.app.auth.budget import ensure_indexes as ensure_budget_indexes
+from backend.app.auth.budget import refund, reserve
 from backend.app.auth.deps import (
     COOKIE_NAME,
     CurrentUser,
@@ -23,7 +24,6 @@ from backend.app.auth.deps import (
 )
 from backend.app.auth.passwords import dummy_verify, normalize_username, verify_password
 from backend.app.auth.store import (
-    as_utc,
     csrf_from_session_token,
     ensure_indexes,
     iso_z,
@@ -54,28 +54,28 @@ def _bad_credentials() -> ApiError:
     return ApiError(401, "NO_AUTENTICADO", "Usuario o contrasena incorrectos.")
 
 
-def _check_rate_limit(db: Database, settings: Settings, k_user_ip: str, k_ip: str) -> None:
-    now = utcnow()
-    since = now - timedelta(minutes=settings.login_window_minutes)
-    attempts = db["login_attempts"]
-    for scope, key, limit in (("user_ip", k_user_ip, settings.login_max_failures_user_ip),
-                              ("ip", k_ip, settings.login_max_failures_ip)):
-        flt = {"scope": scope, "key": key, "at": {"$gte": since}}
-        if attempts.count_documents(flt) >= limit:
-            oldest = attempts.find(flt).sort("at", 1).limit(1)[0]["at"]
-            release = as_utc(oldest) + timedelta(minutes=settings.login_window_minutes)
-            wait = max(1, math.ceil((release - now).total_seconds()))
-            raise ApiError(429, "DEMASIADOS_INTENTOS", "Demasiados intentos; reintente mas tarde.",
-                           headers={"Retry-After": str(wait)})
+def _reserve_or_429(db: Database, settings: Settings, k_user_ip: str, k_ip: str) -> None:
+    """Reserva atomica de cupos ANTES de verificar la contrasena (backend/app/auth/budget.py)."""
+    window = settings.login_window_minutes * 60
+    user_slot = reserve(db, k_user_ip, settings.login_max_failures_user_ip, window)
+    if not user_slot.allowed:
+        raise ApiError(429, "DEMASIADOS_INTENTOS", "Demasiados intentos; reintente mas tarde.",
+                       headers={"Retry-After": str(user_slot.retry_after)})
+    ip_slot = reserve(db, k_ip, settings.login_max_failures_ip, window)
+    if not ip_slot.allowed:
+        refund(db, k_user_ip)              # el intento no llego a evaluarse: se devuelve el cupo
+        raise ApiError(429, "DEMASIADOS_INTENTOS", "Demasiados intentos; reintente mas tarde.",
+                       headers={"Retry-After": str(ip_slot.retry_after)})
 
 
 @router.post("/login", dependencies=[Depends(check_login_request)])
 def login(body: LoginIn, request: Request, response: Response, db: DbDep, settings: SettingsDep) -> dict:
     ensure_indexes(db, settings.login_window_minutes)
+    ensure_budget_indexes(db)
     username = normalize_username(body.username)
     ip = _client_ip(request)
     k_user_ip, k_ip = _key(settings, "u", username, ip), _key(settings, "ip", ip)
-    _check_rate_limit(db, settings, k_user_ip, k_ip)
+    _reserve_or_429(db, settings, k_user_ip, k_ip)    # un cupo por intento; solo el exito lo devuelve
 
     user = db["users"].find_one({"username": username})
     if user is not None and user.get("active", False) and verify_password(body.password, user["password_hash"]):
@@ -85,12 +85,10 @@ def login(body: LoginIn, request: Request, response: Response, db: DbDep, settin
         if user is None or not user.get("active", False):
             dummy_verify(body.password)  # iguala el tiempo
     if not ok:
-        now = utcnow()
-        db["login_attempts"].insert_many([{"scope": "user_ip", "key": k_user_ip, "at": now},
-                                          {"scope": "ip", "key": k_ip, "at": now}])
-        raise _bad_credentials()
+        raise _bad_credentials()                       # el fallo conserva su cupo reservado
 
-    db["login_attempts"].delete_many({"scope": "user_ip", "key": k_user_ip})
+    refund(db, k_user_ip, reset=True)                  # login correcto: devuelve los cupos
+    refund(db, k_ip)
     # rotacion: la sesion presentada (si la hay) se revoca y se crea una nueva
     old = request.cookies.get(COOKIE_NAME)
     now = utcnow()
