@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al 17/10: R04/v2/T04 y T05 aceptados; siguiente T06 según ETAPA_04_CLAUDE.md. Angular base compilada, pero interfaz funcional/pruebas pendientes. Las fechas son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
+Estado al 17/10 (tarde): T06 (ML frente a baselines) ejecutado y pendiente de revisión de Codex; frente web con mocks compila. Siguiente: T07 tras la revisión. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
 
 T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04 y T05 están aceptados; T06 y etapas posteriores siguen pendientes. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 

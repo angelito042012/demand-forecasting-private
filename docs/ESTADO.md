@@ -34,11 +34,20 @@ Sistema Demand Forecasting para la MYPE, entrega el 23/10/2026. Claude Code ejec
 - **Angular**: `scripts/prepare-frontend.ps1` funcionó (Angular CLI 21.2.27, Node 24.19.0, npm 11.17.0); `npm run build` compila (bundle principal 214 kB); `frontend/` con `package-lock.json` versionados. Sin pantallas; `ng test` no ejecutado.
 - **Pruebas**: suite completa con `RUN_REALDATA=1`: 83 aprobadas, 0 omitidas, 1 aviso (httpx/Starlette), 71 s (log en `artifacts/private/t05/pytest_full.log`). `ruff` limpio en backend, pipeline, tests y scripts nuevos.
 
+## Entrega vigente (17/10/2026, Claude): T06 ML frente a baselines, pendiente de revisión de Codex
+
+- **Protocolo**: `docs/T06_PROTOCOLO.md` + `config/t06_config.json` comprometidos antes de evaluar (286017d). Una enmienda declarada (00e4e64): la repetición de F1 exige tolerancia 1e-9, no igualdad exacta, porque Random Forest con 4 hilos varía ~1e-13 por orden de suma; no cambia modelos, folds ni regla.
+- **Implementado**: `pipeline/forecast/{features,models,t06}.py`, `scripts/run_t06.py`. Modelos globales por nivel y fold: Random Forest (100 árboles) y XGBoost (150 árboles), parámetros fijos, 24 features sin información posterior al origen, NaN nativo, vocabulario solo de train, negativos recortados a 0 (21 en total), sin precio (limitación registrada). Interfaz `forecast_origin` y paquetes joblib con modelo+vocabulario+versión. Mismos folds, targets, cohortes y cobertura que T05 (baselines idénticos a `T05_METRICAS.json`, verificado).
+- **Resultado (desarrollo, 5 folds ya conocidos; no es prueba final)**:
+  - SKU, criterio preregistrado WAPE acumulado a 7 días: promedio_28 0,992 (mejor referencia), cero 1,000, XGBoost 1,017, Random Forest 1,058 (menos favorable). **Ningún ML cumple la regla**; propuesta provisional para simulación: `promedio_28`. A nivel diario SKU los ML (1,59/1,67) tampoco superan al cero (1,00). Ambos ML sobrepronostican (sesgo +2 785 / +6 411 unidades frente a 22 954 observadas).
+  - Categoría, criterio WAPE diario: Random Forest 0,394 frente a promedio_28 0,4025 (mejora 2,07 %, 3/5 folds, sesgo/obs 0,13): cumple la regla por margen mínimo. Con el criterio semanal RF (0,217) es peor que naive_semanal (0,201) y promedio_28 (0,202), y XGBoost no cumple. Evidencia débil; ver T06_RESULTADOS.md.
+- **Pruebas**: suite completa `RUN_REALDATA=1`: 94 aprobadas, 0 omitidas, 1 aviso, 74 s (log `artifacts/private/t06/pytest_full.log`); ejecución T06 completa 417 s (log `artifacts/private/t06_run.log`). `ruff` limpio. Evidencia versionada: `docs/T06_RESULTADOS.md`, `T06_METRICAS.json`, `T06_MANIFIESTO.json`; privado: `artifacts/private/t06/` (predicciones y modelos).
+- **Frente web (agente frontend)**: navegación lazy, cuatro pantallas con estados carga/sin datos/error y mocks identificados como demostración; `npm run build` y `npm test` (15 pruebas) aprobados; sin API real, sin autenticación, no probado en navegador.
+
 ## Pendiente
 
-- Ejecutar T06 según ETAPA_04_CLAUDE.md. No se han entrenado Random Forest ni boosting; agosto no se ha evaluado.
-- Límites: un solo almacén/unidad; 5 folds de una semana; la cohorte primaria cuenta ceros observados como utilizables (según protocolo); sin inventario real; una fuente aprobada por mes; resolución de conflictos no implementada.
-- Angular: pantallas y `ng test` pendientes.
+- Revisión de Codex de T06; decisión sobre horizonte para T07 (lead time + revisión pueden superar 7 días: no se extrapoló) y apertura controlada de agosto. No se leyó agosto ni se declara mejora de inventario.
+- Límites: sin precio; folds de desarrollo ya observados; un almacén/unidad; sin inventario real; resolución de conflictos de fuentes no implementada.
 
 ## Entorno
 

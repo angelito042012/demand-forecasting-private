@@ -180,3 +180,9 @@ No escribir claves, tokens o URI con credenciales. Si una prueba no se ejecutó 
 - Reproducir: `.venv\Scripts\python.exe -m scripts.run_t05` y `$env:RUN_REALDATA="1"; .venv\Scripts\python.exe -m pytest -q`.
 
 Campos mínimos al actualizar: ejecutor; fecha; tarea; último paso; paso en curso; archivos; commit; comandos y resultado; evidencia; base activa; procesos; bloqueos; siguiente acción; pendiente de revisión. No escribir claves ni URI con credenciales. Una prueba no ejecutada se indica como tal.
+
+## Entrega 17/10/2026 (Claude): T06 ML frente a baselines (pendiente de revision de Codex)
+
+- Protocolo 286017d, enmienda 1 (00e4e64). Codigo en pipeline/forecast/{features,models,t06}.py y scripts/run_t06.py; 11 pruebas nuevas de features/modelos/integracion (suite 94).
+- SKU: ningun ML cumple la regla; categoria: RF cumple por margen minimo. Ver docs/T06_RESULTADOS.md.
+- Frontend: navegacion y estados con mocks identificados; build y 15 pruebas.

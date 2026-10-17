@@ -1,23 +1,20 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { App } from './app';
+import { routes } from './app.routes';
 
-describe('App', () => {
+describe('App shell', () => {
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [App],
-    }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [App], providers: [provideRouter(routes)] }).compileComponents();
   });
-
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+  it('renderiza título y 4 enlaces de menú', async () => {
+    const f = TestBed.createComponent(App);
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('h1')?.textContent).toContain('Pronóstico de demanda');
+    expect(el.querySelectorAll('nav a').length).toBe(4);
   });
-
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, frontend');
+  it('rutas son lazy (loadComponent)', () => {
+    expect(routes.filter((r) => r.loadComponent).length).toBe(4);
   });
 });

@@ -1,0 +1,483 @@
+{
+  "generado_lima": "2026-10-17 10:50",
+  "base_de_datos": "demand_forecasting_v2",
+  "config_t05_sha256": "9dd450a6dafbd94758b5980fa24b70fcdd04d2808e7c768aaedefcdc7a02c222",
+  "config_t06_sha256": "c674f65117cb4f08f4f941ff07c3cdecd60b4d7a52e8b3d727240986b538bd3a",
+  "commit_protocolo": "286017d",
+  "codigo_sha256": "f79811bf8244270e55faadd89de1b31c215e8b72b4d7419b7b4b1273d4d1f10c",
+  "codigo_archivos": [
+    "pipeline/forecast/baselines.py",
+    "pipeline/forecast/metrics.py",
+    "pipeline/forecast/t05.py",
+    "pipeline/forecast/features.py",
+    "pipeline/forecast/models.py",
+    "pipeline/forecast/t06.py",
+    "pipeline/data/training_access.py",
+    "pipeline/data/sources.py",
+    "pipeline/data/catalog.py",
+    "pipeline/data/daily_series.py",
+    "pipeline/data/calendar.py",
+    "scripts/run_t06.py"
+  ],
+  "git_commit": "00e4e6480c7616fb08f6295e68fbe3af55230b01",
+  "git_sucio": false,
+  "agosto_usado": false,
+  "repeticion_f1_identica": true,
+  "repeticion_f1_diferencia_maxima": 1.1368683772161603e-13,
+  "baselines_identicos_a_t05": true,
+  "segundos_totales": 416.95099560000017,
+  "semillas": 20261017,
+  "predicciones": {
+    "filas": 125391,
+    "sha256_archivo": "40037f3bbea0954a7275626795d4258fd59dded487cc6e36468a768e72afc54b"
+  },
+  "folds": {
+    "F1": {
+      "corte": "2026-05-31",
+      "fingerprint": "9fa7f64e61d691ba4e3774ff000b572ed8918bfbf617836baf6a755beb177f23",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        }
+      ]
+    },
+    "F2": {
+      "corte": "2026-06-14",
+      "fingerprint": "5bcca4c1be49d350fb0d5cc5d6f0635900a69eccfb35b0c4325a2a76a3a60410",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        }
+      ]
+    },
+    "F3": {
+      "corte": "2026-06-28",
+      "fingerprint": "64b79cfb621356ef88e91367f7ace804dca9eb867335940371b3fe4dc3730d00",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        }
+      ]
+    },
+    "F4": {
+      "corte": "2026-07-12",
+      "fingerprint": "590ec26ce58fbc80c6ee17ed70070ecccd5cc2198a7975ef0da062942cae7695",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        },
+        {
+          "mes": "2026-07",
+          "archivo": "julio.xlsx",
+          "sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae"
+        }
+      ]
+    },
+    "F5": {
+      "corte": "2026-07-24",
+      "fingerprint": "d31225df74d2dc2ad95b51ff28043cd705c48c53606f892c2b129b260c3606b7",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        },
+        {
+          "mes": "2026-07",
+          "archivo": "julio.xlsx",
+          "sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae"
+        }
+      ]
+    }
+  },
+  "modelos_guardados": [
+    "F1_categoria_random_forest.joblib",
+    "F1_categoria_xgboost.joblib",
+    "F1_sku_random_forest.joblib",
+    "F1_sku_xgboost.joblib",
+    "F2_categoria_random_forest.joblib",
+    "F2_categoria_xgboost.joblib",
+    "F2_sku_random_forest.joblib",
+    "F2_sku_xgboost.joblib",
+    "F3_categoria_random_forest.joblib",
+    "F3_categoria_xgboost.joblib",
+    "F3_sku_random_forest.joblib",
+    "F3_sku_xgboost.joblib",
+    "F4_categoria_random_forest.joblib",
+    "F4_categoria_xgboost.joblib",
+    "F4_sku_random_forest.joblib",
+    "F4_sku_xgboost.joblib",
+    "F5_categoria_random_forest.joblib",
+    "F5_categoria_xgboost.joblib",
+    "F5_sku_random_forest.joblib",
+    "F5_sku_xgboost.joblib"
+  ],
+  "entrenamiento": [
+    {
+      "fold": "F1",
+      "nivel": "sku",
+      "modelo": "random_forest",
+      "origenes": 20,
+      "paso_dias": 3,
+      "segundos_features": 0.18,
+      "filas": 403590,
+      "caracteristicas": 24,
+      "segundos_ajuste": 39.51,
+      "memoria_matriz_mb": 38.7,
+      "segundos_prediccion": 0.18,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F1",
+      "nivel": "sku",
+      "modelo": "xgboost",
+      "origenes": 20,
+      "paso_dias": 3,
+      "segundos_features": 0.18,
+      "filas": 403590,
+      "caracteristicas": 24,
+      "segundos_ajuste": 3.15,
+      "memoria_matriz_mb": 38.7,
+      "segundos_prediccion": 0.04,
+      "negativos_recortados": 5
+    },
+    {
+      "fold": "F1",
+      "nivel": "categoria",
+      "modelo": "random_forest",
+      "origenes": 20,
+      "paso_dias": 3,
+      "segundos_features": 0.01,
+      "filas": 4896,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.36,
+      "memoria_matriz_mb": 0.5,
+      "segundos_prediccion": 0.18,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F1",
+      "nivel": "categoria",
+      "modelo": "xgboost",
+      "origenes": 20,
+      "paso_dias": 3,
+      "segundos_features": 0.01,
+      "filas": 4896,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.12,
+      "memoria_matriz_mb": 0.5,
+      "segundos_prediccion": 0.0,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F2",
+      "nivel": "sku",
+      "modelo": "random_forest",
+      "origenes": 24,
+      "paso_dias": 3,
+      "segundos_features": 0.23,
+      "filas": 492788,
+      "caracteristicas": 24,
+      "segundos_ajuste": 49.97,
+      "memoria_matriz_mb": 47.3,
+      "segundos_prediccion": 0.2,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F2",
+      "nivel": "sku",
+      "modelo": "xgboost",
+      "origenes": 24,
+      "paso_dias": 3,
+      "segundos_features": 0.23,
+      "filas": 492788,
+      "caracteristicas": 24,
+      "segundos_ajuste": 3.54,
+      "memoria_matriz_mb": 47.3,
+      "segundos_prediccion": 0.04,
+      "negativos_recortados": 2
+    },
+    {
+      "fold": "F2",
+      "nivel": "categoria",
+      "modelo": "random_forest",
+      "origenes": 24,
+      "paso_dias": 3,
+      "segundos_features": 0.02,
+      "filas": 5796,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.42,
+      "memoria_matriz_mb": 0.6,
+      "segundos_prediccion": 0.18,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F2",
+      "nivel": "categoria",
+      "modelo": "xgboost",
+      "origenes": 24,
+      "paso_dias": 3,
+      "segundos_features": 0.02,
+      "filas": 5796,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.13,
+      "memoria_matriz_mb": 0.6,
+      "segundos_prediccion": 0.01,
+      "negativos_recortados": 6
+    },
+    {
+      "fold": "F3",
+      "nivel": "sku",
+      "modelo": "random_forest",
+      "origenes": 29,
+      "paso_dias": 3,
+      "segundos_features": 0.27,
+      "filas": 610940,
+      "caracteristicas": 24,
+      "segundos_ajuste": 64.3,
+      "memoria_matriz_mb": 58.7,
+      "segundos_prediccion": 0.21,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F3",
+      "nivel": "sku",
+      "modelo": "xgboost",
+      "origenes": 29,
+      "paso_dias": 3,
+      "segundos_features": 0.27,
+      "filas": 610940,
+      "caracteristicas": 24,
+      "segundos_ajuste": 4.35,
+      "memoria_matriz_mb": 58.7,
+      "segundos_prediccion": 0.05,
+      "negativos_recortados": 3
+    },
+    {
+      "fold": "F3",
+      "nivel": "categoria",
+      "modelo": "random_forest",
+      "origenes": 29,
+      "paso_dias": 3,
+      "segundos_features": 0.03,
+      "filas": 7056,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.54,
+      "memoria_matriz_mb": 0.7,
+      "segundos_prediccion": 0.17,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F3",
+      "nivel": "categoria",
+      "modelo": "xgboost",
+      "origenes": 29,
+      "paso_dias": 3,
+      "segundos_features": 0.03,
+      "filas": 7056,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.14,
+      "memoria_matriz_mb": 0.7,
+      "segundos_prediccion": 0.0,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F4",
+      "nivel": "sku",
+      "modelo": "random_forest",
+      "origenes": 34,
+      "paso_dias": 3,
+      "segundos_features": 0.37,
+      "filas": 736195,
+      "caracteristicas": 24,
+      "segundos_ajuste": 79.18,
+      "memoria_matriz_mb": 70.7,
+      "segundos_prediccion": 0.19,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F4",
+      "nivel": "sku",
+      "modelo": "xgboost",
+      "origenes": 34,
+      "paso_dias": 3,
+      "segundos_features": 0.37,
+      "filas": 736195,
+      "caracteristicas": 24,
+      "segundos_ajuste": 5.27,
+      "memoria_matriz_mb": 70.7,
+      "segundos_prediccion": 0.05,
+      "negativos_recortados": 2
+    },
+    {
+      "fold": "F4",
+      "nivel": "categoria",
+      "modelo": "random_forest",
+      "origenes": 34,
+      "paso_dias": 3,
+      "segundos_features": 0.02,
+      "filas": 8352,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.62,
+      "memoria_matriz_mb": 0.8,
+      "segundos_prediccion": 0.17,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F4",
+      "nivel": "categoria",
+      "modelo": "xgboost",
+      "origenes": 34,
+      "paso_dias": 3,
+      "segundos_features": 0.02,
+      "filas": 8352,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.14,
+      "memoria_matriz_mb": 0.8,
+      "segundos_prediccion": 0.0,
+      "negativos_recortados": 1
+    },
+    {
+      "fold": "F5",
+      "nivel": "sku",
+      "modelo": "random_forest",
+      "origenes": 38,
+      "paso_dias": 3,
+      "segundos_features": 0.4,
+      "filas": 838570,
+      "caracteristicas": 24,
+      "segundos_ajuste": 91.06,
+      "memoria_matriz_mb": 80.5,
+      "segundos_prediccion": 0.2,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F5",
+      "nivel": "sku",
+      "modelo": "xgboost",
+      "origenes": 38,
+      "paso_dias": 3,
+      "segundos_features": 0.4,
+      "filas": 838570,
+      "caracteristicas": 24,
+      "segundos_ajuste": 5.87,
+      "memoria_matriz_mb": 80.5,
+      "segundos_prediccion": 0.05,
+      "negativos_recortados": 2
+    },
+    {
+      "fold": "F5",
+      "nivel": "categoria",
+      "modelo": "random_forest",
+      "origenes": 38,
+      "paso_dias": 3,
+      "segundos_features": 0.04,
+      "filas": 9360,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.76,
+      "memoria_matriz_mb": 0.9,
+      "segundos_prediccion": 0.18,
+      "negativos_recortados": 0
+    },
+    {
+      "fold": "F5",
+      "nivel": "categoria",
+      "modelo": "xgboost",
+      "origenes": 38,
+      "paso_dias": 3,
+      "segundos_features": 0.04,
+      "filas": 9360,
+      "caracteristicas": 24,
+      "segundos_ajuste": 0.15,
+      "memoria_matriz_mb": 0.9,
+      "segundos_prediccion": 0.0,
+      "negativos_recortados": 0
+    }
+  ],
+  "negativos_recortados_total": 21,
+  "versiones": {
+    "python": "3.12.14",
+    "pandas": "2.3.3",
+    "numpy": "2.5.4",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1"
+  }
+}
