@@ -1,0 +1,38 @@
+[
+  {
+    "file": "marzo.xlsx",
+    "previous_sha256": "f5ffefc86d943e091e56bee0a3ed4bb9001959282ec4ae12a6636917b16ea2f0",
+    "current_sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140",
+    "changed": true
+  },
+  {
+    "file": "abril.xlsx",
+    "previous_sha256": "ceef5be9a214ca20db5f7f09e2029f64e52132bfc8082e25b2b69f8c533cdda5",
+    "current_sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5",
+    "changed": true
+  },
+  {
+    "file": "mayo.xlsx",
+    "previous_sha256": "f9e6805feb0f287ecc367215ef53eb29b37371ace891f882b906d61c0f9a0fab",
+    "current_sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280",
+    "changed": true
+  },
+  {
+    "file": "junio.xlsx",
+    "previous_sha256": "375f93618d4a4658757f6aa3663187623351de639fa7edf4868ad07d2d81d7e5",
+    "current_sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e",
+    "changed": true
+  },
+  {
+    "file": "julio.xlsx",
+    "previous_sha256": "a1493e84400af944ae39b71966261de01d06d95be2071b024aba2d3489cd7efa",
+    "current_sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae",
+    "changed": true
+  },
+  {
+    "file": "agosto.xlsx",
+    "previous_sha256": "e8b5b3ba3c916e72032ca15dde5946b96640e6b81cd543f5bcf248d04675c2ad",
+    "current_sha256": "e8b5b3ba3c916e72032ca15dde5946b96640e6b81cd543f5bcf248d04675c2ad",
+    "changed": false
+  }
+]

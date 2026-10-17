@@ -1,0 +1,8 @@
+Lee docs/REVISION_CODEX_02.md. Codex acepta las correcciones R01–R03 para las seis fuentes canónicas. El siguiente trabajo es preparar la base v2 y completar T04, incluyendo la protección R04 que evita usar cargas fallidas o parciales.
+
+1. Ejecuta los controles de fuentes/calidad en la ruta de entrenamiento y catálogo con pruebas de carga parcial, recuperación, conflictos y cobertura. No uses filas de fuentes no aprobadas ni datos posteriores al corte. No entrenes modelos.
+2. Reconstruye los seis Excel en una base nueva demand_forecasting_v2. Compara conteos, importes y líneas normalizadas con v1; repite la carga y exige cero duplicados/conflictos. Conserva v1 intacta. Si coincide todo, configura localmente la aplicación para usar v2 y documenta cómo revertir. La reconstrucción nueva y el cambio local reversible forman parte de este encargo; no borres la base anterior.
+3. Completa perfil de calidad, diccionario y serie diaria de marzo-julio con calendario natural, máscara de exclusión y catálogo temporal. Documenta ceros observados, productos nuevos, historia disponible e intermitencia. Firma el dataset con fuentes y decisiones de transformación.
+4. Actualiza docs/ESTADO.md y el backlog diferenciando código aceptado, base preparada y tareas aún pendientes. No esperes por Angular para avanzar en datos; mantén su diagnóstico y no desactives TLS.
+
+Usa los agentes locales cuando exista trabajo independiente y evita cambios simultáneos en archivos compartidos. Ejecuta las pruebas pertinentes y entrega evidencia para revisión de Codex. Detente antes del entrenamiento y de usar agosto para selección.

@@ -1,0 +1,11 @@
+{
+  "checks": {
+    "negative_type_7": 560,
+    "negative_zero_order": 560
+  },
+  "distinct_skus_all_rows": 3899,
+  "skus_multiple_categories": 1,
+  "base_units": {
+    "UND": 87437
+  }
+}
