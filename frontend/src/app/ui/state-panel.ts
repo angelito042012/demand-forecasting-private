@@ -1,31 +1,28 @@
 import { Component, input, output } from '@angular/core';
 import { LoadState } from '../core/models';
-import { DemoBadge } from './demo-badge';
 
 @Component({
   selector: 'app-state-panel',
-  imports: [DemoBadge],
   template: `
     @switch (state().kind) {
       @case ('loading') {
         <p class="st" role="status" data-state="loading">Cargando…</p>
       }
       @case ('empty') {
-        <p class="st" data-state="empty">Sin datos para mostrar.</p>
+        <p class="st" data-state="empty">{{ emptyText() }}</p>
       }
       @case ('error') {
-        <div class="st err" role="alert" data-state="error">
-          <p>Error: {{ errorMessage() }}</p>
+        <div class="st err" role="alert" data-state="error" [attr.data-code]="code()">
+          @if (code() === 'SESION_EXPIRADA') {
+            <p>Su sesión venció. <a href="/acceso">Ingrese de nuevo</a>.</p>
+          } @else {
+            <p>{{ errorMessage() }}</p>
+          }
           <button type="button" (click)="retry.emit()">Reintentar</button>
         </div>
       }
       @case ('data') {
-        <div data-state="data">
-          @if (provenance(); as p) {
-            <app-demo-badge [provenance]="p" />
-          }
-          <ng-content />
-        </div>
+        <div data-state="data"><ng-content /></div>
       }
     }
   `,
@@ -36,13 +33,14 @@ import { DemoBadge } from './demo-badge';
 })
 export class StatePanel {
   state = input.required<LoadState<unknown>>();
+  emptyText = input('Sin datos para mostrar.');
   retry = output<void>();
   errorMessage() {
     const s = this.state();
-    return s.kind === 'error' ? s.message : '';
+    return s.kind === 'error' ? s.error.message : '';
   }
-  provenance() {
+  code() {
     const s = this.state();
-    return s.kind === 'data' ? s.provenance : null;
+    return s.kind === 'error' ? s.error.code : '';
   }
 }

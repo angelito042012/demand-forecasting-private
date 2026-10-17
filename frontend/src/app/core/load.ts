@@ -1,18 +1,40 @@
 import { Observable } from 'rxjs';
 import { signal, WritableSignal } from '@angular/core';
-import { LoadState } from './models';
-import { Result } from './data.service';
+import { AppError, LoadState } from './models';
 
-/** Carga un observable de lista en una señal LoadState (loading/error/empty/data). */
-export function load<T>(src: () => Observable<Result<T[]>>): { state: WritableSignal<LoadState<T[]>>; reload: () => void } {
-  const state = signal<LoadState<T[]>>({ kind: 'loading' });
+export interface Loader<T> {
+  state: WritableSignal<LoadState<T>>;
+  /** Vuelve a ejecutar la consulta (siempre con la fuente actual). */
+  reload: () => void;
+}
+
+/**
+ * Ejecuta una consulta y mantiene el estado cargando/error/vacío/datos.
+ * `isEmpty` decide cuándo no hay datos; un error NUNCA se convierte en datos de relleno.
+ */
+export function load<T>(src: () => Observable<T>, isEmpty: (d: T) => boolean = () => false, autoStart = true): Loader<T> {
+  const state = signal<LoadState<T>>({ kind: 'loading' });
+  let ticket = 0;
   const reload = () => {
+    const mine = ++ticket;
     state.set({ kind: 'loading' });
     src().subscribe({
-      next: (r) => state.set(r.data.length === 0 ? { kind: 'empty' } : { kind: 'data', data: r.data, provenance: r.provenance }),
-      error: (e: unknown) => state.set({ kind: 'error', message: e instanceof Error ? e.message : 'Error desconocido' }),
+      next: (d) => { if (mine === ticket) state.set(isEmpty(d) ? { kind: 'empty' } : { kind: 'data', data: d }); },
+      error: (e: unknown) => {
+        if (mine !== ticket) return;
+        const err: AppError = isAppError(e) ? e : { status: 0, code: 'DESCONOCIDO', message: 'Ocurrió un error inesperado.' };
+        state.set({ kind: 'error', error: err });
+      },
     });
   };
-  reload();
+  if (autoStart) reload();
   return { state, reload };
+}
+
+export function isAppError(e: unknown): e is AppError {
+  return typeof e === 'object' && e !== null && 'code' in e && 'message' in e && 'status' in e;
+}
+
+export function dataOf<T>(s: LoadState<T>): T | null {
+  return s.kind === 'data' ? s.data : null;
 }

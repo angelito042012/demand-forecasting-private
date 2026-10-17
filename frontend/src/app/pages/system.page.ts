@@ -1,6 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
-import { DataService } from '../core/data.service';
-import { HealthInfo, LoadState } from '../core/models';
+import { Component, computed, inject } from '@angular/core';
+import { ApiService } from '../core/api.service';
+import { load } from '../core/load';
+import { Health } from '../core/models';
 import { StatePanel } from '../ui/state-panel';
 
 @Component({
@@ -8,27 +9,23 @@ import { StatePanel } from '../ui/state-panel';
   imports: [StatePanel],
   template: `
     <h2>Estado del sistema</h2>
-    <p>Contrato: GET /api/v1/health. No se llama a la API real.</p>
-    <app-state-panel [state]="state()" (retry)="reload()">
-      <p>Estado: {{ info()?.status }} · versión API: {{ info()?.api_version }}</p>
+    <app-state-panel [state]="l.state()" (retry)="l.reload()">
+      @if (info(); as h) {
+        <ul data-testid="health">
+          <li>Estado general: <strong>{{ h.status === 'ok' ? 'operativo' : 'degradado' }}</strong></li>
+          <li>Base de datos: {{ h.database === 'ok' ? 'disponible' : 'no disponible' }}</li>
+          <li>Versión de la API: {{ h.version }}</li>
+        </ul>
+        @if (h.status === 'degraded') {
+          <p class="warn">El servicio funciona de forma parcial; algunas pantallas pueden fallar. Reintente más tarde.</p>
+        }
+      }
     </app-state-panel>
   `,
+  styles: `.warn { color: #664d03; background: #fff3cd; padding: 0.4rem 0.7rem; }`,
 })
 export class SystemPage {
-  private ds = inject(DataService);
-  state = signal<LoadState<HealthInfo>>({ kind: 'loading' });
-  info() {
-    const s = this.state();
-    return s.kind === 'data' ? s.data : null;
-  }
-  constructor() {
-    this.reload();
-  }
-  reload() {
-    this.state.set({ kind: 'loading' });
-    this.ds.health().subscribe({
-      next: (r) => this.state.set({ kind: 'data', data: r.data, provenance: r.provenance }),
-      error: (e: unknown) => this.state.set({ kind: 'error', message: e instanceof Error ? e.message : 'Error desconocido' }),
-    });
-  }
+  private api = inject(ApiService);
+  l = load<Health>(() => this.api.health());
+  info = computed(() => { const s = this.l.state(); return s.kind === 'data' ? s.data : null; });
 }

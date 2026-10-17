@@ -1,18 +1,20 @@
+@if (demo.enabled) {
+  <app-demo-banner />
+}
 <header>
   <h1>Pronóstico de demanda y reposición</h1>
-  <nav aria-label="Principal">
-    <a routerLink="/cargas" routerLinkActive="active">Cargas de datos</a>
-    <a routerLink="/pronosticos" routerLinkActive="active">Pronósticos</a>
-    <a routerLink="/recomendaciones" routerLinkActive="active">Recomendaciones</a>
-    <a routerLink="/sistema" routerLinkActive="active">Estado del sistema</a>
-  </nav>
-  <label>
-    Escenario mock:
-    <select (change)="setScenario($event)" aria-label="Escenario mock">
-      @for (s of scenarios; track s.id) {
-        <option [value]="s.id" [selected]="s.id === ds.scenario()">{{ s.label }}</option>
-      }
-    </select>
-  </label>
+  @if (auth.session(); as s) {
+    <nav aria-label="Principal">
+      <a routerLink="/resumen" routerLinkActive="active">Resumen</a>
+      <a routerLink="/cargas" routerLinkActive="active">Importaciones</a>
+      <a routerLink="/corridas" routerLinkActive="active">Corridas</a>
+      <a routerLink="/pronosticos" routerLinkActive="active">Pronósticos</a>
+      <a routerLink="/recomendaciones" routerLinkActive="active">Recomendaciones</a>
+      <a routerLink="/comparacion" routerLinkActive="active">Comparación</a>
+      <a routerLink="/sistema" routerLinkActive="active">Sistema</a>
+    </nav>
+    <span class="user" data-testid="user">{{ s.username }} ({{ s.role }})</span>
+    <button type="button" data-testid="logout" (click)="logout()">Salir</button>
+  }
 </header>
 <main><router-outlet /></main>
