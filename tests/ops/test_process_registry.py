@@ -27,7 +27,7 @@ def _start_time_utc(pid: int) -> str:
 
 def _stop(registry: Path) -> str:
     r = subprocess.run(["powershell", "-NoProfile", "-File", str(ROOT / "scripts" / "stop-local.ps1"),
-                        "-RegistryPath", str(registry)], capture_output=True, text=True, timeout=60)
+                        "-RegistryPath", str(registry)], capture_output=True, text=True, timeout=60, check=False)
     assert r.returncode == 0, r.stderr
     return r.stdout
 
