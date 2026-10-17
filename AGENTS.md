@@ -6,7 +6,7 @@ El usuario designa Claude Code como ejecutor habitual y Codex como director/revi
 
 Se autoriza delegación a agentes cuando haya subtareas independientes y sea útil. Máximo operativo habitual: tres trabajadores simultáneos. Asignar alcance de archivos; un integrador controla contratos y dependencias. Las definiciones de agentes/skills de Claude sirven como referencia de dominio y no se presumen funciones cargadas por Codex.
 
-Autoridad técnica: leer el encargo vigente indicado en ESTADO.md. Ahora ETAPA_05_CLAUDE.md (T07), tras aceptar T06 en REVISION_CODEX_05.md. Corregir coherencia de inferencia y evaluar horizontes 10/14/21 y simulación junio-julio con protocolo previo; agosto reservado. No repetir etapas cerradas. Verificar código vivo antes de retomar. No entrenar hasta aprobar datos; agosto sigue reservado. Mantener siempre visible el carácter sintético del inventario generado.
+Autoridad técnica: leer el encargo vigente indicado en ESTADO.md. Ahora ETAPA_06_CLAUDE.md (T08 + lectura T09), tras aceptar T07 en REVISION_CODEX_06.md. Integrar API/auth/persistencia y pantallas históricas con método promedio_28; congelar por escrito sin abrir agosto ni repetir entrenamientos. No repetir etapas cerradas. Verificar código vivo antes de retomar. No entrenar hasta aprobar datos; agosto sigue reservado. Mantener siempre visible el carácter sintético del inventario generado.
 
 No alterar originales ni borrar la base v1. Reconstrucción nueva en v2, comparación y cambio local reversible forman parte del encargo. Commits locales para checkpoints están autorizados después de revisar exclusiones; no guardar secretos ni datos comerciales. Servicios de pago requieren presupuesto/acceso acordados. Preparar lo posible y pedir solo accesos realmente necesarios.
 

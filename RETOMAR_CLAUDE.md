@@ -1,9 +1,9 @@
 # Retomar sin repetir trabajo
 
-Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente: **ETAPA_05_CLAUDE.md (T07)**, tras aceptar T06 al commit 3b11fbd en docs/REVISION_CODEX_05.md.
+Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente: **ETAPA_06_CLAUDE.md (T08 + integración de lectura T09)**, tras aceptar T07 al commit 5790103 en docs/REVISION_CODEX_06.md.
 
-Comprueba código, Git, configuración efectiva sin secretos y procesos. Conserva Excel, bases, cambios y evidencia. Si existe trabajo posterior, verifícalo y continúa desde el último paso real. No reiniciar ni repetir T04–T06; no editar archivos de otro trabajador activo.
+Comprueba Git, cambios y procesos. Conserva Excel, bases y artefactos; no editar archivos de un trabajador activo ni repetir T04–T07. Primero ajustes pequeños del motor y contrato; después API/auth, publicación versionada de resultados existentes y pantallas conectadas. Se permite delegación de ámbitos separados con un integrador.
 
-Ejecuta primero el ajuste de coherencia de inferencia; luego protocolo/config comprometidos antes de los nuevos resultados. T07 evalúa horizontes 10/14/21 y simulación junio-julio inicializada solo con datos <=31/05. Inventario simulado etiquetado, sin mejora garantizada. Agosto sigue reservado; no consultar sus ventas ni movimientos sintéticos, no abrir test final ni congelar selección en este incremento.
+Método operativo: promedio_28 SKU y categorías agregadas; RF comparador experimental. Preparar congelación documentada de evaluación final, **sin abrir agosto ni entrenar paquetes finales**. La demostración es histórica al 10/07 y todo inventario sigue etiquetado como simulado. No representar mocks o una publicación local como despliegue completo.
 
-Guarda checkpoints y TRASPASO breve durante el trabajo. Actualiza ESTADO/BACKLOG/HISTORIAL al terminar, con pruebas realmente ejecutadas, commit, evidencias, límites y siguiente paso. Entrega T07 a revisión de Codex. Claude es ejecutor habitual; un ejecutor principal activo.
+Guardar checkpoints/traspaso por unidad; actualizar ESTADO/BACKLOG/HISTORIAL al cerrar. Respuesta breve con commit, flujo demostrado, pruebas realmente ejecutadas y pendientes. Entregar a revisión Codex. Un único ejecutor principal activo.

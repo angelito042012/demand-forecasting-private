@@ -1,10 +1,10 @@
 # Estado vigente del proyecto
 
-Actualizado el 17/10/2026, America/Lima. Entrega final: 23/10/2026. Claude Code ejecuta; Codex dirige/revisa. Un único ejecutor principal activo. Historial y detalles previos en HISTORIAL_ENTREGAS.md y revisiones 01–05.
+Actualizado el 17/10/2026, America/Lima. Entrega final: 23/10/2026. Claude Code ejecuta; Codex dirige/revisa. Un único ejecutor principal activo. Historial y detalles previos en HISTORIAL_ENTREGAS.md y revisiones 01–06.
 
 ## Punto de entrada y siguiente encargo
 
-**T07 entregado a revisión de Codex (17/10/2026, Claude).** Siguiente: revisión de T07 y, después, integración/API, congelación de selección y prueba final controlada de agosto en el orden que Codex decida. Agosto sigue sin consultarse. Evidencia: `docs/T07_PROTOCOLO.md`, `T07_RESULTADOS.md`, `T07_METRICAS.json`, `T07_MANIFIESTO.json`, `config/t07_config.json`; privado: `artifacts/private/t07/`.
+**Encargo vigente: ETAPA_06_CLAUDE.md (T08 + lectura integrada T09)**, tras aceptar T07 al commit 5790103 en REVISION_CODEX_06.md. Próximo ejecutor Claude: ajustes pequeños del motor, contrato API/auth, congelación documentada, publicación no destructiva de corrida histórica al 10/07 y pantallas con datos persistidos. No repetir entrenamientos T06/T07 ni abrir agosto. El test final se ejecutará en un encargo posterior.
 
 ## Hitos aceptados
 
@@ -23,7 +23,7 @@ Actualizado el 17/10/2026, America/Lima. Entrega final: 23/10/2026. Claude Code 
 - Claude reporta suite completa 94 aprobadas, 0 omitidas, 1 aviso (74 s); log artifacts/private/t06/pytest_full.log. Angular build y 15 pruebas aprobadas. Distinguir esos resultados de la revisión selectiva.
 - Artefactos: docs/T06_PROTOCOLO.md, T06_RESULTADOS.md, T06_METRICAS.json, T06_MANIFIESTO.json y config/t06_config.json. Modelos/predicciones en artifacts/private/t06/, fuera de Git.
 
-## Entrega T07 (17/10/2026): horizontes 10/14/21 y simulación junio-julio, pendiente de revisión
+## T07 aceptado (17/10/2026): horizontes 10/14/21 y simulación junio-julio
 
 - **Prerrequisito**: inferencia coherente (contexto: inicio/fin reales, dimensiones, entidades, vocabulario guardado con `Vocab.id`, versión de features `t07-1`, horizonte entrenado); paquetes T06 rechazados salvo `allow_legacy` (h≤7); rezagos h>7 con `o+h-7*ceil(h/7)`. Artefactos T06 intactos.
 - **Protocolo/config**: comprometidos antes de resultados (325da2f), sin enmiendas. Código `pipeline/forecast/{features,models,t07}.py`, `pipeline/sim/engine.py`, `scripts/run_t07.py`.
@@ -34,8 +34,8 @@ Actualizado el 17/10/2026, America/Lima. Entrega final: 23/10/2026. Claude Code 
 
 ## Límites y trabajo activo siguiente
 
-- Inferencia: validar fechas reales ctx.start/fin y uso del vocabulario guardado antes de API/simulador. Los folds T06 fueron coherentes; no se invalidan sus métricas. T07 lo corrige primero.
-- T07 extiende el horizonte hasta 21 días; RF de categoría distribuido con pesos históricos es candidato nuevo, sin garantía de mejora. Simulación de desarrollo inicia con información <=31/05; no reutilizar parámetros de julio del escenario reference_v1 de agosto.
+- Inferencia coherente corregida/probada en T07. Al integrar, conservar alineación explícita de entidades y matrices. Motor actual con entradas válidas; endurecer contrato externo y añadir conservación diaria al chequeo automático, según REVISION_CODEX_06.md.
+- T07 evaluó hasta 21 días y no respaldó RF distribuido como mejor pronóstico. Método operativo v1: promedio_28 SKU, categorías agregadas desde SKU; RF solo comparador experimental. Simulación inicializada <=31/05, sin parámetros futuros. Congelación final documentada en próximo incremento; agosto no autorizado todavía.
 - Inventario reference_v1 ya existe, con 3758 SKU, 14338 movimientos y 6279 pedidos sintéticos. Es un escenario, no inventario real ni mejora demostrada. No consultar su trayectoria de agosto para este encargo.
 - Frontend: navegación y cuatro pantallas con estados/mocks etiquetados; compila y tiene pruebas reportadas. Sin API real, autenticación ni revisión en navegador.
 - Backend: healthcheck; faltan API funcional/autenticación, integración, corridas versionadas y publicación. Python 3.12, Angular 21, FastAPI/PyMongo/Mongo; contenedor df-mongo-dev útil. Sin cuentas Azure/Atlas ni presupuesto de nube acordado.
@@ -46,4 +46,10 @@ TIPO_DOC=7 son notas de crédito; no retorno físico automático. Excluir 03/04,
 
 ## Continuidad
 
-Siguiente ejecutor previsto Claude Code; revisar Git/procesos y ejecutar ETAPA_05_CLAUDE.md. Commits locales autorizados con secretos/datos privados excluidos. TRASPASO.md contiene el siguiente paso exacto. No hay alternancia automática de cuotas; el usuario avisa del cambio de ejecutor. Después de T07: integración/API/autenticación, evaluación final congelada, publicación, pruebas y documentación; cada hito necesita evidencia, no solo un mensaje de terminación.
+Siguiente ejecutor previsto Claude Code; revisar Git/procesos y ejecutar ETAPA_06_CLAUDE.md. Commits locales autorizados con secretos/datos privados excluidos. TRASPASO.md contiene el siguiente paso exacto. No hay alternancia automática de cuotas; el usuario avisa del cambio de ejecutor. Después de T07: integración/API/autenticación, evaluación final congelada, publicación, pruebas y documentación; cada hito necesita evidencia, no solo un mensaje de terminación.
+
+## Revisión independiente T07 (Codex 06)
+
+22 pruebas selectivas aprobadas en 2,44 s; estilo correcto. Hashes de config/código, dos artefactos y 13 modelos comprobados. Recorridas 293853 predicciones sin agosto ni claves duplicadas; 160 grupos de métricas SKU recalculados coincidentes. Las métricas de categoría no se recalcularon desde detalle fila a fila. NPZ: 27 combinaciones sobre 3347 SKU y 61 fechas, saldos diarios, recepción por lead time, revisiones, condiciones iniciales y métricas totales verificadas. No se reentrenó ni se repitió la prueba real costosa; suite 117 corresponde a Claude. Resumen privado artifacts/private/codex_review06_audit.json; revisión versionada REVISION_CODEX_06.md.
+
+Interpretación: RF H14 WAPE 0,9292 frente a 0,8726 de promedio_28, 0/4 folds favorables. Su +1,17 puntos de fill rate en el escenario principal coincide con +7,5% stock y +4,0% compras: no ahorro ni mejora real demostrada. Antes de integración solo faltan endurecimientos pequeños del motor; no invalidan T07. T08/T09 integrados, T10, T11, T12 y cierre académico siguen pendientes.
