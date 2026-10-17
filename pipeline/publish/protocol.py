@@ -87,8 +87,11 @@ def claim_run(db, run_doc: dict, now: datetime | None = None, lease_seconds: int
         if cur["status"] == "staging" and not expired:
             raise PublishInProgressError("hay una publicacion en curso con la misma clave")
         owner = uuid.uuid4().hex
+        # CAS sobre el lease LEIDO: si el dueno renovo entre la lectura y este paso, `lease_expires_at` ya no coincide
+        # (None coincide con ausente/nulo) y no se le desplaza.
         got = db.runs.find_one_and_update(
-            {"_id": cur["_id"], "status": cur["status"], "generation": cur.get("generation", 0)},
+            {"_id": cur["_id"], "status": cur["status"], "generation": cur.get("generation", 0),
+             "lease_expires_at": cur.get("lease_expires_at")},
             {"$set": {**{k: v for k, v in run_doc.items() if k not in ("run_id", "status")}, "status": "staging",
                       "owner": owner, "lease_expires_at": lease, "error": None},
              "$inc": {"generation": 1, "attempts": 1}}, return_document=ReturnDocument.AFTER)
@@ -185,11 +188,31 @@ def fail_attempt(db, attempt: Attempt, stage: str, exc: Exception, now: datetime
     return res.matched_count == 1
 
 
+ABANDONED_CODE = "INTENTO_ABANDONADO"
+
+
+def reserve_abandoned(db, run_id: str, generation: int, t: datetime) -> bool:
+    """Reserva atomica de una generacion en staging con lease VENCIDO antes de borrar sus hijos.
+
+    CAS sobre (run_id, status=staging, generation, lease vencido o ausente): pasa la corrida a `failed` (se conserva
+    el documento con su motivo). Desde ese instante `guard`, `complete_run`, `insert_children` y la activacion del
+    intento antiguo fallan (exigen status=staging + owner). Si el dueno renovo el lease o promovio la corrida antes,
+    el CAS no coincide y los hijos se conservan. Devuelve si esta llamada hizo la reserva."""
+    res = db.runs.update_one(
+        {"run_id": run_id, "status": "staging", "generation": generation,
+         "$or": [{"lease_expires_at": None}, {"lease_expires_at": {"$lte": t}}]},
+        {"$set": {"status": "failed", "owner": None, "lease_expires_at": None,
+                  "error": {"code": ABANDONED_CODE, "stage": "mantenimiento", "at": t,
+                            "message": "intento sin latido; reservado por el mantenimiento antes de limpiar"}}})
+    return res.matched_count == 1
+
+
 def purge_orphans(db, now: datetime | None = None) -> dict:
-    """Elimina hijos de intentos que no son el vigente: no referenciados por `children_ref` y cuyo intento ya no
-    esta vivo. Un intento vivo (staging con lease vigente y su generation) se respeta."""
+    """Elimina hijos de intentos muertos. Un intento todavia reclamable (staging de su generacion) solo se limpia
+    tras `reserve_abandoned`; el resto (generacion superada, failed, sin corrida) ya no puede renovarse ni promoverse.
+    Nunca toca `children_ref`, corridas completed/superseded ni las historicas (sin sufijo ~g). Idempotente."""
     t = _aware(now or utcnow())
-    removed = {}
+    removed: dict = {}
     ids = set()
     for name in CHILD_COLLECTIONS:
         ids |= {i for i in db[name].distinct("run_id") if isinstance(i, str) and "~g" in i}
@@ -197,13 +220,23 @@ def purge_orphans(db, now: datetime | None = None) -> dict:
         base, _, gen = cid.rpartition("~g")
         run = db.runs.find_one({"run_id": base}, {"children_ref": 1, "status": 1, "generation": 1,
                                                   "lease_expires_at": 1})
-        keep = False
         if run is not None:
-            live = (run.get("status") == "staging" and run.get("generation") == int(gen)
-                    and run.get("lease_expires_at") is not None and _aware(run["lease_expires_at"]) > t)
-            keep = run.get("children_ref") == cid or live
-        if not keep:
-            for name in CHILD_COLLECTIONS:
-                n = db[name].delete_many({"run_id": cid}).deleted_count
+            if run.get("children_ref") == cid:
+                continue
+            if run.get("status") == "staging" and run.get("generation") == int(gen):
+                lease = run.get("lease_expires_at")
+                if lease is not None and _aware(lease) > t:
+                    continue                       # intento vivo
+                if not reserve_abandoned(db, base, int(gen), t):
+                    continue                       # renovo o promovio primero: se conserva
+        for name in CHILD_COLLECTIONS:
+            n = db[name].delete_many({"run_id": cid}).deleted_count
+            if n:
                 removed[name] = removed.get(name, 0) + n
+    # corridas staging con lease vencido y sin hijos: se reservan (quedan failed con su motivo; no se borran)
+    for run in db.runs.find({"status": "staging", "$or": [{"lease_expires_at": None},
+                                                          {"lease_expires_at": {"$lte": t}}]},
+                            {"run_id": 1, "generation": 1}):
+        if reserve_abandoned(db, run["run_id"], run.get("generation", 0), t):
+            removed["runs_abandonadas"] = removed.get("runs_abandonadas", 0) + 1
     return removed
