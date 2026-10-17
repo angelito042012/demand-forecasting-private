@@ -207,3 +207,8 @@ Campos mínimos al actualizar: ejecutor; fecha; tarea; último paso; paso en cur
 ## Revisión Codex 05 y encargo T07 (17/10/2026)
 
 T06 aceptado como experimento de desarrollo al commit 3b11fbd. Once pruebas selectivas aprobadas; 36 grupos de métricas recalculados y hashes comprobados. Sin repetición del entrenamiento completo ni suite integral. Ver REVISION_CODEX_05.md. Siguiente: ETAPA_05_CLAUDE.md, horizontes 10/14/21 y simulación de desarrollo; agosto reservado.
+
+## Entrega 17/10/2026 (Claude): T07 horizontes y simulacion (pendiente de revision de Codex)
+
+- Protocolo 325da2f sin enmiendas. Codigo: pipeline/sim/engine.py, pipeline/forecast/t07.py, features/models (inferencia coherente), scripts/run_t07.py. Suite 117 + 16 posteriores.
+- RF categoria distribuido no cumple la regla provisional; promedio_28 es la referencia provisional. Simulacion con 9 escenarios y 3 politicas; ventaja de servicio del RF no concluyente (mas stock y compras).

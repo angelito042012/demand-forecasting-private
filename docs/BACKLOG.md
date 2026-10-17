@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al 17/10: T06 aceptado como experimento en REVISION_CODEX_05.md; frente web con mocks compila. Encargo vigente ETAPA_05_CLAUDE.md: T07 (horizontes 10/14/21, simulación y ajuste de inferencia). Agosto reservado. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
+Estado al 17/10 (tarde): T07 (horizontes 10/14/21 y simulación junio-julio) ejecutado y pendiente de revisión de Codex. Siguiente: integración/API, congelación de selección y prueba final tras la revisión. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
 
 T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04, T05 y T06 están aceptados; T07 y etapas posteriores siguen pendientes. Selección final para agosto aún no congelada. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 

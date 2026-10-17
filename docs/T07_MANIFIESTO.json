@@ -1,0 +1,528 @@
+{
+  "generado_lima": "2026-10-17 11:45",
+  "base_de_datos": "demand_forecasting_v2",
+  "etiqueta": "Inventario simulado con supuestos; no corresponde al inventario real de la empresa",
+  "agosto_usado": false,
+  "commit_protocolo": "325da2f",
+  "config_sha256": "e695f95d5b75b035a9722a086775c6ad4ddf3d3b7709dc8cb7c4d4c907dc7f79",
+  "codigo_sha256": "acaa2124e44fc65643cb2f7dd6c5b5a793fc2ca1a87d72dc0632a02c7775dcd1",
+  "git_commit": "e5466413ef58af372cd0e1e8afade7cfad35bb4b",
+  "repeticion_identica": true,
+  "conservacion_ok": true,
+  "identidad_valor_max_abs": 1.1641532182693481e-10,
+  "identidad_valor_tolerancia": 1e-06,
+  "segundos_totales": 162.36643419999928,
+  "semilla_rf": 20261017,
+  "artefactos": {
+    "predicciones_folds.csv.gz": {
+      "sha256": "4f7b2110b26017a23b76d8a59184a22edfeebbc47031170533593c1754bc2512"
+    },
+    "simulacion_series.npz": {
+      "sha256": "8497a1354f448083dba608e763c77724ed78c17d61e4c215b687253672136409"
+    }
+  },
+  "modelos": {
+    "G1_rf_categoria.joblib": "96d66322fc734a361922f63315ecb1c18c3ecb6126de85b51a3bf005c2d3a756",
+    "G2_rf_categoria.joblib": "e0c9857aacc94d6884d4bfe62b32ed307a63463db831570e26c649d6961ad149",
+    "G3_rf_categoria.joblib": "c7262a9935094007d6e88e45438ba87a9562eedab7c5b67f7192ab6e2e3282dc",
+    "G4_rf_categoria.joblib": "45b96ebdf573afd961425e65239b81f91ca4d5d8ef363a939cd63db127a6a5e7",
+    "sim_2026-06-01_rf_categoria.joblib": "c67ca7a7db2b03a58ba802120ae9663e04b560602c7376c8d1edec3addca34f9",
+    "sim_2026-06-08_rf_categoria.joblib": "cfcd335c2ad0547be24cadbdc170db697330b1eafa11cd2f940503f9e8258e50",
+    "sim_2026-06-15_rf_categoria.joblib": "1be7e4101cf582eb3b3d736d8f9cb8152f0c66d5fab9dbe0c192f489f4c3a195",
+    "sim_2026-06-22_rf_categoria.joblib": "0bcac93cef6f0e36935288547b74de14215b93c7662b806f4ca61a6ca17157e5",
+    "sim_2026-06-29_rf_categoria.joblib": "d5f29138d2909ed89cc5c103d0b781d21138c61b5cc1fd4fa352fe63e6d266ae",
+    "sim_2026-07-06_rf_categoria.joblib": "6b3e49f5c0ac0274b4ebce684cfb07e459702444e798deb350a12a3de2279f8a",
+    "sim_2026-07-13_rf_categoria.joblib": "b2de9d2100c210a6dd3c92781e85c98b69d9f3e768ffe53896d2bef26d02e0e9",
+    "sim_2026-07-20_rf_categoria.joblib": "e20a3711bf881c4f95d3a5c0fca63bbd3e593479fedf574d81a37d96453bf4fb",
+    "sim_2026-07-27_rf_categoria.joblib": "e5a321211689015e18e4d5c1e04be30bea2de077342a95d0dc4631b606cf3edb"
+  },
+  "folds_predictivos": {
+    "G1": {
+      "corte": "2026-05-31",
+      "fingerprint": "9fa7f64e61d691ba4e3774ff000b572ed8918bfbf617836baf6a755beb177f23",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        }
+      ],
+      "dias_evaluables": 20,
+      "no_evaluables": [
+        "2026-06-07"
+      ],
+      "skus_conocidos": 3347,
+      "skus_nuevos_en_bloque": 159,
+      "unidades_nuevos_evaluables": 682.0,
+      "pesos": {
+        "categorias_peso_28d": 34,
+        "categorias_fallback_historico": 2,
+        "categorias_fallback_uniforme": 0
+      },
+      "conservacion_categoria_a_sku_max_abs": 1.9326762412674725e-12,
+      "negativos_recortados": 0,
+      "segundos_rf": 4.3,
+      "entrenamiento": {
+        "origenes": 15,
+        "filas": 11088,
+        "caracteristicas": 24,
+        "segundos_ajuste": 2.52,
+        "memoria_matriz_mb": 1.1,
+        "origen": "2026-05-31",
+        "feature_version": "t07-1"
+      }
+    },
+    "G2": {
+      "corte": "2026-06-14",
+      "fingerprint": "5bcca4c1be49d350fb0d5cc5d6f0635900a69eccfb35b0c4325a2a76a3a60410",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        }
+      ],
+      "dias_evaluables": 21,
+      "no_evaluables": [],
+      "skus_conocidos": 3450,
+      "skus_nuevos_en_bloque": 156,
+      "unidades_nuevos_evaluables": 744.0,
+      "pesos": {
+        "categorias_peso_28d": 32,
+        "categorias_fallback_historico": 4,
+        "categorias_fallback_uniforme": 0
+      },
+      "conservacion_categoria_a_sku_max_abs": 3.524291969370097e-12,
+      "negativos_recortados": 0,
+      "segundos_rf": 3.67,
+      "entrenamiento": {
+        "origenes": 20,
+        "filas": 14760,
+        "caracteristicas": 24,
+        "segundos_ajuste": 3.48,
+        "memoria_matriz_mb": 1.4,
+        "origen": "2026-06-14",
+        "feature_version": "t07-1"
+      }
+    },
+    "G3": {
+      "corte": "2026-06-28",
+      "fingerprint": "64b79cfb621356ef88e91367f7ace804dca9eb867335940371b3fe4dc3730d00",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        }
+      ],
+      "dias_evaluables": 21,
+      "no_evaluables": [],
+      "skus_conocidos": 3549,
+      "skus_nuevos_en_bloque": 150,
+      "unidades_nuevos_evaluables": 424.0,
+      "pesos": {
+        "categorias_peso_28d": 32,
+        "categorias_fallback_historico": 4,
+        "categorias_fallback_uniforme": 0
+      },
+      "conservacion_categoria_a_sku_max_abs": 2.2737367544323206e-12,
+      "negativos_recortados": 0,
+      "segundos_rf": 4.47,
+      "entrenamiento": {
+        "origenes": 24,
+        "filas": 17640,
+        "caracteristicas": 24,
+        "segundos_ajuste": 4.3,
+        "memoria_matriz_mb": 1.7,
+        "origen": "2026-06-28",
+        "feature_version": "t07-1"
+      }
+    },
+    "G4": {
+      "corte": "2026-07-10",
+      "fingerprint": "a5e4d10127f9e5794c62a1576f9fde4582f52dfd6fbd8dfd00714fc94a6cea0d",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        },
+        {
+          "mes": "2026-07",
+          "archivo": "julio.xlsx",
+          "sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae"
+        }
+      ],
+      "dias_evaluables": 21,
+      "no_evaluables": [],
+      "skus_conocidos": 3647,
+      "skus_nuevos_en_bloque": 111,
+      "unidades_nuevos_evaluables": 296.0,
+      "pesos": {
+        "categorias_peso_28d": 35,
+        "categorias_fallback_historico": 1,
+        "categorias_fallback_uniforme": 0
+      },
+      "conservacion_categoria_a_sku_max_abs": 2.3874235921539366e-12,
+      "negativos_recortados": 0,
+      "segundos_rf": 5.43,
+      "entrenamiento": {
+        "origenes": 28,
+        "filas": 20664,
+        "caracteristicas": 24,
+        "segundos_ajuste": 5.21,
+        "memoria_matriz_mb": 2.0,
+        "origen": "2026-07-10",
+        "feature_version": "t07-1"
+      }
+    }
+  },
+  "simulacion": {
+    "universo_skus": 3347,
+    "primaria_inicial": 2672,
+    "historia_corta_inicial": 675,
+    "excluidos_nuevos_skus": 411,
+    "excluidos_nuevos_unidades_proxy": 3783.0,
+    "costo_fuentes": {
+      "propio": 3347,
+      "categoria": 0,
+      "global": 0
+    },
+    "fallback_rf_a_promedio_filas": 0,
+    "fingerprint_inicializacion": "9fa7f64e61d691ba4e3774ff000b572ed8918bfbf617836baf6a755beb177f23",
+    "fuentes_inicializacion": [
+      {
+        "mes": "2026-03",
+        "archivo": "marzo.xlsx",
+        "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+      },
+      {
+        "mes": "2026-04",
+        "archivo": "abril.xlsx",
+        "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+      },
+      {
+        "mes": "2026-05",
+        "archivo": "mayo.xlsx",
+        "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+      }
+    ],
+    "dias": 61,
+    "dias_evaluables": 60,
+    "revisiones": [
+      {
+        "dia": "2026-06-01",
+        "objetivos_desde": "2026-06-02",
+        "objetivos_hasta": "2026-06-22",
+        "pesos": {
+          "categorias_peso_28d": 34,
+          "categorias_fallback_historico": 2,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 2.5579538487363607e-12,
+        "hash_pronostico": "36bc3bd9efac999813cd298fc953b8f9bc13d9b782eccb9b276226746f5fa8ac"
+      },
+      {
+        "dia": "2026-06-08",
+        "objetivos_desde": "2026-06-09",
+        "objetivos_hasta": "2026-06-29",
+        "pesos": {
+          "categorias_peso_28d": 33,
+          "categorias_fallback_historico": 3,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 1.5347723092418164e-12,
+        "hash_pronostico": "7d6d484298e7eb9e1a6655076acc2df7e50c4f00c9a2863fadaef84663a8b8f4"
+      },
+      {
+        "dia": "2026-06-15",
+        "objetivos_desde": "2026-06-16",
+        "objetivos_hasta": "2026-07-06",
+        "pesos": {
+          "categorias_peso_28d": 32,
+          "categorias_fallback_historico": 4,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 2.3874235921539366e-12,
+        "hash_pronostico": "ea58b5c80403d7c7519ed192d8501209e433b424bec492d05573239ae0f691b7"
+      },
+      {
+        "dia": "2026-06-22",
+        "objetivos_desde": "2026-06-23",
+        "objetivos_hasta": "2026-07-13",
+        "pesos": {
+          "categorias_peso_28d": 32,
+          "categorias_fallback_historico": 4,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 1.4779288903810084e-12,
+        "hash_pronostico": "c9d7996f7496b4580480ed3238318c6a5b3d56a11f1663fb6acb1e059778ca9a"
+      },
+      {
+        "dia": "2026-06-29",
+        "objetivos_desde": "2026-06-30",
+        "objetivos_hasta": "2026-07-20",
+        "pesos": {
+          "categorias_peso_28d": 32,
+          "categorias_fallback_historico": 4,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 1.4210854715202004e-12,
+        "hash_pronostico": "8f10fe80f875397efe30b24fe2d7b737a808aeacd8bc80801d51137f78708a17"
+      },
+      {
+        "dia": "2026-07-06",
+        "objetivos_desde": "2026-07-07",
+        "objetivos_hasta": "2026-07-27",
+        "pesos": {
+          "categorias_peso_28d": 32,
+          "categorias_fallback_historico": 4,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 1.8758328224066645e-12,
+        "hash_pronostico": "c67965d2c7ec1d55b69df838ce93dcdfb958c0251ac74b3a643f076b3a430ad0"
+      },
+      {
+        "dia": "2026-07-13",
+        "objetivos_desde": "2026-07-14",
+        "objetivos_hasta": "2026-08-03",
+        "pesos": {
+          "categorias_peso_28d": 33,
+          "categorias_fallback_historico": 3,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 1.3073986337985843e-12,
+        "hash_pronostico": "2e88e8477e00c3f7ebcf88c137e4e43a4c854e99cfc2651e82b37a83a727cabf"
+      },
+      {
+        "dia": "2026-07-20",
+        "objetivos_desde": "2026-07-21",
+        "objetivos_hasta": "2026-08-10",
+        "pesos": {
+          "categorias_peso_28d": 32,
+          "categorias_fallback_historico": 4,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 1.5347723092418164e-12,
+        "hash_pronostico": "467ef51e3eef051b72f4931a88bb79023331d2c2677636b812ad28e9133f0d5b"
+      },
+      {
+        "dia": "2026-07-27",
+        "objetivos_desde": "2026-07-28",
+        "objetivos_hasta": "2026-08-17",
+        "pesos": {
+          "categorias_peso_28d": 33,
+          "categorias_fallback_historico": 3,
+          "categorias_fallback_uniforme": 0
+        },
+        "conservacion_cat_a_sku": 1.4210854715202004e-12,
+        "hash_pronostico": "8b67944a29f70f4e37ccf54f00c8943110f6a0ded7e7542dcdb406b6618da6b5"
+      }
+    ],
+    "hash_inicializacion": "0e5fa5fe330a6154986e08066f3f4a2e7cf5a22f379f6c4c4b53584a0c08898d"
+  },
+  "entrenamiento": [
+    {
+      "fold": "G1",
+      "origenes": 15,
+      "filas": 11088,
+      "caracteristicas": 24,
+      "segundos_ajuste": 2.52,
+      "memoria_matriz_mb": 1.1,
+      "origen": "2026-05-31",
+      "feature_version": "t07-1",
+      "segundos_total": 4.3
+    },
+    {
+      "fold": "G2",
+      "origenes": 20,
+      "filas": 14760,
+      "caracteristicas": 24,
+      "segundos_ajuste": 3.48,
+      "memoria_matriz_mb": 1.4,
+      "origen": "2026-06-14",
+      "feature_version": "t07-1",
+      "segundos_total": 3.67
+    },
+    {
+      "fold": "G3",
+      "origenes": 24,
+      "filas": 17640,
+      "caracteristicas": 24,
+      "segundos_ajuste": 4.3,
+      "memoria_matriz_mb": 1.7,
+      "origen": "2026-06-28",
+      "feature_version": "t07-1",
+      "segundos_total": 4.47
+    },
+    {
+      "fold": "G4",
+      "origenes": 28,
+      "filas": 20664,
+      "caracteristicas": 24,
+      "segundos_ajuste": 5.21,
+      "memoria_matriz_mb": 2.0,
+      "origen": "2026-07-10",
+      "feature_version": "t07-1",
+      "segundos_total": 5.43
+    },
+    {
+      "origen_sim": "2026-06-01",
+      "origenes": 15,
+      "filas": 11088,
+      "caracteristicas": 24,
+      "segundos_ajuste": 2.49,
+      "memoria_matriz_mb": 1.1,
+      "origen": "2026-06-01",
+      "feature_version": "t07-1",
+      "segundos_total": 2.64
+    },
+    {
+      "origen_sim": "2026-06-08",
+      "origenes": 18,
+      "filas": 13320,
+      "caracteristicas": 24,
+      "segundos_ajuste": 3.08,
+      "memoria_matriz_mb": 1.3,
+      "origen": "2026-06-08",
+      "feature_version": "t07-1",
+      "segundos_total": 3.25
+    },
+    {
+      "origen_sim": "2026-06-15",
+      "origenes": 20,
+      "filas": 14760,
+      "caracteristicas": 24,
+      "segundos_ajuste": 3.46,
+      "memoria_matriz_mb": 1.4,
+      "origen": "2026-06-15",
+      "feature_version": "t07-1",
+      "segundos_total": 3.63
+    },
+    {
+      "origen_sim": "2026-06-22",
+      "origenes": 22,
+      "filas": 16164,
+      "caracteristicas": 24,
+      "segundos_ajuste": 3.79,
+      "memoria_matriz_mb": 1.6,
+      "origen": "2026-06-22",
+      "feature_version": "t07-1",
+      "segundos_total": 3.96
+    },
+    {
+      "origen_sim": "2026-06-29",
+      "origenes": 25,
+      "filas": 18396,
+      "caracteristicas": 24,
+      "segundos_ajuste": 4.56,
+      "memoria_matriz_mb": 1.8,
+      "origen": "2026-06-29",
+      "feature_version": "t07-1",
+      "segundos_total": 4.75
+    },
+    {
+      "origen_sim": "2026-07-06",
+      "origenes": 27,
+      "filas": 19908,
+      "caracteristicas": 24,
+      "segundos_ajuste": 4.94,
+      "memoria_matriz_mb": 1.9,
+      "origen": "2026-07-06",
+      "feature_version": "t07-1",
+      "segundos_total": 5.13
+    },
+    {
+      "origen_sim": "2026-07-13",
+      "origenes": 29,
+      "filas": 21420,
+      "caracteristicas": 24,
+      "segundos_ajuste": 5.39,
+      "memoria_matriz_mb": 2.1,
+      "origen": "2026-07-13",
+      "feature_version": "t07-1",
+      "segundos_total": 5.58
+    },
+    {
+      "origen_sim": "2026-07-20",
+      "origenes": 32,
+      "filas": 23688,
+      "caracteristicas": 24,
+      "segundos_ajuste": 6.09,
+      "memoria_matriz_mb": 2.3,
+      "origen": "2026-07-20",
+      "feature_version": "t07-1",
+      "segundos_total": 6.29
+    },
+    {
+      "origen_sim": "2026-07-27",
+      "origenes": 34,
+      "filas": 25200,
+      "caracteristicas": 24,
+      "segundos_ajuste": 6.42,
+      "memoria_matriz_mb": 2.4,
+      "origen": "2026-07-27",
+      "feature_version": "t07-1",
+      "segundos_total": 6.62
+    }
+  ],
+  "metricas_vinculos": {
+    "T07_METRICAS.json:predictivo": "artifacts/private/t07/predicciones_folds.csv.gz",
+    "T07_METRICAS.json:simulacion": "artifacts/private/t07/simulacion_series.npz"
+  }
+}
