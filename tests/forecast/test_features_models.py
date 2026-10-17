@@ -20,7 +20,7 @@ START = date(2026, 4, 1)
 def _ctx(values, cat_codes=None, cat_values=None):
     n = values.shape[0]
     return ft.SeriesContext(values, START, np.zeros(n, int) if cat_codes is None else cat_codes, np.zeros(n, int),
-                            values if cat_values is None else cat_values)
+                            values if cat_values is None else cat_values, ft.Vocab.fit(["A"], ["1"]).id())
 
 
 def _series(total=60, seed=0, n=5):

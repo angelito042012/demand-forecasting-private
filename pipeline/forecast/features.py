@@ -10,6 +10,8 @@ Precio: no incorporado en esta iteracion (limitacion registrada en el protocolo)
 """
 from __future__ import annotations
 
+import hashlib
+import math
 import warnings
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -21,6 +23,8 @@ FEATURE_NAMES = (["h"] + [f"lag{k}" for k in range(7)]
                     "usables28", "dias_desde_ultima_venta", "historia_dias", "media_historica",
                     "dow", "dia_mes", "mes", "cat_code", "cat_media28", "alm_code"])
 UNKNOWN_CODE = -1
+FEATURE_VERSION = "t07-1"   # t06 = semantica de rezago o+h-7 (h<=7); t07 extiende a h<=21 con o+h-7*ceil(h/7)
+HORIZON_MAX = 21
 
 
 @dataclass(frozen=True)
@@ -38,6 +42,10 @@ class Vocab:
     def alm(self, a) -> int:
         return self.almacenes.index(a) if a in self.almacenes else UNKNOWN_CODE
 
+    def id(self) -> str:
+        """Identidad del vocabulario: dos codificaciones solo son compatibles si comparten este id."""
+        return hashlib.sha256(repr((self.categorias, self.almacenes)).encode()).hexdigest()[:16]
+
 
 @dataclass(frozen=True)
 class SeriesContext:
@@ -47,6 +55,7 @@ class SeriesContext:
     cat_codes: np.ndarray       # (n,) codigo de categoria (vocab de entrenamiento)
     alm_codes: np.ndarray       # (n,)
     cat_values: np.ndarray      # (n, T) serie de la categoria de cada entidad (NaN si no hay)
+    vocab_id: str | None = None  # Vocab.id() con el que se construyeron cat_codes/alm_codes
 
 
 def _nan_stat(fn, arr):
@@ -81,13 +90,14 @@ def base_features(ctx: SeriesContext, oi: int) -> tuple[np.ndarray, dict]:
 
 def build_matrix(ctx: SeriesContext, oi: int, h: int, known: np.ndarray, base: dict) -> np.ndarray:
     """Matriz (n_known, n_features) en el orden FEATURE_NAMES para el horizonte h."""
-    if not 1 <= h <= 7:
-        raise ValueError("h debe estar entre 1 y 7")
+    if not 1 <= h <= HORIZON_MAX:
+        raise ValueError(f"h debe estar entre 1 y {HORIZON_MAX}")
     n = int(known.sum())
     target = ctx.start + timedelta(days=oi + h)       # fecha objetivo (calendario natural)
     cols = {"h": np.full(n, float(h)), "dow": np.full(n, float(target.weekday())),
             "dia_mes": np.full(n, float(target.day)), "mes": np.full(n, float(target.month))}
-    for name, lag in (("lag_mismo_dia_1s", 7), ("lag_mismo_dia_2s", 14)):
+    weeks = math.ceil(h / 7)   # semanas hacia atras hasta la ultima semana YA observada (h<=7 -> 1)
+    for name, lag in (("lag_mismo_dia_1s", 7 * weeks), ("lag_mismo_dia_2s", 7 * weeks + 7)):
         idx = oi + h - lag
         if idx > oi:
             raise AssertionError("rezago posterior al origen")
@@ -126,7 +136,7 @@ def build_training(ctx: SeriesContext, origins: list[int], horizon: int = 7):
 
 
 def inference_matrices(ctx: SeriesContext, horizon: int = 7):
-    """Features al origen (ultima columna) para h=1..7: lista de (h, matriz) y entidades conocidas."""
+    """Features al origen (ultima columna) para h=1..horizon: lista de (h, matriz) y entidades conocidas."""
     oi = ctx.values.shape[1] - 1
     known, base = base_features(ctx, oi)
     return known, [(h, build_matrix(ctx, oi, h, known, base)) for h in range(1, horizon + 1)]

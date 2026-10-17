@@ -38,7 +38,7 @@ def build_context(level: str, index: list, values: np.ndarray, info: dict) -> tu
         cat_values = values
         alm_codes = np.zeros(len(index), dtype=int)
     cat_codes = np.array([vocab.cat(c) for c in cats])
-    return SeriesContext(values, start, cat_codes, alm_codes, cat_values), vocab
+    return SeriesContext(values, start, cat_codes, alm_codes, cat_values, vocab.id()), vocab
 
 
 def make_extras_fn(cfg6: dict, config_sha256: str, models_dir: Path, log: list):
