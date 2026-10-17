@@ -1,5 +1,7 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { map, tap } from 'rxjs';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { catchError, map, of, tap, throwError } from 'rxjs';
+import { RunChoice } from '../core/run-choice';
 import { ApiService } from '../core/api.service';
 import { load } from '../core/load';
 import { BacktestDetail, BacktestItem, Cohorte, Page, PredRow } from '../core/models';
@@ -11,15 +13,31 @@ import { DASH, fmtDate, fmtInt, fmtPct, fmtPen, fmtPp, fmtDec } from '../core/fo
 import { StatePanel } from '../ui/state-panel';
 import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
 
+const EVAL_START = '2026-06-01';
+const EVAL_END = '2026-07-31';
+
+/** Suma días a una fecha AAAA-MM-DD (UTC, sin zona horaria local). */
+function addDays(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
 @Component({
   selector: 'app-comparison-page',
-  imports: [StatePanel, SimNotice, RunBanner, SupersededBanner],
+  imports: [StatePanel, SimNotice, RunBanner, SupersededBanner, RouterLink],
   template: `
     <h2>Comparación de métodos y políticas</h2>
     <p>
-      Resultados históricos de desarrollo, calculados sobre meses ya conocidos (hasta el
-      {{ cutoffText() }}). No son una prueba final: agosto sigue reservado.
+      Resultados históricos de desarrollo, calculados sobre meses ya conocidos. No son una prueba final: agosto sigue reservado.
     </p>
+    @if (chosen()) {
+      <dl class="periods" data-testid="periods">
+        <dt>Origen</dt><dd data-testid="p-origin">{{ originText() }}</dd>
+        <dt>Fechas objetivo</dt><dd data-testid="p-target">{{ targetText() }}</dd>
+        <dt>Período de evaluación del backtest y de la simulación</dt><dd data-testid="p-eval">{{ evalText }}</dd>
+      </dl>
+      <p class="muted" data-testid="periods-note">El origen es el último día con historia usada para pronosticar; no es el fin de la evaluación. Los pronósticos cubren las fechas objetivo y la simulación de reposición recorre todo el período de evaluación.</p>
+    }
     <app-sim-notice [scenarioId]="scenario()" />
     @if (run(); as r) {
       <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" />
@@ -39,7 +57,7 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
       </ul>
     </section>
 
-    <app-state-panel [state]="list.state()" emptyText="No hay backtests publicados." (retry)="list.reload()">
+    <app-state-panel [state]="list.state()" [emptyText]="choice.id() ? 'Sin backtest para esta corrida.' : 'No hay backtests publicados.'" (retry)="list.reload()">
       @if (items().length > 1) {
         <label>Backtest
           <select data-testid="bt-select" aria-label="Backtest" (change)="pick($any($event.target).value)">
@@ -53,6 +71,12 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
       }
     </app-state-panel>
 
+    @if (choice.id() && list.state().kind === 'empty') {
+      <p class="notice info" data-testid="no-backtest">
+        La corrida elegida (<code>{{ choice.id() }}</code>) no tiene backtest propio: las corridas generadas por la aplicación no repiten experimentos y no hay ventas observadas posteriores a su origen.
+        @if (histRun(); as h) { <a [routerLink]="['/comparacion']" [queryParams]="{ run: h }" data-testid="hist-link">Ver el backtest histórico T07</a> }
+      </p>
+    }
     @if (chosen()) {
       <app-state-panel [state]="detail.state()" emptyText="Datos insuficientes: el backtest no publicó resultados." (retry)="detail.reload()">
         @if (det(); as d) {
@@ -258,11 +282,20 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
   `,
   styles: `
     .selectors select { min-width: 9rem; }
+    .periods { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 1rem; margin: 0.4rem 0; }
+    .periods dt { font-weight: 600; } .periods dd { margin: 0; }
     pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft); padding: 0.5rem; max-height: 22rem; overflow: auto; font-size: 0.8rem; }
   `,
 })
 export class ComparisonPage {
   private api = inject(ApiService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+  /** Corrida elegida (parámetro de URL «run»); sin él, el backtest publicado por defecto. */
+  choice = new RunChoice(this.route, this.router, this.destroyRef, () => { this.chosen.set(null); this.histRun.set(null); this.list.reload(); });
+  histRun = signal<string | null>(null);
+  readonly evalText = `${fmtDate(EVAL_START)} al ${fmtDate(EVAL_END)}`;
   readonly policies = POLICIES;
   readonly cohortes = COHORTES;
   readonly predCohortes = PRED_COHORTES;
@@ -272,8 +305,10 @@ export class ComparisonPage {
 
   chosen = signal<string | null>(null);
   list = load<BacktestItem[]>(
-    () => this.api.backtests().pipe(
+    () => this.api.backtests(this.choice.id() ?? undefined).pipe(
       map((r) => (Array.isArray(r) ? r : (r as Page<BacktestItem>).items)),
+      catchError((e: { status?: number }) => (this.choice.id() && e?.status === 404 ? of([] as BacktestItem[]) : throwError(() => e))),
+      tap((items) => { if (!items.length && this.choice.id()) this.findHistorical(); }),
       // Selecciona el primer backtest al llegar la lista.
       tap((items) => { if (items.length && !this.chosen()) { this.chosen.set(items[0].backtest_id); queueMicrotask(() => this.detail.reload()); } }),
     ),
@@ -285,7 +320,27 @@ export class ComparisonPage {
   det = computed(() => { const s = this.detail.state(); return s.kind === 'data' ? s.data : null; });
   scenario = computed(() => this.det()?.scenario_id ?? null);
   run = computed(() => this.det()?.run ?? null);
-  cutoffText = computed(() => fmtDate(this.run()?.cutoff ?? '2026-07-10'));
+  /** Origen: corte de la corrida (valor publicado). */
+  origin = computed(() => this.run()?.cutoff ?? null);
+  originText = computed(() => (this.origin() ? fmtDate(this.origin()) : 'sin dato'));
+  /** Fechas objetivo: las publicadas por la corrida; si faltan, origen + 1 a origen + 21 (horizonte fijo de 21 días). */
+  targetText = computed(() => {
+    const r = this.run() as { target_start?: string; target_end?: string } | null;
+    const o = this.origin();
+    const a = r?.target_start ?? (o ? addDays(o, 1) : null);
+    const b = r?.target_end ?? (o ? addDays(o, 21) : null);
+    return a && b ? `${fmtDate(a)} al ${fmtDate(b)}` : 'sin dato';
+  });
+  private findHistorical() {
+    this.api.backtests().subscribe({
+      next: (r) => {
+        const items = Array.isArray(r) ? r : (r as Page<BacktestItem>).items;
+        const id = items[0]?.run_id ?? items[0]?.run?.run_id ?? null;
+        this.histRun.set(id && id !== this.choice.id() ? id : null);
+      },
+      error: () => this.histRun.set(null),
+    });
+  }
 
   // Simulación: escenario principal por defecto (L7/S7 según los supuestos publicados).
   userL = signal<number | null>(null);

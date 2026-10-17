@@ -65,6 +65,10 @@ export interface RunSummary extends RunHeader, RunQuality {
 
 export interface RunDetail extends RunHeader, RunQuality {
   kind?: string;
+  origin?: string;
+  target_start?: string;
+  target_end?: string;
+  horizon_days?: number;
   provenance?: string;
   disclaimer?: string;
   fingerprint_short?: string;
@@ -124,9 +128,11 @@ export interface ForecastItem {
   target_date: string;
   h: number;
   chosen_method: string;
-  pred: { promedio_28: number; rf_categoria_distribuido: number; cero: number };
+  /** En corridas generadas, `rf_categoria_distribuido` es null (comparador no disponible). */
+  pred: { promedio_28: number; rf_categoria_distribuido: number | null; cero: number };
+  /** null en corridas generadas: el futuro no es cero, simplemente no se observó. */
   observed: number | null;
-  evaluable: boolean;
+  evaluable: boolean | null;
   provenance: 'OBSERVED_EXCEL';
 }
 
@@ -291,7 +297,7 @@ export interface BacktestDetail {
 export type ErrorCode =
   | 'NO_AUTENTICADO' | 'SESION_EXPIRADA' | 'PROHIBIDO' | 'NO_ENCONTRADO' | 'ENTRADA_INVALIDA'
   | 'DEMASIADOS_INTENTOS' | 'CSRF_INVALIDO' | 'ORIGEN_NO_PERMITIDO' | 'AGOSTO_RESERVADO'
-  | 'SERVICIO_NO_DISPONIBLE' | 'RED' | 'DESCONOCIDO';
+  | 'SERVICIO_NO_DISPONIBLE' | 'RED' | 'DESCONOCIDO' | 'CORTE_FUERA_DE_RANGO';
 
 export interface AppError {
   status: number;
@@ -309,3 +315,60 @@ export type LoadState<T> =
 
 export const SIM_NOTICE = 'Inventario simulado con supuestos; no corresponde al inventario real de la empresa';
 export const RUN_LABEL = 'Corrida histórica de desarrollo al 10/07/2026';
+
+// ---- T10: trabajos, importaciones y generación de corridas (docs/T10_CONTRATO.md §2-§3) ----
+export type JobType = 'import_excel' | 'generate_run';
+export type JobStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+export interface JobError { code: string; message?: string; retryable?: boolean; attempt?: number; at?: string }
+
+/** Resultado público de un trabajo. Importación: outcome importado | sin_cambios. Generación: run_id. */
+export interface JobResult {
+  outcome?: 'importado' | 'sin_cambios' | string;
+  import_id?: string;
+  estado?: string;
+  filas_leidas?: number;
+  ventas?: number;
+  notas_credito?: number;
+  rechazadas?: number;
+  rechazos_por_motivo?: Record<string, number>;
+  insertadas?: number;
+  ya_existentes?: number;
+  en_conflicto?: number;
+  run_id?: string;
+  [k: string]: unknown;
+}
+
+export interface PublicJob {
+  job_id: string;
+  type: JobType;
+  status: JobStatus;
+  stage?: string | null;
+  /** Conteos reales publicados por el worker (objeto etiqueta -> número). Nunca se interpreta como porcentaje. */
+  progress?: Record<string, unknown> | null;
+  result?: JobResult | null;
+  error?: JobError | null;
+  created_at?: string;
+  updated_at?: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  attempts?: number;
+  max_attempts?: number;
+  links?: { import?: string; run?: string } | null;
+}
+
+export interface ImportAccepted {
+  job_id: string;
+  status: JobStatus;
+  upload?: { sha256_short?: string; size_bytes?: number; month?: string; label?: string };
+  reused?: boolean;
+}
+export interface RunAccepted { job_id: string; status: JobStatus; origin: string; horizon_days: number; method: string }
+export interface RunOptions {
+  origin_min: string;
+  origin_max: string;
+  origin_default: string;
+  horizon_max: number;
+  methods: string[];
+  development_policy?: boolean;
+}

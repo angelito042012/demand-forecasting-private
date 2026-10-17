@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   BacktestDetail, BacktestItem, BacktestView, ForecastItem, GroupBy, Health, ImportDetail, ImportItem, Page,
-  Recommendation, RecoPage, RunDetail, RunSummary, SalesSummary,
+  ImportAccepted, JobType, PublicJob, Recommendation, RecoPage, RunAccepted, RunDetail, RunOptions, RunSummary, SalesSummary, JobStatus,
 } from './models';
 
 const BASE = '/api/v1';
@@ -52,5 +52,19 @@ export class ApiService {
   backtests(run_id?: string) { return this.get<BacktestItem[] | Page<BacktestItem>>('/backtests', { run_id }); }
   backtest(id: string, view: BacktestView = 'all') {
     return this.get<BacktestDetail>(`/backtests/${encodeURIComponent(id)}`, { view });
+  }
+
+  // ---- T10 ----
+  runOptions() { return this.get<RunOptions>('/runs/options'); }
+  jobs(q: { page: number; page_size: number; status?: JobStatus; type?: JobType }) { return this.get<Page<PublicJob>>('/jobs', { ...q }); }
+  job(id: string) { return this.get<PublicJob>(`/jobs/${encodeURIComponent(id)}`); }
+  /** Multipart: el navegador fija Content-Type con su boundary (nunca se establece a mano). */
+  uploadImport(file: File): Observable<ImportAccepted> {
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+    return this.http.post<ImportAccepted>(`${BASE}/imports`, fd, { withCredentials: true });
+  }
+  createRun(body: { origin: string; horizon_days: number; method: string }): Observable<RunAccepted> {
+    return this.http.post<RunAccepted>(`${BASE}/runs`, body, { withCredentials: true });
   }
 }

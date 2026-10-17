@@ -9,9 +9,9 @@
       <a routerLink="/resumen" routerLinkActive="active">Resumen</a>
       <a routerLink="/cargas" routerLinkActive="active">Importaciones</a>
       <a routerLink="/corridas" routerLinkActive="active">Corridas</a>
-      <a routerLink="/pronosticos" routerLinkActive="active">Pronósticos</a>
-      <a routerLink="/recomendaciones" routerLinkActive="active">Recomendaciones</a>
-      <a routerLink="/comparacion" routerLinkActive="active">Comparación</a>
+      <a routerLink="/pronosticos" queryParamsHandling="preserve" routerLinkActive="active">Pronósticos</a>
+      <a routerLink="/recomendaciones" queryParamsHandling="preserve" routerLinkActive="active">Recomendaciones</a>
+      <a routerLink="/comparacion" queryParamsHandling="preserve" routerLinkActive="active">Comparación</a>
       <a routerLink="/sistema" routerLinkActive="active">Sistema</a>
     </nav>
     <span class="user" data-testid="user">{{ s.username }} ({{ s.role }})</span>

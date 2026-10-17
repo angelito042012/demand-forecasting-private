@@ -167,12 +167,11 @@ describe('Recomendaciones', () => {
 });
 
 describe('Importaciones', () => {
-  it('aclara que la carga nueva sigue por CLI y no ofrece botón de carga', async () => {
+  it('el lector (sin sesión de administrador) no ve controles de carga ni pide /jobs', async () => {
     const f = mount(ImportsPage);
     await flush(req('/api/v1/imports'), page([]), f);
     expect(state(f)).toBe('empty');
-    expect(el(f).querySelector('[data-testid="cli-note"]')?.textContent).toContain('línea de comandos');
-    expect(el(f).textContent).toContain('T10');
+    expect(el(f).querySelector('[data-testid="readonly-note"]')?.textContent).toContain('solo lectura');
     expect(el(f).querySelector('input[type="file"]')).toBeNull();
     expect(Array.from(el(f).querySelectorAll('button')).some((b) => /cargar|subir/i.test(b.textContent!))).toBe(false);
   });

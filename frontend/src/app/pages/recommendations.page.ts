@@ -1,4 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { RunChoice } from '../core/run-choice';
 import { FormsModule } from '@angular/forms';
 import { ApiService, RecoQuery } from '../core/api.service';
 import { load } from '../core/load';
@@ -11,7 +13,7 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
 
 @Component({
   selector: 'app-recommendations-page',
-  imports: [StatePanel, Pager, FormsModule, SimNotice, RunBanner, SupersededBanner],
+  imports: [StatePanel, Pager, FormsModule, SimNotice, RunBanner, SupersededBanner, RouterLink],
   template: `
     <h2>Recomendaciones de reposición (vista previa)</h2>
     <app-sim-notice [scenarioId]="scenarioId()" />
@@ -19,8 +21,15 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
       <app-superseded-banner [run]="r" />
       <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" />
     }
+    @if (first(); as x) {
+      <p data-testid="reco-header">Origen del pronóstico: <strong>{{ date(x.origin) }}</strong> · fechas objetivo: <strong>{{ date(x.forecast_from) }} al {{ date(x.forecast_to) }}</strong> ·
+        inventario simulado al cierre del {{ date(x.snapshot_date) }}.
+        <a [routerLink]="['/corridas']" data-testid="change-run">Cambiar de corrida</a>
+        @if (choice.id()) { (corrida elegida en la dirección: <code>{{ choice.id() }}</code>) } @else { (corrida activa) }
+      </p>
+    }
     <p class="notice info">
-      Sugerencia hipotética calculada sobre una corrida histórica de desarrollo; no es un pedido ejecutado ni una compra real.
+      Sugerencia hipotética calculada sobre la corrida seleccionada (histórica de desarrollo o generada por la aplicación); no es un pedido ejecutado ni una compra real.
       Cantidades en «unidad base»; costos supuestos en PEN. La demanda usada es la venta observada, que puede estar limitada por stock.
     </p>
     <form class="filters" (ngSubmit)="apply()" aria-label="Filtros de recomendaciones">
@@ -64,7 +73,7 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
                 } @else {
                   <tr class="nosnap" data-testid="sin-snapshot">
                     <td>{{ r.sku }}</td><td>{{ r.categoria ?? '—' }}</td>
-                    <td colspan="5">Sin inventario simulado al 10/07. {{ r.reason }}.</td>
+                    <td colspan="5">Sin inventario simulado al {{ dayMonth(r.snapshot_date) }}. {{ r.reason }}.</td>
                     <td><button type="button" (click)="open(r)" [attr.aria-label]="'Ver motivo del SKU ' + r.sku">Ver motivo</button></td>
                   </tr>
                 }
@@ -93,7 +102,7 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
                 <p class="notice danger" data-testid="incoherent">Los valores publicados no cuadran con la fórmula; revise la corrida antes de usarlos.</p>
               }
             } @else {
-              <p class="notice warn" data-testid="detail-nosnap">Sin inventario simulado al 10/07. {{ r.reason }}. No se supone stock cero y no se calcula pedido.</p>
+              <p class="notice warn" data-testid="detail-nosnap">Sin inventario simulado al {{ dayMonth(r.snapshot_date) }}. {{ r.reason }}. No se supone stock cero y no se calcula pedido.</p>
             }
             <p data-testid="reco-dates">
               Fecha del inventario simulado: {{ date(r.snapshot_date) }} · origen del pronóstico: {{ date(r.origin) }} ·
@@ -125,11 +134,18 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
 })
 export class RecommendationsPage {
   private api = inject(ApiService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+  /** Corrida elegida (parámetro de URL «run», compartido con Pronósticos y Comparación); sin él, la activa. */
+  choice = new RunChoice(this.route, this.router, this.destroyRef, () => { this.selected.set(null); this.q.set({ ...this.q(), page: 1 }); this.l.reload(); });
   f = { sku: '', categoria: '', status: '' as '' | 'ok' | 'sin_snapshot', only_orders: false, sort: 'sku' };
   private pageSize = 50;
   private q = signal<RecoQuery>({ page: 1, page_size: this.pageSize, sort: 'sku' });
-  l = load<RecoPage>(() => this.api.recommendations(this.q()), (d) => d.items.length === 0);
+  l = load<RecoPage>(() => this.api.recommendations({ ...this.q(), run_id: this.choice.id() ?? undefined }), (d) => d.items.length === 0);
   data = computed(() => { const s = this.l.state(); return s.kind === 'data' ? s.data : null; });
+  first = computed(() => this.data()?.items[0] ?? null);
+  dayMonth = (v: string | null | undefined) => fmtDate(v).slice(0, 5);
   scenarioId = computed(() => this.data()?.items[0]?.scenario_id ?? null);
   run = computed(() => this.data()?.run ?? null);
   int = (v: unknown) => fmtInt(v);
@@ -138,7 +154,7 @@ export class RecommendationsPage {
 
   selected = signal<string | null>(null);
   private selAlmacen = '1';
-  detail = load<Recommendation>(() => this.api.recommendation(this.selected()!, undefined, this.selAlmacen), () => false, false);
+  detail = load<Recommendation>(() => this.api.recommendation(this.selected()!, this.choice.id() ?? this.data()?.run?.run_id ?? undefined, this.selAlmacen), () => false, false);
   det = computed(() => { const s = this.detail.state(); return s.kind === 'data' ? s.data : null; });
   calc = computed(() => { const r = this.det(); return r ? calcSteps(r) : null; });
   explanationLines = computed<string[]>(() => {
