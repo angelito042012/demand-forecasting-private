@@ -1,0 +1,146 @@
+{
+  "version": "seleccion-congelada-1",
+  "fecha_congelacion": "2026-10-17",
+  "estado": "CONGELADA_SIN_EJECUTAR",
+  "agosto_consultado": false,
+  "reference_v1_consultado": false,
+  "paquetes_finales_entrenados": false,
+  "metodo_operativo_v1": {
+    "nombre": "promedio_28",
+    "nivel": "sku",
+    "categoria": "suma de pronosticos SKU",
+    "horizonte_maximo": 21,
+    "definicion": "media de observaciones utilizables de los 28 dias naturales al origen, constante en h=1..21"
+  },
+  "comparador_experimental": {
+    "nombre": "rf_categoria_distribuido",
+    "estado": "no ganador en T07",
+    "config_t07": "config/t07_config.json",
+    "config_t07_sha256": "e695f95d5b75b035a9722a086775c6ad4ddf3d3b7709dc8cb7c4d4c907dc7f79",
+    "feature_version": "t07-1",
+    "parametros": "identicos a T07 (rf_categoria: 100 arboles, profundidad 12, hoja minima 20, max_features 0,5, seed 20261017, n_jobs 1)",
+    "modulo_experimental": {
+      "commit": "e5466413ef58af372cd0e1e8afade7cfad35bb4b",
+      "manifiesto": "docs/T07_MANIFIESTO.json",
+      "codigo_sha256_manifiesto": "acaa2124e44fc65643cb2f7dd6c5b5a793fc2ca1a87d72dc0632a02c7775dcd1",
+      "archivos_sha256": {
+        "pipeline/forecast/t05.py": "425a66124d13efc3bad777d65644db30f2537d760bf6f609f04dffcf52fb81f8",
+        "pipeline/data/importer.py": "ed2238fa6c75239614763d4690d5007377cce8870bc7a90388618517e6c9c12d",
+        "pipeline/forecast/features.py": "dd9e09b44e0a4f7aa046671c5d9db02dd3cdab7d758afc355d2d6f2b32329ec3",
+        "pipeline/forecast/models.py": "f0729c0971ea98b6483bb0995e22f24113223d73388ae9a1a1a015ab5b04444d",
+        "pipeline/forecast/metrics.py": "ee8b7a92bb43ef33a908b3b57a6795913483451261f2ca088bc3a512654ea999",
+        "pipeline/forecast/baselines.py": "dbdd3347b28f48147d6f6d302fda840bf6ef3f601bde2950ec0375c950d3e267",
+        "pipeline/forecast/t07.py": "dd9b16e417e7df2081e0606d3a2f3505bfbfdc6da38c9c18d1ab46378ffd3f3b",
+        "pipeline/sim/engine.py": "09cddb7db40fc336cb3936c3b3b67fdb7ea0e1bce03bcc1a1b3bdd5a6df4727b",
+        "pipeline/data/training_access.py": "27f17a51c7586f2d5d4e8b6c5a1bfcc95a133c80fbc139989f20c926405e7614",
+        "pipeline/data/sources.py": "2e8e1d4459d41412021a425435049440de54f220f8ff06d8645bc83c628d483f",
+        "pipeline/data/catalog.py": "eae2a87156a21fa6a24cb7efb775ddbd6ad8da2a6e736c43e498a614fe37fde8",
+        "pipeline/data/daily_series.py": "8376a1be2d82e9af2bac2c302e217f90bdd0579a14bf615b010636f98b50a948",
+        "pipeline/data/calendar.py": "21967af406b0fd67ed9304fb02529b19d68f0c96a19ff32af5c8c2dfce2ae3d5",
+        "scripts/run_t07.py": "84b0a57b52f6ed27be51e6a89954ccd732e8c685f6ecc0ec31b69ae6d1f0c006"
+      }
+    }
+  },
+  "control_predictivo": "cero",
+  "politica_sintetica_de_referencia": "referencia_fija",
+  "motor_simulacion": {
+    "modulo": "pipeline/sim/engine.py",
+    "commit_validacion_entradas": "d59703b",
+    "ecuaciones": "sin cambio respecto a e5466413ef58af372cd0e1e8afade7cfad35bb4b"
+  },
+  "diseno_final": {
+    "corte_inicial": "2026-07-31",
+    "universo_y_catalogo": "SKU y categorias conocidos al 2026-07-31 (primera venta <= 31/07); catalogo al corte",
+    "evaluacion_predictiva": {
+      "bloque": [
+        "2026-08-01",
+        "2026-08-21"
+      ],
+      "dias": 21,
+      "emision": "una vez en el origen 2026-07-31; sin ventas reales dentro del bloque",
+      "acumulados": [
+        10,
+        14,
+        21
+      ],
+      "criterio_primario": {
+        "nivel": "sku",
+        "H": 14,
+        "cohorte": "primaria",
+        "universo": "comun"
+      },
+      "vistas": [
+        "acumulado",
+        "diaria"
+      ],
+      "niveles": [
+        "sku",
+        "categoria"
+      ]
+    },
+    "simulacion": {
+      "inicio": "2026-08-01",
+      "fin": "2026-08-31",
+      "politicas": [
+        "referencia_fija",
+        "promedio_28",
+        "rf_categoria_distribuido"
+      ],
+      "escenarios": {
+        "L": [
+          3,
+          7,
+          14
+        ],
+        "S": [
+          0,
+          7,
+          14
+        ],
+        "R": 7
+      },
+      "principal": {
+        "L": 7,
+        "S": 7
+      },
+      "inicializacion": "stock, medias y costos estimados solo con datos <= 2026-07-31 (mismas ecuaciones T07)",
+      "reajuste": "revision al final de los dias 1, 8, 15, 22 y 29 de agosto; RF reentrenado con etiquetas <= dia de revision; promedio_28 actualizado; solo observaciones ya pasadas; metodo y parametros congelados",
+      "nota": "la evaluacion predictiva fija y la simulacion secuencial son disenos distintos y no se mezclan"
+    },
+    "nuevos_sku": "se reportan aparte (unidades y cobertura) sin historia inventada; las 141 altas/568 unidades auditadas antes no sustituyen la evaluacion final",
+    "dias_sin_registros": "un dia sin ninguna linea no se convierte en cero ni en servicio perfecto: sin evento de demanda ni denominador"
+  },
+  "pesos_asignacion": "identicos a T07: unidades positivas de 28 dias; fallback historico; fallback uniforme; se cuentan",
+  "metricas": [
+    "WAPE",
+    "MAE",
+    "RMSE",
+    "sesgo",
+    "proporciones sub/sobre",
+    "cobertura",
+    "MAPE solo con reales positivos",
+    "fill rate",
+    "perdidas",
+    "stock medio",
+    "compras desembolsadas",
+    "costo consumido (supuesto)"
+  ],
+  "reglas_de_lectura": {
+    "umbrales_prometidos": null,
+    "seleccion_tras_ver_agosto": false,
+    "rf_sobre_promedio_28": "con un solo bloque no puede aplicarse el criterio de >=3 folds favorables: RF no se declara ganador por la prueba final; se informan mejora relativa y sesgo (referencia |sesgo|/obs <= 0,25)",
+    "resultados_desfavorables": "se conservan y se reportan"
+  },
+  "ejecucion_futura": {
+    "autorizacion": "encargo explicito posterior de Codex tras revisar integracion y esta congelacion",
+    "pasos": [
+      "verificar hashes de este documento y de la config",
+      "cargar agosto solo con load_final_test_sales(frozen_selection_confirmed=True)",
+      "ejecutar el procedimiento congelado una vez",
+      "guardar manifiesto con hashes",
+      "no re-seleccionar"
+    ],
+    "script": "scripts/run_final.py (NO implementado en T08)"
+  },
+  "defectos": "si al implementar la integracion se detecta un defecto que afecte este protocolo, se documenta para revision antes de modificar la congelacion"
+}
