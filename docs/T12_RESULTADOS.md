@@ -1,6 +1,6 @@
 # T12 Resultados: evaluación final de agosto bajo selección congelada
 
-**Inventario simulado con supuestos; no corresponde al inventario real de la empresa.** Generado el 2026-10-17T17:54:13-05:00 (America/Lima). Selección congelada: `config/seleccion_congelada.json` (sha256 `8a9138059391f2b80b9a944b2ee25803cd1e54fe9b359b2dfec0a840f759ef8d`), sin cambios. Predicciones iniciales selladas antes de leer agosto (sello `d587255d87fb2d99e449a098e4c1fa6e1c1c6d5838180b7aa8fe098e9a2ce663`). Un solo bloque (01–21/08, origen 31/07); **no hay umbrales prometidos** y los resultados desfavorables y el control cero se conservan. No demuestra impacto en inventario real de la empresa.
+**Inventario simulado con supuestos; no corresponde al inventario real de la empresa.** Generado el 2026-10-17T18:12:23-05:00 (America/Lima). Selección congelada: `config/seleccion_congelada.json` (sha256 `8a9138059391f2b80b9a944b2ee25803cd1e54fe9b359b2dfec0a840f759ef8d`), sin cambios. Predicciones iniciales selladas antes de leer agosto (sello `d587255d87fb2d99e449a098e4c1fa6e1c1c6d5838180b7aa8fe098e9a2ce663`). Un solo bloque (01–21/08, origen 31/07); **no hay umbrales prometidos** y los resultados desfavorables y el control cero se conservan. No demuestra impacto en inventario real de la empresa.
 
 ## Hallazgo primario
 
@@ -218,7 +218,7 @@ Una ventaja de servicio acompañada de más stock o más compras no se presenta 
 
 - Auditoría separada (recomputa desde predicciones selladas y reales guardados, sin reentrenar): **aprobada**; 27 combinaciones con balances re-verificados; identidad de valor máx. 1.09e-10.
 - Sello anterior a la lectura de agosto: True. Fingerprint de entrenamiento: `f73f00a79ad02b69bb3c8dfd3af8a7d9a6ff751842f5ad4c5ba5e8d20038c33b`.
-- Fases: verificacion=completa, preparacion=completa, lectura_agosto=completa, evaluacion_predictiva=completa, simulacion=completa.
+- Fases de cálculo: verificacion=completa, preparacion=completa, lectura_agosto=completa, evaluacion_predictiva=completa, simulacion=completa.
 
 ## Limitaciones
 

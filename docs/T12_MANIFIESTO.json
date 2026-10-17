@@ -1,7 +1,7 @@
 {
  "version": "t12-1",
- "generado_lima": "2026-10-17T17:54:13-05:00",
- "git_commit": "86325a7e36253043b3c6cc3884593a27dd288ab1",
+ "generado_lima": "2026-10-17T18:12:24-05:00",
+ "git_commit": "71656c208d8f92f000849a80f580989940baa138",
  "entorno": {
   "python": "3.12.14",
   "numpy": "2.5.4",
@@ -104,6 +104,22 @@
    },
    "simulacion_sha256": "37f22610b7cbf4c62f7fcce27363b47ae0293b60d29b4d3474c9fcb2c64bf8bd",
    "identidad_valor_max_abs": 1.0913936421275139e-10
+  },
+  "auditoria": {
+   "estado": "completa",
+   "inicio": "2026-10-17T18:12:22-05:00",
+   "intentos": 1,
+   "fin": "2026-10-17T18:12:23-05:00",
+   "auditoria_sha256": "24b50a195043af4718399f33bfb91d90c2b2daf4a88387118195b53cdcb6eede",
+   "combinaciones": 27
+  },
+  "reporte": {
+   "estado": "completa",
+   "inicio": "2026-10-17T18:12:23-05:00",
+   "intentos": 1,
+   "fin": "2026-10-17T18:12:24-05:00",
+   "resultados_sha256": "c38b3ed8f159eb851874cb8fd452798966d72f9871165bbac286c9d2e5e89019",
+   "metricas_sha256": "17d175dbef62bfdb300ae9fb9ad5334b58919dceb13bf24af080e6111814c570"
   }
  },
  "eventos": [
@@ -185,5 +201,29 @@
  "etiqueta": "Inventario simulado con supuestos; no corresponde al inventario real de la empresa",
  "publicado": false,
  "desplegado": false,
- "nota": "Los artefactos con datos y modelos permanecen en artifacts/private/final (fuera de Git)."
+ "nota": "Los artefactos con datos y modelos permanecen en artifacts/private/final (fuera de Git).",
+ "correcciones": [
+  {
+   "t": "2026-10-17T18:12:22-05:00",
+   "git_commit_base": "71656c208d8f92f000849a80f580989940baa138",
+   "motivo": "R11: registrar las fases auditoria y reporte",
+   "fases_registradas_a_posteriori": [
+    "auditoria",
+    "reporte"
+   ],
+   "ya_completas_antes": [],
+   "hashes_originales_conservados": {
+    "preparacion/predicciones_fijas.npz": "f4e829c5b9156984aad6b429959bbbba9528c1b792c4c3c7d8293cbe7cc6e710",
+    "preparacion/inicializacion_sim.npz": "ec9ef830e4c0bc351358c329afc3515234d5f898f01156c20682017e64827670",
+    "preparacion/rf_categoria_T12.joblib": "0c77cfeffbbaa59104464e35acf183de2a52efaa52a26e7d6f34392281ac04fb",
+    "preparacion/manifiesto_preparacion.json": "61eb8ea0eb375cbb1263995a7a492eebf44e83a1bb5458f8453445e41be0b422",
+    "reales_bloque.npz": "b96ce83370cebdabba621c084b33ffb123a5501501e8c28cc3d6bd69080f44b4",
+    "ventas_agosto_min.csv.gz": "f05e0a01ed795d6d21c9f0835eb4c7dd9cecd96a421e91adb450629e5fdd4642",
+    "predictivo.json": "0e954eac2299b145df6b481edcf2a1d0d23c38d9ef45eb282afe49567011bc74",
+    "simulacion.json": "37f22610b7cbf4c62f7fcce27363b47ae0293b60d29b4d3474c9fcb2c64bf8bd",
+    "simulacion_series.npz": "7921e58038ce8fb4861db9b244b0ecc26039888eaec5978a0094ec351d6837e4"
+   },
+   "nota": "Correccion tecnica posterior: las fases originales conservan sus fechas e intentos; no se repitieron prepare, lectura de agosto, evaluacion ni simulacion."
+  }
+ ]
 }
