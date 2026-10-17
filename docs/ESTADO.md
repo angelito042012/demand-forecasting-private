@@ -6,7 +6,7 @@ Actualizado el 17/10/2026, America/Lima, durante recuperación de sesión. Este 
 
 Sistema Demand Forecasting para la MYPE, entrega el 23/10/2026. Claude Code ejecuta; Codex dirige y revisa, y puede asumir ejecución cuando el usuario avise del cambio por límite de uso. Un solo ejecutor principal modifica el proyecto a la vez. Ver PROTOCOLO_TRABAJO.md.
 
-**Punto de entrada para una sesión nueva: RETOMAR_CLAUDE.md. Encargo vigente: ETAPA_03_CLAUDE.md (T05, baselines y folds temporales), emitido tras REVISION_CODEX_03.md.** R04, reconstrucción v2 y T04 aceptados para las fuentes canónicas. No repetir ETAPA_02. Agosto permanece reservado; todavía no iniciar T06.
+**Punto de entrada para una sesión nueva: RETOMAR_CLAUDE.md. Encargo vigente: ETAPA_04_CLAUDE.md (T06, comparación de ML), tras REVISION_CODEX_04.md.** T05 aceptado al commit dff7d27. Se autoriza entrenamiento de ML solo con marzo-julio y protocolo previo. Agosto sigue reservado; no evaluar el test final ni declarar impacto de inventario.
 
 ## Hitos comprobados
 
@@ -25,7 +25,7 @@ Sistema Demand Forecasting para la MYPE, entrega el 23/10/2026. Claude Code ejec
 - **Pruebas**: suite completa con `RUN_REALDATA=1`: 65 aprobadas, 0 omitidas, 1 aviso (httpx/Starlette), 69 s; `ruff` limpio en backend, pipeline, tests y scripts nuevos. Salud de la API con v2: 200 ok (cliente de prueba).
 - **Hallazgos de datos clave** (medidos, ver perfil): un solo almacén y unidad UND; 3 días enmascarados sin registros en los Excel; 88 % de los días-par posteriores a la primera venta son cero observado; 2 568 de 3 758 pares son intermitentes y 729 irregulares; 357 SKU con <56 días de historia.
 
-## Entrega vigente (17/10/2026, Claude): T05 baselines y validación temporal, pendiente de revisión de Codex
+## T05 aceptado por Codex el 17/10/2026
 
 - **Aceptado por Codex antes de esta entrega**: R04, base v2 (activa) y T04 (REVISION_CODEX_03.md).
 - **Detalles menores cerrados**: `unidad_base` en el fingerprint; catálogo con `start` y máscara de la ventana de ventas; céntimos sin truncado (error si hay más de dos decimales); `SIN_REGISTROS_DIA` en diccionario y conservado en el agregado por categoría; remediación no destructiva en `docs/REMEDIACION_FUENTES.md`. Contenido de las series T04 sin cambios (mismos hashes); el fingerprint de entrenamiento cambió por incluir `unidad_base` (T04_FIRMA.json actualizado).
@@ -36,7 +36,7 @@ Sistema Demand Forecasting para la MYPE, entrega el 23/10/2026. Claude Code ejec
 
 ## Pendiente
 
-- Revisión de Codex de T05 y encargo T06 (ML). No se entrenó Random Forest ni boosting; no se evaluó agosto.
+- Ejecutar T06 según ETAPA_04_CLAUDE.md. No se han entrenado Random Forest ni boosting; agosto no se ha evaluado.
 - Límites: un solo almacén/unidad; 5 folds de una semana; la cohorte primaria cuenta ceros observados como utilizables (según protocolo); sin inventario real; una fuente aprobada por mes; resolución de conflictos no implementada.
 - Angular: pantallas y `ng test` pendientes.
 
@@ -58,4 +58,8 @@ TRASPASO.md contiene ejecutor previsto, último paso y próxima acción exacta. 
 
 ## Revisión independiente acotada de Codex
 
-REVISION_CODEX_03.md: 14 pruebas de fuentes/invariancia y 6 de series aprobadas; estilo correcto. Hashes de los tres artefactos comprobados; 459375 filas SKU-día recorridas, máscaras y sumas mensuales verificadas contra el perfil. Las 65 pruebas completas son el resultado reportado por Claude, no una repetición de Codex. Próxima entrega: T05; Angular puede prepararse en paralelo sin bloquear datos.
+REVISION_CODEX_03.md: 14 pruebas de fuentes/invariancia y 6 de series aprobadas; estilo correcto. Hashes de los tres artefactos comprobados; 459375 filas SKU-día recorridas, máscaras y sumas mensuales verificadas contra el perfil. Las 65 pruebas completas son el resultado reportado por Claude, no una repetición de Codex. Esa revisión corresponde al hito anterior. Después se aceptó T05 en REVISION_CODEX_04.md; la próxima entrega vigente es T06.
+
+## Revisión de T05
+
+Codex aprobó 14 pruebas seleccionadas de baselines/métricas e integración; estilo correcto. Verificó hashes de config/código/predicciones y recorrió 125391 predicciones sin agosto ni targets duplicados. Recalculó 24 grupos de métricas agregadas del universo común, diarios y de bloque, con coincidencia. La suite completa de 83 aprobadas corresponde al log de Claude, sin repetición integral de Codex. Referencia no nula ultimo_dia; el control cero sigue mejor en WAPE diario SKU. No confundir selección preregistrada entre no nulos con superioridad global.

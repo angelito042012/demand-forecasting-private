@@ -52,4 +52,4 @@ El despliegue forma parte del objetivo global. Preparar código, scripts, config
 
 Marzo-julio: desarrollo y validación temporal. Agosto: prueba final reservada hasta congelar selección. Notas de crédito separadas, tres días excluidos sin comprimir calendario y catálogo por corte. El inventario sintético está autorizado para escenarios y debe identificarse como tal; no demuestra una mejora real de la MYPE. No usarlo para entrenar demanda. No repetir preguntas ya resueltas en DECISIONES_DATOS.md.
 
-El encargo vigente se indica en ESTADO.md. Después de aprobar R04/v2/T04 corresponde ETAPA_03_CLAUDE.md (T05): modelos de referencia y folds exclusivamente en marzo-julio. Detenerse antes de T06 y de abrir agosto para revisión. No ejecutar encargos históricos que el estado actual marca como aceptados.
+El encargo vigente se indica en ESTADO.md. Tras aprobar T05 corresponde ETAPA_04_CLAUDE.md (T06): ML acotado y comparación con baselines en marzo-julio. Detenerse antes de abrir agosto y de afirmar impacto operativo. No ejecutar encargos históricos que el estado actual marca como aceptados.

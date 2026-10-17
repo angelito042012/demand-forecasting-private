@@ -1,9 +1,9 @@
 # Recuperar sesión sin repetir trabajo
 
-Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. El encargo vigente lo determina ESTADO.md. Actualmente es ETAPA_03_CLAUDE.md (T05) y su referencia de aprobación es docs/REVISION_CODEX_03.md: R04, base v2 y T04 ya fueron aceptados para las fuentes canónicas.
+Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. El encargo vigente lo determina ESTADO.md. Actualmente es ETAPA_04_CLAUDE.md (T06), tras aceptar T05 en docs/REVISION_CODEX_04.md.
 
-Comprueba código, Git, configuración y procesos antes de modificar. Conserva cambios, Excel, bases y evidencia existentes. No reinicies ni repitas encargos anteriores. Si hubo avances posteriores al registro, compruébalos y retoma desde el último paso real. No editar archivos de un trabajador todavía activo.
+Comprueba código, Git, configuración y procesos antes de modificar. Conserva cambios, Excel, bases y evidencia. Si hay avances posteriores al registro, verifícalos y retoma desde el último paso real. No reiniciar ni repetir encargos aceptados. No editar archivos de un trabajador activo.
 
-Ejecuta el encargo vigente paso a paso y aplica docs/DECISIONES_DATOS.md. Guarda checkpoints locales, evidencia y avances durante el trabajo. Mantén un resumen breve en docs/TRASPASO.md con tarea, commit/archivos, pruebas ejecutadas y resultado, evidencias, bloqueos y siguiente paso. Actualiza ESTADO.md al cerrar una entrega. Registros extensos separados y referenciados.
+Ejecuta el encargo vigente y las decisiones de datos. Guarda checkpoints y evidencia durante el trabajo. Mantén docs/TRASPASO.md breve con tarea, commit/archivos, pruebas/resultados, evidencias, bloqueos y siguiente paso. Logs extensos separados y referenciados. Actualiza ESTADO.md al terminar.
 
-No abrir agosto para seleccionar modelos. En T05 están autorizados baselines en marzo-julio, no Random Forest/boosting ni evaluación final. Presentar la entrega a revisión de Codex antes de T06. La alternancia de ejecutor se rige por PROTOCOLO_TRABAJO.md; no iniciar dos ejecutores principales sobre los mismos archivos.
+T06 autoriza Random Forest y un boosting con protocolo previo en marzo-julio, comparados con baselines bajo los mismos folds/targets. Agosto sigue reservado; no abrir prueba final ni declarar impacto de inventario. Entregar a revisión de Codex al cerrar el incremento. Un solo ejecutor principal activo.

@@ -1,15 +1,13 @@
 # Traspaso vigente
 
-- Ejecutor: Claude Code (Sonnet 5.5), 17/10/2026, America/Lima. Tarea: T05 (ETAPA_03_CLAUDE.md), tras la aceptación de R04/v2/T04 por Codex (REVISION_CODEX_03.md).
-- Último paso terminado: T05 ejecutado y documentado; Angular base generada y compilada. Nada en curso; sin procesos propios en segundo plano (df-mongo-dev sigue activo).
-- Commits locales: d763bed (protocolo y config congelados ANTES de evaluar), 0ce411d (código y pruebas), commit de `scripts/run_t05.py` con lectura automática (el manifiesto registra el HEAD de la ejecución) y commit final de entrega (HEAD, ver `git log`).
-- Pruebas: suite completa `RUN_REALDATA=1`: 83 aprobadas, 0 omitidas, 1 aviso, 71 s (log: `artifacts/private/t05/pytest_full.log`). `ruff` limpio. Repetición de la evaluación T05: predicciones y métricas idénticas. `ng test` de Angular no ejecutado.
-- Evidencia versionada: `docs/T05_PROTOCOLO.md`, `config/t05_config.json`, `docs/T05_RESULTADOS.md`, `docs/T05_METRICAS.json`, `docs/T05_MANIFIESTO.json` (hashes de config, código, datos, fuentes y versiones), `docs/REMEDIACION_FUENTES.md`. Privada (fuera de Git): `artifacts/private/t05/predicciones.csv.gz`.
-- Resultado resumido: en SKU diario ningún baseline supera al control cero (WAPE 1,43 / 1,63 / 1,54 frente a 1,00); en categoría los tres lo superan (WAPE ≈ 0,40–0,44). Referencia T06 por regla previa: `ultimo_dia`, con esa salvedad. Detalle en T05_RESULTADOS.md.
-- Base activa: `demand_forecasting_v2`; v1 conservada (solo consulta). Fingerprint T04 actualizado (incluye unidad_base); hashes de contenido de las series sin cambio.
-- Angular: `frontend/` con Angular CLI 21.2.27, `npm run build` correcto, `package-lock.json` conservado; sin pantallas.
-- Bloqueos: ninguno.
-- Siguiente acción exacta: revisión de Codex de T05; luego T06 (ML) comparando contra `ultimo_dia`, `promedio_28` y el control cero; agosto sigue reservado hasta congelar la selección.
-- Reproducir: `.venv\Scripts\python.exe -m scripts.run_t05` y `$env:RUN_REALDATA="1"; .venv\Scripts\python.exe -m pytest -q`.
-
-Campos mínimos al actualizar: ejecutor; fecha; tarea; último paso; paso en curso; archivos; commit; comandos y resultado; evidencia; base activa; procesos; bloqueos; siguiente acción; pendiente de revisión. No escribir claves ni URI con credenciales. Una prueba no ejecutada se indica como tal.
+- Registro: Codex, 17/10/2026. Entrega revisada: T05, commit dff7d27; aprobación en REVISION_CODEX_04.md.
+- Ejecutor previsto: Claude Code. Codex no implementó T06; preparó revisión y encargo.
+- Verificación independiente: 14 pruebas focalizadas aprobadas; estilo correcto; hashes config/código/predicciones comprobados; 125391 predicciones sin agosto ni claves duplicadas; 24 grupos de métricas agregadas recalculados con coincidencia. Suite completa de 83: log de Claude, sin repetirla.
+- Resultado: los baselines no nulos no superan cero en WAPE diario SKU; promedio_28 marginalmente mejor en bloque semanal; categorías con mejores resultados. ultimo_dia es referencia entre no nulos por regla preregistrada. No representa mejora de inventario.
+- Encargo siguiente: ETAPA_04_CLAUDE.md (T06). Primer paso: protocolo/config de modelos, features, criterios y cómputo antes de ejecutar. Random Forest y un boosting acotados; cinco folds de T05, marzo-julio; todos los baselines como comparación.
+- Criterio de evaluación de desarrollo: SKU por bloque semanal con cambio declarado previamente, métricas diarias conservadas; categoría criterio diario más bloque. No comparar universos distintos ni ocultar control cero o resultados desfavorables.
+- Base activa registrada: demand_forecasting_v2; v1 conservada. Solo pruebas temporales se escribieron en esta revisión. No nueva carga/migración de datos reales.
+- Angular base creada y compilada por Claude en T05. Se permite un frente web acotado independiente según el encargo, con mocks/demostración identificados.
+- Datos/evidencia: artifacts/private/t05/predicciones.csv.gz; docs/T05_PROTOCOLO.md, T05_RESULTADOS.md, T05_METRICAS.json y T05_MANIFIESTO.json.
+- Detener antes de abrir agosto o declarar selección final/impacto en inventarios. Entregar evidencias para revisión de Codex.
+- Mantener este registro breve; logs extensos por ruta. Guardar checkpoints y actualizar el traspaso durante el trabajo.
