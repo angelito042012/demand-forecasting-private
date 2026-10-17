@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al 17/10: T08/lectura T09 construidos, revisión Codex07 detectó R05–R06 pendientes. Encargo ETAPA_07_CLAUDE.md: precisión/publicación nueva, proxy y presentación. No iniciar T10 ni abrir agosto antes de corregir. Fechas de tabla son objetivos, no evidencia; ver ESTADO/TRASPASO.
+Estado al 17/10 (noche): T08R (R05 precisión, R06 proxy, presentación) entregado a revisión de Codex; corrida corregida activa y anterior sustituida. Siguiente: T10 carga/batch (con endurecimiento del límite de login y lease), T11, T12. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
 
 T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04–T07 aceptados como desarrollo. T08 pendiente de aceptación R05–R06; T09 lectura funciona con presentación pendiente; T10 y posteriores pendientes. Método operativo v1 promedio_28; RF comparador, no ganador. Congelación final documentada en T08 antes de abrir agosto. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 

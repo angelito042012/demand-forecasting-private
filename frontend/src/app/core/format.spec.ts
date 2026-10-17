@@ -80,6 +80,13 @@ describe('cálculo de pedido: presentación a partir de señales exactas', () =>
     expect(c.steps[3].text).toBe('0 unidades en 28 días útiles = 0 por día');
     expect(c.steps[6].value).toBe(0);
   });
+  it('la API publica sum_28 como TEXTO: se usa la vía exacta (12 uds en 28 días = 3/7; objetivo 9; pedido 0)', () => {
+    const c = calcSteps({ ...base, sum_28: '12', days_28: 28, mean_28_exact: '3/7', mean_28: 0.4285714286, forecast_14d: 5.9999999996, safety: 3.0000000002, target: 9, order_qty: 0, order_value_assumed: 0 } as never)!;
+    expect(c.mode).toBe('exact');
+    expect(c.steps[3].text).toContain('12 unidades en 28 días útiles = 3/7 por día');
+    expect(c.check).toEqual({ target: true, position: true, order: true });
+  });
+
   it('corrida antigua sin sum_28: usa los valores publicados con presentación ≤ 3 decimales', () => {
     const c = calcSteps(realRecoDetail)!;
     expect(c.mode).toBe('published');

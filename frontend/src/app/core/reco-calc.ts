@@ -32,12 +32,14 @@ export function calcSteps(r: Recommendation): CalcResult | null {
   if (nums.some((n) => n === null || n === undefined)) return null;
   const u = 'unidad base';
   const H = r.horizon_days, S = r.safety_days;
-  const exact = Number.isInteger(r.sum_28) && Number.isInteger(r.days_28) && (r.days_28 as number) > 0;
+  // La API publica sum_28 como TEXTO exacto («12»; una suma fraccionaria vendría como «5/2» y no entra por la vía entera).
+  const sumInt = typeof r.sum_28 === 'string' ? (/^\d+$/.test(r.sum_28) ? Number(r.sum_28) : NaN) : r.sum_28;
+  const exact = Number.isInteger(sumInt) && Number.isInteger(r.days_28) && (r.days_28 as number) > 0;
 
   let forecast = r.forecast_14d!, safety = r.safety!, target = r.target!, mean = r.mean_28!;
   let meanText: string;
   if (exact) {
-    const sum = r.sum_28 as number, days = r.days_28 as number;
+    const sum = sumInt as number, days = r.days_28 as number;
     mean = sum / days;
     forecast = (H * sum) / days;
     safety = (S * sum) / days;

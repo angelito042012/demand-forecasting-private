@@ -255,3 +255,7 @@ T07 aceptado al commit 5790103. Codex ejecutó 22 pruebas selectivas, comprobó 
 ## Revisión Codex07: R05–R06 abiertos
 
 118 pruebas seleccionadas aprobadas, pero auditoría independiente detectó225objetivos/118pedidos inflados por CSV de precisión reducida. Middleware Uvicorn reproduce IP manipulable por XFF. Catálogo/fuentes y métricas T07 coinciden hoy con referencias aprobadas. Ver REVISION_CODEX_07.md. T08 parcialmente verificado, no aceptado completo. Siguiente ETAPA_07_CLAUDE.md: precisión/publicación nueva, confianza de proxy y presentación acotada. Agosto reservado y T10 no iniciado.
+
+## Entrega 17/10/2026 (Claude): correccion T08R (pendiente de revision de Codex)
+
+- R05: senales exactas y corrida hist-20260710-4ea348836e35 (anterior superseded); auditoria independiente 0 diferencias, 582/2655. R06: --no-proxy-headers y prueba de cadena real. Presentacion legible. pytest 254, frontend 79, E2E 16/16. Detalle: docs/T08R_REPORTE.md.

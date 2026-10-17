@@ -48,7 +48,7 @@ def main(argv=None) -> int:
     idx = {s: i for i, s in enumerate(skus)}
     on_hand, ordered, received = npz[KEY + "on_hand"], npz[KEY + "ordered"], npz[KEY + "received"]
     diffs, n_ok, pos, units, checked = [], 0, 0, 0, 0
-    for d in db.recommendations.find({"run_id": run_id, "status": "ok"}):
+    for d in db.recommendations.find({"run_id": run_id, "status": "ok"}):  # noqa: SIM113
         n_ok += 1
         sku, alm = d["sku"], d["almacen"]
         first, wsum = agg[(sku, alm)]

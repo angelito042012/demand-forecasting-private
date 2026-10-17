@@ -164,7 +164,7 @@ export interface Recommendation {
   explanation_steps?: string[];
   explanation?: string | string[];
   /** Señales exactas (corridas corregidas): suma de unidades y días útiles de la ventana, y la media como fracción. */
-  sum_28?: number | null;
+  sum_28?: string | number | null;   // la API lo publica como texto exacto
   days_28?: number | null;
   mean_28_exact?: string | null;
   transit_breakdown?: { ordered_until_snapshot?: number; received_until_snapshot?: number } | null;

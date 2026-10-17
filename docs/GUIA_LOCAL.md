@@ -13,9 +13,9 @@ Demostración local con **resultados existentes de desarrollo** (corrida histór
 1. **Crear un usuario administrador** (una vez; la contraseña se pide por consola y no se imprime ni se guarda en texto):
    `.venv\Scripts\python.exe -m backend.cli create-user --username <usuario> --role admin`
    Un lector: igual con `--role lector`. No existe registro público ni contraseñas por defecto. Sin usuario no hay acceso (no hay *bypass*).
-2. **Publicar la corrida histórica** (una vez; CLI privilegiada, idempotente; verifica checksums contra el manifiesto):
-   `.venv\Scripts\python.exe -m scripts.publish_run --manifest t07`
-3. **Iniciar** API y frontend: `powershell -File scripts/start-local.ps1` → API `http://127.0.0.1:8000/api/v1/health`, web `http://localhost:4200` (el servidor de Angular hace proxy de `/api`, mismo origen).
+2. **Publicar la corrida histórica** (una vez; CLI privilegiada, idempotente; verifica checksums, fuentes y la referencia aprobada T07; calcula las señales exactas de la recomendación desde las ventas aprobadas):
+   `.venv\Scripts\python.exe -m scripts.publish_run --manifest t07` (para sustituir una corrida con un defecto: `--supersede <run_id>`; la anterior se conserva marcada como sustituida).
+3. **Iniciar** API y frontend (la API arranca con `--no-proxy-headers`: no confía en `X-Forwarded-For` del cliente; ver contrato de proxy en `docs/T08_CONTRATO.md` §8): `powershell -File scripts/start-local.ps1` → API `http://127.0.0.1:8000/api/v1/health`, web `http://localhost:4200` (el servidor de Angular hace proxy de `/api`, mismo origen).
 4. **Detener** solo los procesos propios: `powershell -File scripts/stop-local.ps1`.
 
 ## Flujo de la demostración
