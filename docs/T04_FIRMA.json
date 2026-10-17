@@ -1,9 +1,9 @@
 {
   "dataset": "T04_series_diarias_marzo_julio_2026",
-  "generado_lima": "2026-10-17 08:02",
+  "generado_lima": "2026-10-17 08:25",
   "base_de_datos": "demand_forecasting_v2",
   "corte": "2026-07-31",
-  "fingerprint_entrenamiento": "a07df648eeb546fd5940d245cd9a736388fd3a89c45865dc9738ce65a3b0aaa4",
+  "fingerprint_entrenamiento": "f73f00a79ad02b69bb3c8dfd3af8a7d9a6ff751842f5ad4c5ba5e8d20038c33b",
   "parametros": {
     "mascara": [
       "2026-04-03",
@@ -69,7 +69,7 @@
     }
   },
   "codigo": {
-    "git_commit": "9cf700e767bea37beaebadf2ab2387b400ef5839",
+    "git_commit": "d763bed94714c6638eabc74b9909f9e49f6e113f",
     "git_sucio": true,
     "python": "3.12.14",
     "pandas": "2.3.3",

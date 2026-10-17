@@ -205,6 +205,10 @@
     "sku_16140041": "MAQUILLAJE PARA ROSTRO"
   },
   "notas_credito_informativas_hasta_corte": {
+    "2026-06": {
+      "lineas": 81,
+      "importe": -9680.6
+    },
     "2026-05": {
       "lineas": 78,
       "importe": -2769.38
@@ -220,10 +224,6 @@
     "2026-07": {
       "lineas": 112,
       "importe": -4548.76
-    },
-    "2026-06": {
-      "lineas": 81,
-      "importe": -9680.6
     }
   }
 }

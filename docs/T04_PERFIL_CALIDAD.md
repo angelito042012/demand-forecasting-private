@@ -1,6 +1,6 @@
 # T04 Perfil de calidad (marzo-julio 2026)
 
-Generado el 2026-10-17 08:02 (America/Lima). Dataset: `a07df648eeb546fd...` (firma completa en T04_FIRMA.json). Solo marzo-julio; agosto no se uso. Cifras agregadas medidas por scripts/build_t04.py; nada aqui es un resultado de modelo.
+Generado el 2026-10-17 08:25 (America/Lima). Dataset: `f73f00a79ad02b69...` (firma completa en T04_FIRMA.json). Solo marzo-julio; agosto no se uso. Cifras agregadas medidas por scripts/build_t04.py; nada aqui es un resultado de modelo.
 
 ## Fuentes y cobertura
 
@@ -39,7 +39,7 @@ Generado el 2026-10-17 08:02 (America/Lima). Dataset: `a07df648eeb546fd...` (fir
 
 ## Notas de credito (informativo, fuera del objetivo)
 
-Hasta el corte: {'2026-05': {'lineas': 78, 'importe': -2769.38}, '2026-03': {'lineas': 89, 'importe': -3128.0}, '2026-04': {'lineas': 72, 'importe': -2927.5}, '2026-07': {'lineas': 112, 'importe': -4548.76}, '2026-06': {'lineas': 81, 'importe': -9680.6}}. Separadas de ventas brutas; no implican devolucion fisica.
+Hasta el corte: {'2026-06': {'lineas': 81, 'importe': -9680.6}, '2026-05': {'lineas': 78, 'importe': -2769.38}, '2026-03': {'lineas': 89, 'importe': -3128.0}, '2026-04': {'lineas': 72, 'importe': -2927.5}, '2026-07': {'lineas': 112, 'importe': -4548.76}}. Separadas de ventas brutas; no implican devolucion fisica.
 
 ## Limites
 
