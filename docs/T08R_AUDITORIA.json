@@ -1,0 +1,43 @@
+{
+ "auditoria_independiente": "scripts/audit_recommendations.py (no usa builders/signals/daily_series)",
+ "corrida_corregida": {
+  "run_id": "hist-20260710-4ea348836e35",
+  "recomendaciones_ok_auditadas": 3347,
+  "diferencias": 0,
+  "con_pedido_positivo": 582,
+  "unidades_sugeridas": 2655,
+  "sin_snapshot": 300,
+  "sin_snapshot_con_cantidades_nulas": 300,
+  "referencia_codex_582_2655": [
+   582,
+   2655
+  ],
+  "coincide_con_referencia_codex": true,
+  "ventana": [
+   "2026-06-13",
+   "2026-07-10"
+  ],
+  "metodo": "agregacion directa de ventas aprobadas + NPZ; entero exacto"
+ },
+ "corrida_anterior_sustituida": {
+  "run_id": "hist-20260710-52b01cd999dd",
+  "publicado_con_pedido_positivo": 640,
+  "recomendaciones_ok_auditadas": 3347,
+  "diferencias": 225,
+  "con_pedido_positivo": 582,
+  "unidades_sugeridas": 2655,
+  "sin_snapshot": 300,
+  "sin_snapshot_con_cantidades_nulas": 300,
+  "referencia_codex_582_2655": [
+   582,
+   2655
+  ],
+  "coincide_con_referencia_codex": true,
+  "ventana": [
+   "2026-06-13",
+   "2026-07-10"
+  ],
+  "metodo": "agregacion directa de ventas aprobadas + NPZ; entero exacto"
+ },
+ "explicacion": "La corrida anterior uso la media del CSV T07 (10 cifras significativas) y publico 640 pedidos positivos/2773 unidades (225 objetivos distintos, 118 pedidos inflados en una unidad). La corrida corregida usa suma y dias utiles exactos: 582 pedidos/2655 unidades, igual que la referencia de Codex; 640-582=58 sugerencias y 2773-2655=118 unidades menos."
+}
