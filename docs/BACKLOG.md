@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al 17/10: R01–R03/T03 aceptados para seis fuentes canónicas. T01 parcial por Angular. Próximo incremento: R04 + base v2 + T04 según RETOMAR_CLAUDE.md; las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
+Estado al 17/10 (noche): R04 implementado y probado; base v2 preparada y activa localmente; T04 generado (código, perfil, diccionario, firma). Los tres esperan revisión de Codex; no están aceptados. T01 parcial por Angular. Siguiente: T05 tras la revisión. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
 
 T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. La preparación analítica T04 y etapas posteriores siguen pendientes. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 

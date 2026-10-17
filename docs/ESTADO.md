@@ -17,18 +17,23 @@ Sistema Demand Forecasting para la MYPE, entrega el 23/10/2026. Claude Code ejec
 - Escenario de inventario sintético reference_v1 generado y validado; 3758 SKU, 14338 movimientos y 6279 pedidos simulados. No representa inventario real ni una mejora demostrada.
 - Cinco agentes y cuatro skills de Claude presentes.
 
-## Pendiente inmediato
+## Entrega vigente (17/10/2026, Claude): R04 + base v2 + T04, pendiente de revisión de Codex
 
-- R04: impedir que ventas/categorías persistidas por cargas fallidas o parciales entren silenciosamente en el dataset. Reproducción en REVISION_CODEX_02.md.
-- Base v2: preparar en base nueva, comparar conteos/importes/líneas y repetir carga; cambiar configuración local solo tras controles correctos, conservando v1. No consta completada en archivos inspeccionados.
-- T04: perfil, diccionario, series diarias y firma de dataset de marzo-julio. No se encontraron archivos nuevos que acrediten su ejecución durante esta recuperación; comprobar estado vivo al iniciar.
-- Angular: última conexión a registro npm falló; frontend/ todavía ausente. No bloquear trabajo de datos por ello.
+- **R04 (código)**: `pipeline/data/sources.py` aprueba fuentes (importación `completed`, sin conflicto OPEN). `load_training_data/load_fold/load_final_test_sales` y el catálogo leen solo líneas con fuente aprobada y detienen la construcción con `SourceApprovalError` ante carga fallida/parcial, conflicto abierto relevante, línea sin fuente válida, mes requerido (2026-03..mes del corte) sin fuente o base sin importaciones. El fingerprint ahora cubre filas (con categoría/almacén), catálogo, máscara, corte y manifiesto de fuentes. `reconcile` ya no da por buena una condición vacía.
+- **Base v2 (preparada)**: `demand_forecasting_v2` reconstruida desde los seis Excel: 86 877 ventas y 560 créditos, 0 conflictos, 0 rechazos, 0 duplicados de `linea_id`; líneas normalizadas, conteos e importes por mes idénticos a v1 (`scripts/compare_v1_v2.py`). La recarga fue no-op por sha256 (0 inserciones). v1 (`demand_forecasting_dev`) intacta. Aplicación configurada localmente en v2 (`backend/app/config.py`, `.env.example`). Revertir: ver TRASPASO.md.
+- **T04 (generado)**: series diarias SKU-almacén (459 375 filas) y por categoría (5 441), intermitencia, perfil, diccionario y firma: `docs/T04_PERFIL_CALIDAD.md|json`, `docs/T04_DICCIONARIO.md`, `docs/T04_FIRMA.json`; datos en `artifacts/private/t04/` (ignorado por Git). Reproducible: dos corridas dieron los mismos hashes.
+- **Pruebas**: suite completa con `RUN_REALDATA=1`: 62 aprobadas, 0 omitidas, 1 aviso (httpx/Starlette), 68 s; `ruff` limpio en backend, pipeline, tests y scripts nuevos. Salud de la API con v2: 200 ok (cliente de prueba).
+- **Hallazgos de datos clave** (medidos, ver perfil): un solo almacén y unidad UND; 3 días enmascarados sin registros en los Excel; 88 % de los días-par posteriores a la primera venta son cero observado; 2 568 de 3 758 pares son intermitentes y 729 irregulares; 357 SKU con <56 días de historia.
 
-## Entorno y límites de esta recuperación
+## Pendiente
 
-Python 3.12 y dependencias locales preparados previamente. Git inicializado, sin commits al inspeccionar el 17/10; archivos sin seguimiento. Crear checkpoint local revisando exclusiones antes de empezar desarrollo. API sin autenticación completa ni interfaz implementada. Usuario sin cuentas Azure/Atlas según último dato recibido.
+- Revisión de Codex de R04/v2/T04; luego el encargo de baselines/ML (T05). No se entrenó nada ni se usó agosto.
+- Límites de R04: sin procedimiento de resolución de conflictos ni detección de líneas ausentes en un archivo reemplazado; la comprobación contra el manifiesto exacto de líneas sigue pendiente. Línea de recarga en v2 validada solo por no-op de sha256 (la idempotencia línea a línea está cubierta por pruebas en bases temporales).
+- Angular: `npm ping` al registro funciona hoy (PONG 661 ms); no se intentó instalar. frontend/ sigue ausente.
 
-La última base comprobada en la revisión anterior fue demand_forecasting_dev, esquema v1, con 86 877 ventas y 560 créditos. El contenedor utilizado fue df-mongo-dev. No se volvió a consultar MongoDB ni Docker en esta recuperación; comprobar si están activos y si ya existe v2 antes de actuar. No recrear recursos por suponerlos ausentes.
+## Entorno
+
+Python 3.12 con dependencias locales; Git con checkpoints locales (ver TRASPASO.md). Contenedor df-mongo-dev activo en 127.0.0.1:27017 con bases demand_forecasting_dev (v1) y demand_forecasting_v2 (activa). Sin cuentas Azure/Atlas. API sin autenticación completa.
 
 ## Decisiones que no deben preguntarse otra vez
 
