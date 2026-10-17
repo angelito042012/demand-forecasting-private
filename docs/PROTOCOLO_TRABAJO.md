@@ -28,7 +28,7 @@ El usuario y sus decisiones más recientes prevalecen sobre archivos históricos
 
 Comprobar archivos, Git, cambios pendientes, configuración efectiva sin imprimir secretos y servicios necesarios. Si el último registro no concuerda con el código, investigar y actualizar el estado con lo observado. Una sesión perdida no implica que el código se haya perdido ni que una tarea registrada como pendiente siga sin ejecutar: verificar.
 
-En esta recuperación no hay commits previos. Crear un checkpoint local del estado existente después de revisar los archivos que se incluirán y excluir secretos/datos comerciales. Un commit puede guardar trabajo parcial si se describe claramente como tal, sin afirmar que está aprobado o probado. No resetear ni descartar cambios pendientes. Los commits locales rutinarios forman parte de la trazabilidad autorizada; publicar un remoto o compartir datos exige conocer el destino y el acceso correspondiente.
+La recuperación inicial ya produjo checkpoints y commits. Al retomar, comprobar el historial real y crear un checkpoint local solo si existen cambios que lo requieran, excluyendo secretos/datos comerciales. Un commit puede guardar trabajo parcial si se describe claramente como tal, sin afirmar que está aprobado o probado. No resetear ni descartar cambios pendientes. Los commits locales rutinarios forman parte de la trazabilidad autorizada; publicar un remoto o compartir datos exige conocer el destino y el acceso correspondiente.
 
 ## Durante cada entrega
 
@@ -52,4 +52,4 @@ El despliegue forma parte del objetivo global. Preparar código, scripts, config
 
 Marzo-julio: desarrollo y validación temporal. Agosto: prueba final reservada hasta congelar selección. Notas de crédito separadas, tres días excluidos sin comprimir calendario y catálogo por corte. El inventario sintético está autorizado para escenarios y debe identificarse como tal; no demuestra una mejora real de la MYPE. No usarlo para entrenar demanda. No repetir preguntas ya resueltas en DECISIONES_DATOS.md.
 
-El encargo vigente se indica en ESTADO.md. Tras aprobar T05 corresponde ETAPA_04_CLAUDE.md (T06): ML acotado y comparación con baselines en marzo-julio. Detenerse antes de abrir agosto y de afirmar impacto operativo. No ejecutar encargos históricos que el estado actual marca como aceptados.
+El encargo vigente se indica en ESTADO.md. Tras aprobar T06 corresponde ETAPA_05_CLAUDE.md (T07): inferencia coherente, horizontes de protección y simulación de desarrollo en junio-julio. Detenerse antes de abrir agosto y de afirmar impacto operativo. No ejecutar encargos históricos que el estado actual marca como aceptados.

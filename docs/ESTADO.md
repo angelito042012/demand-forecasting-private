@@ -1,74 +1,40 @@
 # Estado vigente del proyecto
 
-Actualizado el 17/10/2026, America/Lima, durante recuperación de sesión. Este resumen sustituye las instrucciones de etapas ya cerradas; el registro anterior se conserva en HISTORIAL_ENTREGAS.md.
+Actualizado el 17/10/2026, America/Lima. Entrega final: 23/10/2026. Claude Code ejecuta; Codex dirige/revisa. Un único ejecutor principal activo. Historial y detalles previos en HISTORIAL_ENTREGAS.md y revisiones 01–05.
 
-## Objetivo y siguiente encargo
+## Punto de entrada y siguiente encargo
 
-Sistema Demand Forecasting para la MYPE, entrega el 23/10/2026. Claude Code ejecuta; Codex dirige y revisa, y puede asumir ejecución cuando el usuario avise del cambio por límite de uso. Un solo ejecutor principal modifica el proyecto a la vez. Ver PROTOCOLO_TRABAJO.md.
+**RETOMAR_CLAUDE.md → ETAPA_05_CLAUDE.md (T07)**, tras aceptar T06 al commit 3b11fbd en docs/REVISION_CODEX_05.md. Ejecutar primero el ajuste de inferencia, después protocolo/config antes de evaluar horizontes de protección 10/14/21 y simulación de junio-julio. No repetir T04–T06. Agosto sigue reservado; no entrenar/seleccionar con él ni abrir la prueba final en este encargo.
 
-**Punto de entrada para una sesión nueva: RETOMAR_CLAUDE.md. Encargo vigente: ETAPA_04_CLAUDE.md (T06, comparación de ML), tras REVISION_CODEX_04.md.** T05 aceptado al commit dff7d27. Se autoriza entrenamiento de ML solo con marzo-julio y protocolo previo. Agosto sigue reservado; no evaluar el test final ni declarar impacto de inventario.
+## Hitos aceptados
 
-## Hitos comprobados
+- Datos: seis Excel intactos en C:\Users\rogel\Documents\Datos. 87437 líneas =86877 ventas y 560 notas de crédito; 31 columnas homogéneas. No pedir reexportación.
+- R01–R04/T03: importador schema2, identidad lógica y fuentes, conciliación, barrera de entrenamiento, fuentes aprobadas y remediación no destructiva. Límites y evidencia en revisiones anteriores.
+- Mongo activa demand_forecasting_v2; comparación completa con v1 demand_forecasting_dev verificada. Ambas conservadas.
+- T04: calendario/catálogo por corte y máscaras; 459375 filas SKU-día y 5441 categoría-día. 3758 SKU, demanda muy intermitente. Docs T04 y artefactos privados conservados.
+- T05: cuatro baselines, cinco folds de siete días y cohortes temporales. Aceptado en REVISION_CODEX_04.md; resultados históricos conservados.
+- T06: RF y XGBoost con protocolo previo y comparación sobre los mismos targets/baselines de T05. Aceptado como experimento de desarrollo en REVISION_CODEX_05.md. Precio no incorporado. Sin selección final para agosto.
 
-- Análisis, alcance, arquitectura propuesta, contratos y plan existentes.
-- Seis Excel de marzo-agosto en C:\Users\rogel\Documents\Datos; 31 columnas y 87 437 filas de datos auditadas. No pedir reexportación.
-- API básica de salud, importador v2, conciliación, calendario/catálogo temporal y acceso de entrenamiento implementados.
-- R01–R03 aceptados por Codex para los seis archivos canónicos. Última suite ejecutada por Codex en la revisión anterior: 46 aprobadas, un aviso, 59,57 segundos. Análisis de estilo correcto. No se repitió la suite en esta recuperación documental.
-- Escenario de inventario sintético reference_v1 generado y validado; 3758 SKU, 14338 movimientos y 6279 pedidos simulados. No representa inventario real ni una mejora demostrada.
-- Cinco agentes y cuatro skills de Claude presentes.
+## Resultado T06 y revisión independiente
 
-## Entrega R04 y T04 revisada por Codex el 17/10/2026
+- SKU primario, acumulado siete días: promedio_28 WAPE 0,992109; cero 1,000; XGBoost 1,017; RF 1,058. Ningún ML cumple la regla. Propuesta provisional promedio_28. Sesgos ML aproximadamente +2785/+6411 frente a **23026 unidades observadas**. WAPE es razón: 0,992 equivale a 99,2%.
+- Categoría diaria: RF 0,394 frente a promedio_28 0,4025, ventaja relativa 2,07%, 3/5 folds; cumple por margen mínimo. RF semanal 0,217 es peor que naive 0,201 y promedio_28 0,202. No sustenta mejores pedidos SKU; el nuevo método de reparto requiere validación.
+- Codex: 11 pruebas selectivas aprobadas (7 puras/modelos y 4 integración); estilo correcto. Hashes de código/config/predicciones verificados; 125391 filas sin fechas en agosto ni claves repetidas. Columnas originales T05 idénticas. Recalculados 36 grupos de métricas, coincidentes. No repitió el entrenamiento de siete minutos ni la suite integral.
+- Claude reporta suite completa 94 aprobadas, 0 omitidas, 1 aviso (74 s); log artifacts/private/t06/pytest_full.log. Angular build y 15 pruebas aprobadas. Distinguir esos resultados de la revisión selectiva.
+- Artefactos: docs/T06_PROTOCOLO.md, T06_RESULTADOS.md, T06_METRICAS.json, T06_MANIFIESTO.json y config/t06_config.json. Modelos/predicciones en artifacts/private/t06/, fuera de Git.
 
-- **R04 (código)**: `pipeline/data/sources.py` aprueba fuentes (importación `completed`, sin conflicto OPEN). `load_training_data/load_fold/load_final_test_sales` y el catálogo leen solo líneas con fuente aprobada y detienen la construcción con `SourceApprovalError` ante carga fallida/parcial, conflicto abierto relevante, línea sin fuente válida, mes requerido (2026-03..mes del corte) sin fuente o base sin importaciones. El fingerprint ahora cubre filas (con categoría/almacén), catálogo, máscara, corte y manifiesto de fuentes. `reconcile` ya no da por buena una condición vacía.
-- **Base v2 (preparada)**: `demand_forecasting_v2` reconstruida desde los seis Excel: 86 877 ventas y 560 créditos, 0 conflictos, 0 rechazos, 0 duplicados de `linea_id`; líneas normalizadas, conteos e importes por mes idénticos a v1 (`scripts/compare_v1_v2.py`). La recarga fue no-op por sha256 (0 inserciones). v1 (`demand_forecasting_dev`) intacta. Aplicación configurada localmente en v2 (`backend/app/config.py`, `.env.example`). Revertir: ver TRASPASO.md.
-- **T04 (generado)**: series diarias SKU-almacén (459 375 filas) y por categoría (5 441), intermitencia, perfil, diccionario y firma: `docs/T04_PERFIL_CALIDAD.md|json`, `docs/T04_DICCIONARIO.md`, `docs/T04_FIRMA.json`; datos en `artifacts/private/t04/` (ignorado por Git). Reproducible: dos corridas dieron los mismos hashes.
-- **Pruebas**: suite completa con `RUN_REALDATA=1`: 65 aprobadas, 0 omitidas, 1 aviso (httpx/Starlette), 69 s; `ruff` limpio en backend, pipeline, tests y scripts nuevos. Salud de la API con v2: 200 ok (cliente de prueba).
-- **Hallazgos de datos clave** (medidos, ver perfil): un solo almacén y unidad UND; 3 días enmascarados sin registros en los Excel; 88 % de los días-par posteriores a la primera venta son cero observado; 2 568 de 3 758 pares son intermitentes y 729 irregulares; 357 SKU con <56 días de historia.
+## Límites y trabajo activo siguiente
 
-## T05 aceptado por Codex el 17/10/2026
+- Inferencia: validar fechas reales ctx.start/fin y uso del vocabulario guardado antes de API/simulador. Los folds T06 fueron coherentes; no se invalidan sus métricas. T07 lo corrige primero.
+- T07 extiende el horizonte hasta 21 días; RF de categoría distribuido con pesos históricos es candidato nuevo, sin garantía de mejora. Simulación de desarrollo inicia con información <=31/05; no reutilizar parámetros de julio del escenario reference_v1 de agosto.
+- Inventario reference_v1 ya existe, con 3758 SKU, 14338 movimientos y 6279 pedidos sintéticos. Es un escenario, no inventario real ni mejora demostrada. No consultar su trayectoria de agosto para este encargo.
+- Frontend: navegación y cuatro pantallas con estados/mocks etiquetados; compila y tiene pruebas reportadas. Sin API real, autenticación ni revisión en navegador.
+- Backend: healthcheck; faltan API funcional/autenticación, integración, corridas versionadas y publicación. Python 3.12, Angular 21, FastAPI/PyMongo/Mongo; contenedor df-mongo-dev útil. Sin cuentas Azure/Atlas ni presupuesto de nube acordado.
 
-- **Aceptado por Codex antes de esta entrega**: R04, base v2 (activa) y T04 (REVISION_CODEX_03.md).
-- **Detalles menores cerrados**: `unidad_base` en el fingerprint; catálogo con `start` y máscara de la ventana de ventas; céntimos sin truncado (error si hay más de dos decimales); `SIN_REGISTROS_DIA` en diccionario y conservado en el agregado por categoría; remediación no destructiva en `docs/REMEDIACION_FUENTES.md`. Contenido de las series T04 sin cambios (mismos hashes); el fingerprint de entrenamiento cambió por incluir `unidad_base` (T04_FIRMA.json actualizado).
-- **T05**: protocolo y configuración congelados y comprometidos (d763bed) antes de evaluar: `docs/T05_PROTOCOLO.md`, `config/t05_config.json`. Cinco folds de 7 días, cuatro baselines (cero, último día, naive semanal con fallback contabilizado, promedio 28 días), niveles SKU y categoría, cohorte primaria/historia corta/nuevos. Código en `pipeline/forecast/` y `scripts/run_t05.py`. Resultados: `docs/T05_RESULTADOS.md`, `T05_METRICAS.json`, `T05_MANIFIESTO.json`; predicciones fila a fila en `artifacts/private/t05/` (ignorado). Repetición idéntica verificada; agosto no se leyó.
-- **Resultado, tal como salió**: en SKU-almacén diario (cohorte primaria, universo común, 104 533 filas) ningún baseline distinto de cero supera al control cero (WAPE cero 1,000; último día 1,431; naive 1,627; promedio 28 d 1,535). En el acumulado a 7 días solo promedio_28 queda marginalmente por debajo (0,992 frente a 1,000). En categoría los tres baselines superan al cero (WAPE diario 0,40–0,44 frente a 1,0; R² 0,76–0,83). Por la regla fijada de antemano la referencia para T06 es **ultimo_dia** (SKU, diario), pero su ventaja sobre el cero no existe a ese nivel: T06 debe comparar también contra el control cero y el acumulado a 7 días. Es un hallazgo descriptivo de cinco semanas con ventas posiblemente censuradas; no sustenta mejora de inventario.
-- **Angular**: `scripts/prepare-frontend.ps1` funcionó (Angular CLI 21.2.27, Node 24.19.0, npm 11.17.0); `npm run build` compila (bundle principal 214 kB); `frontend/` con `package-lock.json` versionados. Sin pantallas; `ng test` no ejecutado.
-- **Pruebas**: suite completa con `RUN_REALDATA=1`: 83 aprobadas, 0 omitidas, 1 aviso (httpx/Starlette), 71 s (log en `artifacts/private/t05/pytest_full.log`). `ruff` limpio en backend, pipeline, tests y scripts nuevos.
+## Decisiones que permanecen cerradas
 
-## Entrega vigente (17/10/2026, Claude): T06 ML frente a baselines, pendiente de revisión de Codex
-
-- **Protocolo**: `docs/T06_PROTOCOLO.md` + `config/t06_config.json` comprometidos antes de evaluar (286017d). Una enmienda declarada (00e4e64): la repetición de F1 exige tolerancia 1e-9, no igualdad exacta, porque Random Forest con 4 hilos varía ~1e-13 por orden de suma; no cambia modelos, folds ni regla.
-- **Implementado**: `pipeline/forecast/{features,models,t06}.py`, `scripts/run_t06.py`. Modelos globales por nivel y fold: Random Forest (100 árboles) y XGBoost (150 árboles), parámetros fijos, 24 features sin información posterior al origen, NaN nativo, vocabulario solo de train, negativos recortados a 0 (21 en total), sin precio (limitación registrada). Interfaz `forecast_origin` y paquetes joblib con modelo+vocabulario+versión. Mismos folds, targets, cohortes y cobertura que T05 (baselines idénticos a `T05_METRICAS.json`, verificado).
-- **Resultado (desarrollo, 5 folds ya conocidos; no es prueba final)**:
-  - SKU, criterio preregistrado WAPE acumulado a 7 días: promedio_28 0,992 (mejor referencia), cero 1,000, XGBoost 1,017, Random Forest 1,058 (menos favorable). **Ningún ML cumple la regla**; propuesta provisional para simulación: `promedio_28`. A nivel diario SKU los ML (1,59/1,67) tampoco superan al cero (1,00). Ambos ML sobrepronostican (sesgo +2 785 / +6 411 unidades frente a 22 954 observadas).
-  - Categoría, criterio WAPE diario: Random Forest 0,394 frente a promedio_28 0,4025 (mejora 2,07 %, 3/5 folds, sesgo/obs 0,13): cumple la regla por margen mínimo. Con el criterio semanal RF (0,217) es peor que naive_semanal (0,201) y promedio_28 (0,202), y XGBoost no cumple. Evidencia débil; ver T06_RESULTADOS.md.
-- **Pruebas**: suite completa `RUN_REALDATA=1`: 94 aprobadas, 0 omitidas, 1 aviso, 74 s (log `artifacts/private/t06/pytest_full.log`); ejecución T06 completa 417 s (log `artifacts/private/t06_run.log`). `ruff` limpio. Evidencia versionada: `docs/T06_RESULTADOS.md`, `T06_METRICAS.json`, `T06_MANIFIESTO.json`; privado: `artifacts/private/t06/` (predicciones y modelos).
-- **Frente web (agente frontend)**: navegación lazy, cuatro pantallas con estados carga/sin datos/error y mocks identificados como demostración; `npm run build` y `npm test` (15 pruebas) aprobados; sin API real, sin autenticación, no probado en navegador.
-
-## Pendiente
-
-- Revisión de Codex de T06; decisión sobre horizonte para T07 (lead time + revisión pueden superar 7 días: no se extrapoló) y apertura controlada de agosto. No se leyó agosto ni se declara mejora de inventario.
-- Límites: sin precio; folds de desarrollo ya observados; un almacén/unidad; sin inventario real; resolución de conflictos de fuentes no implementada.
-
-## Entorno
-
-Python 3.12; Git con checkpoints locales (ver TRASPASO.md). Contenedor df-mongo-dev activo con demand_forecasting_dev (v1) y demand_forecasting_v2 (activa). Sin cuentas Azure/Atlas. API sin autenticación completa.
-
-## Decisiones que no deben preguntarse otra vez
-
-TIPO_DOC=7 confirmado como notas de crédito; no implican retorno físico automático. Excluir 03/04, 12/04 y 07/06 de 2026 de entrenamiento/métricas sin comprimir calendario. Categorías por fecha de corte; conservar originales. Inventario sintético autorizado y etiquetado para escenarios. Marzo-julio para desarrollo; agosto reservado para prueba final. Ver DECISIONES_DATOS.md.
-
-## Entregas posteriores
-
-Después de aprobar T04: modelos de referencia y ML; simulación comparativa; API/interfaz/autenticación e integración; infraestructura y publicación; pruebas, documentación y entrega. Codex emitirá cada encargo con criterios verificables. No afirmar métricas o hitos antes de producir evidencia.
+TIPO_DOC=7 son notas de crédito; no retorno físico automático. Excluir 03/04, 12/04 y 07/06/2026 sin comprimir calendario ni convertirlos en observaciones cero. Categoría por corte; conservar originales. Inventario sintético autorizado y etiquetado. Ventas observadas pueden estar censuradas por stock desconocido; no inferir causalidad o impacto real. Marzo-julio para desarrollo; agosto reservado hasta congelación posterior. Ver DECISIONES_DATOS.md.
 
 ## Continuidad
 
-TRASPASO.md contiene ejecutor previsto, último paso y próxima acción exacta. Actualizarlo durante el trabajo y al cambiar de herramienta. En caso de una interrupción abrupta, verificar cambios/procesos antes de confiar solo en el registro. No se configura cambio automático ni vigilancia de cuotas.
-
-## Revisión independiente acotada de Codex
-
-REVISION_CODEX_03.md: 14 pruebas de fuentes/invariancia y 6 de series aprobadas; estilo correcto. Hashes de los tres artefactos comprobados; 459375 filas SKU-día recorridas, máscaras y sumas mensuales verificadas contra el perfil. Las 65 pruebas completas son el resultado reportado por Claude, no una repetición de Codex. Esa revisión corresponde al hito anterior. Después se aceptó T05 en REVISION_CODEX_04.md; la próxima entrega vigente es T06.
-
-## Revisión de T05
-
-Codex aprobó 14 pruebas seleccionadas de baselines/métricas e integración; estilo correcto. Verificó hashes de config/código/predicciones y recorrió 125391 predicciones sin agosto ni targets duplicados. Recalculó 24 grupos de métricas agregadas del universo común, diarios y de bloque, con coincidencia. La suite completa de 83 aprobadas corresponde al log de Claude, sin repetición integral de Codex. Referencia no nula ultimo_dia; el control cero sigue mejor en WAPE diario SKU. No confundir selección preregistrada entre no nulos con superioridad global.
+Siguiente ejecutor previsto Claude Code; revisar Git/procesos y ejecutar ETAPA_05_CLAUDE.md. Commits locales autorizados con secretos/datos privados excluidos. TRASPASO.md contiene el siguiente paso exacto. No hay alternancia automática de cuotas; el usuario avisa del cambio de ejecutor. Después de T07: integración/API/autenticación, evaluación final congelada, publicación, pruebas y documentación; cada hito necesita evidencia, no solo un mensaje de terminación.

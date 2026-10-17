@@ -1,12 +1,11 @@
 # Traspaso vigente
 
-- Ejecutor: Claude Code (Sonnet 5.5), 17/10/2026. Tarea: T06 (ETAPA_04_CLAUDE.md), tras la aprobación de T05 por Codex (REVISION_CODEX_04.md).
-- Último paso terminado: T06 ejecutado y documentado; frente web acotado entregado. Nada en curso; sin procesos propios en segundo plano (df-mongo-dev activo).
-- Commits: 286017d (protocolo+config ANTES de evaluar), 2c52c73 (código y pruebas), 00e4e64 (enmienda 1: tolerancia numérica en la repetición), y el commit final de entrega (HEAD, ver `git log`; resultados y estado).
-- Pruebas: suite completa `RUN_REALDATA=1`: 94 aprobadas, 0 omitidas, 1 aviso, 74 s (`artifacts/private/t06/pytest_full.log`). Angular: `npm run build` y `npm test` (15 aprobadas). `ruff` limpio. Repetición de F1 equivalente (dif. máx. 1,1e-13); baselines idénticos a T05.
-- Evidencia versionada: `docs/T06_PROTOCOLO.md`, `config/t06_config.json`, `docs/T06_RESULTADOS.md`, `T06_METRICAS.json`, `T06_MANIFIESTO.json`. Privada: `artifacts/private/t06/` (predicciones, modelos joblib), `artifacts/private/t06_run.log`.
-- Resultado: SKU (criterio semanal) ningún ML supera la regla; propuesta provisional `promedio_28`. Categoría: Random Forest cumple la regla diaria por margen mínimo (2,07 %, 3/5 folds) pero es peor que los baselines en el bloque semanal. Desarrollo, no prueba final; sin mejora de inventario.
-- Base activa: `demand_forecasting_v2`. Agosto no leído.
-- Bloqueos: ninguno. Pendientes: sin precio; horizonte >7 días no evaluado (T07); API real/autenticación; Angular sin probar en navegador.
-- Siguiente acción exacta: revisión de Codex de T06; luego T07 (simulación con horizonte lead time + revisión) y decisión sobre congelar selección y abrir agosto.
-- Reproducir: `.venv\Scripts\python.exe -m scripts.run_t06` (≈7 min) y `$env:RUN_REALDATA="1"; .venv\Scripts\python.exe -m pytest -q`.
+- Responsable saliente: Codex, dirección/revisión, 17/10/2026, America/Lima. Próximo ejecutor: Claude Code.
+- Último paso: T06 aceptado como experimento al commit 3b11fbd; revisión docs/REVISION_CODEX_05.md. Nada implementado/reentrenado por Codex en esta revisión; solo documentos de revisión/continuidad.
+- Verificación Codex: 11 pruebas selectivas aprobadas y estilo correcto; hashes comprobados, 125391 predicciones sin agosto ni claves duplicadas, identidad de columnas T05; 36 grupos de métricas recalculados coincidentes. Suite completa 94 y build/15 Angular son evidencia de Claude, no repetición independiente.
+- Resultado: no ganador ML por SKU; promedio_28 provisional. RF categoría mejora diaria mínima, empeora acumulado semanal. No mejora de inventario demostrada.
+- Base activa: demand_forecasting_v2; v1 y Excel preservados. df-mongo-dev útil. Claude indicó no dejar procesos propios; comprobar procesos al retomar. No hay entrenamiento iniciado por Codex.
+- Siguiente acción exacta: leer ETAPA_05_CLAUDE.md; comprobar Git/servicios; corregir validación de contexto/vocabulario de inferencia. Después comprometer protocolo/config T07 antes de evaluar horizontes 10/14/21 y simular junio-julio.
+- Alcance: referencia fija sintética, promedio_28 y RF categoría distribuido, mismos supuestos entre políticas; parámetros iniciales solo hasta 31/05. Nueve escenarios L=3/7/14 y S=0/7/14. Agosto reservado, sin selección final.
+- Bloqueos: ninguno para desarrollo local. Falta cuenta/acceso/presupuesto para publicar posteriormente. Frontend sigue con mocks; API/auth/integración posteriores.
+- Evidencia histórica: artifacts/private/t06/, docs/T06_*.md/json. Logs fuera del resumen. Mantener ESTADO/TRASPASO/HISTORIAL/BACKLOG y commits al cerrar T07; entregar a revisión.

@@ -1,9 +1,9 @@
-# Recuperar sesión sin repetir trabajo
+# Retomar sin repetir trabajo
 
-Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. El encargo vigente lo determina ESTADO.md. Actualmente es ETAPA_04_CLAUDE.md (T06), tras aceptar T05 en docs/REVISION_CODEX_04.md.
+Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente: **ETAPA_05_CLAUDE.md (T07)**, tras aceptar T06 al commit 3b11fbd en docs/REVISION_CODEX_05.md.
 
-Comprueba código, Git, configuración y procesos antes de modificar. Conserva cambios, Excel, bases y evidencia. Si hay avances posteriores al registro, verifícalos y retoma desde el último paso real. No reiniciar ni repetir encargos aceptados. No editar archivos de un trabajador activo.
+Comprueba código, Git, configuración efectiva sin secretos y procesos. Conserva Excel, bases, cambios y evidencia. Si existe trabajo posterior, verifícalo y continúa desde el último paso real. No reiniciar ni repetir T04–T06; no editar archivos de otro trabajador activo.
 
-Ejecuta el encargo vigente y las decisiones de datos. Guarda checkpoints y evidencia durante el trabajo. Mantén docs/TRASPASO.md breve con tarea, commit/archivos, pruebas/resultados, evidencias, bloqueos y siguiente paso. Logs extensos separados y referenciados. Actualiza ESTADO.md al terminar.
+Ejecuta primero el ajuste de coherencia de inferencia; luego protocolo/config comprometidos antes de los nuevos resultados. T07 evalúa horizontes 10/14/21 y simulación junio-julio inicializada solo con datos <=31/05. Inventario simulado etiquetado, sin mejora garantizada. Agosto sigue reservado; no consultar sus ventas ni movimientos sintéticos, no abrir test final ni congelar selección en este incremento.
 
-T06 autoriza Random Forest y un boosting con protocolo previo en marzo-julio, comparados con baselines bajo los mismos folds/targets. Agosto sigue reservado; no abrir prueba final ni declarar impacto de inventario. Entregar a revisión de Codex al cerrar el incremento. Un solo ejecutor principal activo.
+Guarda checkpoints y TRASPASO breve durante el trabajo. Actualiza ESTADO/BACKLOG/HISTORIAL al terminar, con pruebas realmente ejecutadas, commit, evidencias, límites y siguiente paso. Entrega T07 a revisión de Codex. Claude es ejecutor habitual; un ejecutor principal activo.

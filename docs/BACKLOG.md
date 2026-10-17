@@ -1,8 +1,8 @@
 # Backlog de ejecución
 
-Estado al 17/10 (tarde): T06 (ML frente a baselines) ejecutado y pendiente de revisión de Codex; frente web con mocks compila. Siguiente: T07 tras la revisión. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
+Estado al 17/10: T06 aceptado como experimento en REVISION_CODEX_05.md; frente web con mocks compila. Encargo vigente ETAPA_05_CLAUDE.md: T07 (horizontes 10/14/21, simulación y ajuste de inferencia). Agosto reservado. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
 
-T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04 y T05 están aceptados; T06 y etapas posteriores siguen pendientes. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
+T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04, T05 y T06 están aceptados; T07 y etapas posteriores siguen pendientes. Selección final para agosto aún no congelada. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 
 | ID | Entrega | Dependencia | Responsable / agente | Fecha objetivo | Aceptación |
 |---|---|---|---|---|---|
@@ -12,7 +12,7 @@ T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregi
 | T03 | Importador validado e idempotente | T01, formato | Mauro / data-engineer | 17 | A01–A02 |
 | T04 | Serie diaria, perfil y conciliación | T02A, T03 | Mauro / data-engineer | 18 | Totales y tratamiento de faltantes |
 | T05 | Baselines, folds, features sin fuga | T04 | Blanca / forecasting | 18 | A03–A05 |
-| T06 | RF y boosting, selección congelada | T05 | Blanca / forecasting | 19 | Registro de experimentos |
+| T06 | RF y boosting, selección provisional; final pendiente | T05 | Blanca / forecasting | 19 | Registro de experimentos |
 | T07 | Simulación de referencia sintética y política con ML | T02B, T05 | Rogelio / backend-inventory | 19 | A06–A08 |
 | T08 | API autenticada y persistencia versionada | T01, contratos | Rogelio / backend-inventory | 20 | A09 |
 | T09 | Pantallas conectadas, filtros y estados | T08; mocks antes | Fabricio / frontend | 20 | A10 |
