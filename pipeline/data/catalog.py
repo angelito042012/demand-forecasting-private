@@ -11,10 +11,13 @@ from .calendar import to_date
 UNKNOWN_CATEGORY = "DESCONOCIDA"
 
 
-def build_category_catalog(db, cutoff_date) -> dict[str, str]:
+def build_category_catalog(db, cutoff_date, *, source_filter: dict | None = None) -> dict[str, str]:
+    """`source_filter` (sources.approved_filter) aplica a las categorias la misma seleccion
+    de fuentes aprobadas que a las ventas (R04)."""
     cutoff = to_date(cutoff_date).isoformat()
+    match = {"fecha": {"$lte": cutoff}, "categoria_original": {"$ne": ""}, **(source_filter or {})}
     pipeline = [
-        {"$match": {"fecha": {"$lte": cutoff}, "categoria_original": {"$ne": ""}}},
+        {"$match": match},
         {"$group": {"_id": {"sku": "$sku", "cat": "$categoria_original"},
                     "ultima": {"$max": "$fecha"}, "n": {"$sum": 1}}},
     ]

@@ -8,6 +8,11 @@ funciones; nunca consultar `sales` directamente. Garantias:
     mismo corte; las notas de credito no forman parte del objetivo;
   - los dias de EXCLUDED_DATES se omiten del entrenamiento y de las metricas
     mediante mascara, sin comprimir el calendario ni crear ventas cero;
+  - R04: solo se leen lineas con alguna fuente APROBADA (carga completa, sin
+    conflictos abiertos; ver sources.py). Cargas fallidas/parciales, fuentes no
+    reconocidas, conflictos abiertos relevantes o meses requeridos sin fuente
+    detienen la construccion con SourceApprovalError; nada entra en silencio.
+    El catalogo usa la misma seleccion de fuentes que las ventas;
   - `fingerprint` resume el contenido de entrenamiento: cambiar registros
     posteriores al corte no lo altera (probado en tests/data/test_training_access.py).
 Agosto solo se obtiene con load_final_test_sales(..., frozen_selection_confirmed=True),
@@ -29,6 +34,7 @@ from .calendar import (
     to_date,
 )
 from .catalog import build_category_catalog
+from .sources import SourceReport, approved_filter, require_approved_sources
 
 _FIELDS = {"_id": 0, "linea_id": 1, "fecha": 1, "sku": 1, "cantidad_base": 1, "importe": 1,
            "categoria_original": 1, "almacen": 1}
@@ -47,6 +53,7 @@ class TrainingData:
     catalog: dict         # sku -> categoria conocida al corte
     fingerprint: str
     omitted_excluded_rows: int = 0
+    sources: SourceReport | None = None  # manifiesto de fuentes aprobadas usado
 
     @property
     def training_days(self) -> tuple:
@@ -78,8 +85,8 @@ def _days(first: date, last: date) -> tuple:
     return tuple(first + timedelta(days=i) for i in range((last - first).days + 1))
 
 
-def _fetch(db, first: date | None, last: date) -> list:
-    query: dict = {"fecha": {"$lte": last.isoformat()}}
+def _fetch(db, first: date | None, last: date, report: SourceReport) -> list:
+    query: dict = {"fecha": {"$lte": last.isoformat()}, **approved_filter(report)}
     if first is not None:
         query["fecha"]["$gte"] = first.isoformat()
     rows = list(db.sales.find(query, _FIELDS))
@@ -87,47 +94,60 @@ def _fetch(db, first: date | None, last: date) -> list:
     return rows
 
 
-def _fingerprint(rows) -> str:
+def _fingerprint(rows, cutoff: date, catalog: dict, report: SourceReport) -> str:
+    """Firma de contenido y decisiones: filas (fecha, sku, cantidad, importe, categoria,
+    almacen), catalogo al corte, mascara de exclusion, corte y manifiesto de fuentes."""
     h = hashlib.sha256()
+    h.update(f"v2|cutoff={cutoff}|mask={sorted(d.isoformat() for d in EXCLUDED_DATES)}\n".encode())
+    for m in report.manifest:
+        h.update(f"src|{m['mes']}|{m['archivo']}|{m['sha256']}\n".encode())
+    for sku in sorted(catalog):
+        h.update(f"cat|{sku}|{catalog[sku]}\n".encode())
     for r in rows:
-        h.update(f"{r['linea_id']}|{r['fecha']}|{r['sku']}|{r['cantidad_base']}|{r['importe']}\n".encode())
+        h.update(f"{r['linea_id']}|{r['fecha']}|{r['sku']}|{r['cantidad_base']}|{r['importe']}|"
+                 f"{r.get('categoria_original', '')}|{r.get('almacen', '')}\n".encode())
     return h.hexdigest()
 
 
-def load_training_data(db, cutoff, *, start=None) -> TrainingData:
-    """Ventas de entrenamiento con fecha <= corte (corte <= 2026-07-31)."""
+def load_training_data(db, cutoff, *, start=None, required_months=None) -> TrainingData:
+    """Ventas de entrenamiento con fecha <= corte (corte <= 2026-07-31), solo de fuentes
+    aprobadas. `required_months` (por defecto 2026-03..mes del corte) debe tener fuente aprobada."""
     last = _check_cutoff(cutoff)
     first = to_date(start) if start is not None else None
-    rows = _fetch(db, first, last)
+    report = require_approved_sources(db, last, required_months=required_months)
+    rows = _fetch(db, first, last, report)
     if any(r["fecha"] > last.isoformat() for r in rows):  # defensa en profundidad
         raise TrainingCutoffError("la consulta devolvio fechas posteriores al corte")
     kept = [r for r in rows if to_date(r["fecha"]) not in EXCLUDED_DATES]
     cal_first = first or (to_date(kept[0]["fecha"]) if kept else last)
     calendar = _days(cal_first, last) if cal_first <= last else ()
+    catalog = build_category_catalog(db, last, source_filter=approved_filter(report))
     return TrainingData(
         cutoff=last, sales=tuple(kept), calendar=calendar,
         excluded_days=frozenset(d for d in calendar if d in EXCLUDED_DATES),
-        catalog=build_category_catalog(db, last), fingerprint=_fingerprint(kept),
-        omitted_excluded_rows=len(rows) - len(kept))
+        catalog=catalog, fingerprint=_fingerprint(kept, last, catalog, report),
+        omitted_excluded_rows=len(rows) - len(kept), sources=report)
 
 
-def load_fold(db, train_cutoff, validation_end, *, start=None) -> FoldData:
+def load_fold(db, train_cutoff, validation_end, *, start=None, required_months=None) -> FoldData:
     """Fold temporal: entrenamiento <= corte; validacion en (corte, validation_end].
     validation_end tambien debe ser <= 2026-07-31 (agosto no se usa para elegir)."""
-    train = load_training_data(db, train_cutoff, start=start)
+    train = load_training_data(db, train_cutoff, start=start, required_months=required_months)
     end = _check_cutoff(validation_end)
     if end <= train.cutoff:
         raise TrainingCutoffError("validation_end debe ser posterior al corte de entrenamiento")
+    report = require_approved_sources(db, end, required_months=required_months)
     first = train.cutoff + timedelta(days=1)
-    rows = [r for r in _fetch(db, first, end) if to_date(r["fecha"]) not in EXCLUDED_DATES]
+    rows = [r for r in _fetch(db, first, end, report) if to_date(r["fecha"]) not in EXCLUDED_DATES]
     calendar = _days(first, end)
     return FoldData(train=train, validation_sales=tuple(rows), validation_calendar=calendar,
                     validation_excluded_days=frozenset(d for d in calendar if d in EXCLUDED_DATES))
 
 
-def load_final_test_sales(db, *, frozen_selection_confirmed: bool) -> tuple:
+def load_final_test_sales(db, *, frozen_selection_confirmed: bool, required_months=None) -> tuple:
     """Ruta explicita de evaluacion final (agosto). Solo con la seleccion congelada."""
     if frozen_selection_confirmed is not True:
         raise TrainingCutoffError("agosto es test final: requiere frozen_selection_confirmed=True")
-    rows = _fetch(db, FINAL_TEST_START, FINAL_TEST_END)
+    report = require_approved_sources(db, FINAL_TEST_END, required_months=required_months)
+    rows = _fetch(db, FINAL_TEST_START, FINAL_TEST_END, report)
     return tuple(r for r in rows if to_date(r["fecha"]) not in EXCLUDED_DATES)

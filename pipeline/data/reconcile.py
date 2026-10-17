@@ -110,7 +110,7 @@ def reconcile(db) -> dict:
             "dias_sin_registros_no_excluidos": [d for d in missing if d not in excluded],
             "suma_importe_ventas": f"{vs:.2f}", "suma_importe_creditos": f"{cs:.2f}",
             "saldo_neto": f"{vs + cs:.2f}",  # creditos son negativos
-            "cuadra_importaciones": all(i["cuadra_lectura"] and i["cuadra_escritura"]
+            "cuadra_importaciones": bool(s["importaciones"]) and all(i["cuadra_lectura"] and i["cuadra_escritura"]
                                         and i["cuadra_persistencia"] for i in s["importaciones"]),
             "cuadra_conjunto_logico": bool(utiles) and max(utiles) <= uniq <= sum(utiles),
         })

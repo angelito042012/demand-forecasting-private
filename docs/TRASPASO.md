@@ -21,3 +21,7 @@ Reemplazar el registro actual con hechos comprobados al cambiar de etapa o ejecu
 Campos mínimos: ejecutor; fecha; tarea; último paso terminado; paso en curso; archivos; commit/checkpoint; comandos y resultado; evidencia; base activa; procesos útiles; bloqueos; siguiente acción exacta; pendiente de revisión.
 
 No escribir claves, tokens o URI con credenciales. Si una prueba no se ejecutó o un proceso dejó de ser observable, indicarlo.
+
+## Registro de ejecución (Claude, 17/10/2026)
+- Recuperación: sin worker previo activo; Mongo df-mongo-dev arriba; solo existe demand_forecasting_dev (v1: 86 877 ventas, 560 créditos). v2 NO existía. Sin R04 ni T04 en código. Checkpoint Git local 8a34814 (parcial, sin aprobar).
+- En curso: carga de v2 con el importador (log en artifacts/private/load_v2.log).

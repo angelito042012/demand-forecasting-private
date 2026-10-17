@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_timezone: str = "America/Lima"
     mongodb_uri: str = "mongodb://127.0.0.1:27017"
-    mongodb_database: str = "demand_forecasting_dev"
+    mongodb_database: str = "demand_forecasting_v2"
     allowed_origins: str = "http://localhost:4200"
 
     @property
