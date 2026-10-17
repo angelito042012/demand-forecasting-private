@@ -69,7 +69,9 @@ def test_two_simultaneous_ticks_register_one_slot_and_enqueue_one_job():
             t.start()
         for t in ts:
             t.join(60)
-        assert sorted(o["outcome"] for o in out) == ["encolado", "ranura_ya_procesada"]
+        # el perdedor ve la ranura completada o aun en proceso por el ganador (ambos: sin segundo trabajo)
+        assert sorted(o["outcome"] for o in out)[0] == "encolado"
+        assert sorted(o["outcome"] for o in out)[1] in ("ranura_ya_procesada", "ranura_en_proceso")
         assert db[COLLECTION].count_documents({}) == 1 and db.jobs.count_documents({}) == 1
         winner = next(o for o in out if o["outcome"] == "encolado")
         job = db.jobs.find_one({})
@@ -91,7 +93,7 @@ def test_many_threads_same_slot_never_duplicate():
             t.start()
         for t in ts:
             t.join(60)
-        assert out.count("encolado") == 1 and out.count("ranura_ya_procesada") == 7
+        assert out.count("encolado") == 1 and out.count("ranura_ya_procesada") + out.count("ranura_en_proceso") == 7
         assert db.jobs.count_documents({}) == 1 and db[COLLECTION].count_documents({}) == 1
 
 
