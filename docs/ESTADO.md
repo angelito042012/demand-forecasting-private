@@ -1,10 +1,14 @@
 # Estado vigente del proyecto
 
-Actualizado el 17/10/2026, Lima. Entrega final 23/10/2026. Claude ejecuta; Codex dirige/revisa. Un ejecutor principal activo. Historial anterior en HISTORIAL_ENTREGAS.md; revisiones 01–08.
+Actualizado el 17/10/2026, Lima. Entrega final 23/10/2026. Claude ejecuta; Codex dirige/revisa. Un ejecutor principal activo. Historial anterior en HISTORIAL_ENTREGAS.md; revisiones 01–09.
 
 ## Siguiente encargo
 
-**T10 entregado para revisión de Codex** (`docs/T10_REPORTE.md`): carga web, cola durable, worker, generación `promedio_28` y temporizador local, con garantías de concurrencia. Pendiente: revisión Codex; después, a decisión suya, T11 (nube; sin accesos ni gasto autorizados) y T12 (evaluación final en agosto bajo `SELECCION_CONGELADA`, no ejecutada). Agosto sigue sin abrirse.
+**T10 revisado, requiere T10R antes de aceptarse. Encargo vigente: ETAPA_09_CLAUDE.md; revisión docs/REVISION_CODEX_09.md**, entrega 9596d26. Corregir R07 limpieza/publicación (P1), R08 takeover tras renovación, R09 dos fuentes mensuales concurrentes y R10 recuperación de ranura del timer (P2). Flujo habitual construido; no rehacerlo. Codex: 119 pruebas selectivas aprobadas y cuatro reproducciones con Mongo real en bases temporales. Después de corregir/revisar: T12 final y T11 HTTPS/nube/backup/restauración; no iniciarlos ahora. Agosto permanece reservado.
+
+Nube actual: Azure for Students con US$100 disponibles hasta 17/10/2027; Atlas Free demand-forecasting-dev creado en São Paulo. No se verificó conexión/despliegue. Sin presupuesto de bolsillo ni pago por uso autorizados; rotación de credencial mostrada en captura pendiente de confirmación privada. **BD local actual: 459,39 MB de datos lógicos + índices** (15 colecciones), medición posterior a T10. Planificar crecimiento/archivo/restauración antes de migrar, sin borrar evidencia.
+
+Decisión de puntero: mantener activate_run=False para corridas de desarrollo; histórica auditada predeterminada y nuevas consultables por enlace/selector. Refactorizar validadores/estilo ajeno no es requisito de esta corrección.
 
 ## Hitos aceptados
 
@@ -40,7 +44,7 @@ REVISION_CODEX_07.md; artifacts/private/codex_review07_audit.json y codex_review
 
 TIPO_DOC=7 son notas de crédito; no implican retorno físico. Excluir 03/04,12/04 y 07/06/2026 sin comprimir calendario ni escribir cero observado. Categoría por corte. Inventario sintético autorizado y etiquetado; ventas pueden estar censuradas por stock desconocido. Sin impacto real demostrado. Marzo-julio desarrollo; agosto reservado. Ver DECISIONES_DATOS.md.
 
-Ahora T10 carga web/batch/timer, con concurrencia como prerrequisito. Después T12 ejecución final bajo congelación, T11 HTTPS/despliegue/backup/restauración, rendimiento/accesibilidad/aceptación humana e informe. Sin cuentas Azure/Atlas ni presupuesto autorizado. No hay alternancia automática de cuotas; el usuario avisa del cambio. Commits locales autorizados con secretos/datos privados excluidos.
+Ahora T10R (R07–R10), sin ampliar funciones. Después T12 ejecución final bajo congelación, T11 HTTPS/despliegue/backup/restauración, rendimiento/accesibilidad/aceptación humana e informe. Las cuentas Azure/Atlas ya existen según la actualización inicial; sin gasto de bolsillo autorizado. No hay alternancia automática de cuotas; el usuario avisa del cambio. Commits locales autorizados con secretos/datos privados excluidos.
 
 ## Revisión independiente Codex08 (17/10)
 

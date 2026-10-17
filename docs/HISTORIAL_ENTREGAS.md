@@ -282,3 +282,7 @@ T08R aceptado al commit 80117c0 para alcance local. R05/R06 cerrados: 31 pruebas
 ## T10 (17/10/2026): carga web, cola durable, generación y temporizador
 
 Entregado para revisión: garantías de concurrencia, API de carga/corridas/trabajos, worker, generación `promedio_28`, temporizador y frontend admin. Pruebas: pytest 376 aprobadas/6 omitidas, vitest 106, E2E Chrome 16/16, realdata 3/3. Detalle y límites en `docs/T10_REPORTE.md`. Sin agosto, sin cambio de selección congelada, sin despliegue.
+
+## Revisión Codex09 y encargo T10R (17/10/2026)
+
+T10/9596d26 no aceptado todavía. 119 pruebas selectivas aprobadas y cuatro defectos adicionales reproducidos con Mongo real aislado: R07 limpieza/promoción (P1), R08 takeover tras renovación, R09 dos fuentes mensuales concurrentes y R10 tick incompleto sin recuperación (P2). Revisión docs/REVISION_CODEX_09.md; encargo correctivo ETAPA_09_CLAUDE.md. Sin código productivo modificado ni base principal alterada. Auditoría solo lectura confirma histórica activa e hijos intactos, hash congelado correcto y tamaño459,39MB tras T10. Decisión: generadas de desarrollo no activan puntero por defecto; evitar refactorización ajena. Azure estudiantes/Atlas Free ya creados según capturas, conexión/despliegue/capacidad pendientes y sin presupuesto de bolsillo. No se abrió agosto ni se inició T11/T12.
