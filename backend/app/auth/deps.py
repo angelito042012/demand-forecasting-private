@@ -116,3 +116,26 @@ def require_csrf(
             sha256_hex(supplied), user.csrf_token_hash):
         raise ApiError(403, "CSRF_INVALIDO", "Token CSRF ausente o invalido.")
     return user
+
+
+def check_multipart_content_type(request: Request) -> None:
+    media = request.headers.get("content-type", "").split(";")[0].strip().lower()
+    if media != "multipart/form-data":
+        raise ApiError(415, "FORMATO_NO_SOPORTADO", "Se requiere Content-Type multipart/form-data.")
+
+
+def require_csrf_multipart(
+    request: Request,
+    user: Annotated[CurrentUser, Depends(require_user)],
+    settings: SettingsDep,
+) -> CurrentUser:
+    """Como `require_csrf` (sesion, Origin, X-CSRF-Token) pero para subidas multipart/form-data."""
+    if request.method in SAFE_METHODS:
+        return user
+    check_origin(request, settings)
+    check_multipart_content_type(request)
+    supplied = request.headers.get(CSRF_HEADER, "")
+    if not supplied or not user.csrf_token_hash or not hmac.compare_digest(
+            sha256_hex(supplied), user.csrf_token_hash):
+        raise ApiError(403, "CSRF_INVALIDO", "Token CSRF ausente o invalido.")
+    return user
