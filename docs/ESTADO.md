@@ -1,17 +1,17 @@
 # Estado vigente del proyecto
 
-Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–10. Este resumen sustituye estados anteriores.
+Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–11. Este resumen sustituye estados anteriores.
 
 ## Siguiente encargo
 
-**T12 ejecutada y entregada para revisión de Codex** (`docs/T12_RESULTADOS.md`, `T12_METRICAS.json`, `T12_MANIFIESTO.json`; protocolo `docs/T12_PROTOCOLO.md`). Pendiente: revisión Codex. Después, a su decisión: T11 (publicación/HTTPS/copia-restauración con capacidad verificada; Azure for Students y Atlas Free sin conectar; sin presupuesto de bolsillo; 459,39 MB locales), integración del paquete final en web, T13 aceptación, T14/T15 informe/manual/video. **No se inició despliegue.** Agosto fue leído una sola vez, por la ruta dedicada y tras sellar las predicciones.
+**Resultados científicos T12/3f40176 validados por Codex en REVISION_CODEX_11.md. Encargo siguiente: ETAPA_11_CLAUDE.md (T11A)**: cerrar R11 (audit/reporte sin checkpoints), integrar paquete final en web local y base nueva de publicación, contenedores, capacidad y copia/restauración probadas, plan concreto de nube/costo/permisos. No repetir prepare/evaluate ni re-seleccionar. T12 calculada una vez; su cierre administrativo sigue pendiente. No se inició despliegue ni se autorizó gasto de bolsillo.
 
 ## Hitos aceptados
 
 - Datos: seis Excel originales intactos en C:\Users\rogel\Documents\Datos, 87437 líneas =86877 ventas +560 notas de crédito;31 columnas homogéneas. No pedir reexportación. Importador schema2/fuentes aprobadas/conciliación/barrera temporal R01–R04 aceptados para esas fuentes. Base activa demand_forecasting_v2; v1 demand_forecasting_dev conservada.
 - Decisiones: TIPO_DOC=7 notas de crédito, sin inferir retorno físico. Máscara 03/04,12/04,07/06, sin ceros ni calendario comprimido. Categoría por corte; SKU 16140041 al 31/07 permanece ROSTRO. Inventario sintético autorizado y rotulado, sin impacto real demostrado. Ventas pueden estar censuradas por stock desconocido.
 - T04:459375 filas SKU-día y5441categoría-día. T05–T07 aceptados como desarrollo; RF/XGBoost no mejoraron referencia SKU. T07 H14WAPE RF0,9292 frente promedio0,8726,0/4 folds favorables. Operativo promedio_28 por SKU, categorías=sumSKU; RF comparador. Simulación27 combinaciones/3347 SKU/61 días bajo supuestos; más servicio con más stock/compras no demuestra superioridad.
-- T08/T09/T08R: autenticación sesión HttpOnly/CSRF/roles, lectura/API/UI conectadas; mocks solo con demo=1 rotulado. Exactitud racional R05 y proxy local R06 corregidos; histórica corregida activa y anterior superseded conservada. Congelación final previa al test en docs/SELECCION_CONGELADA.md y config/seleccion_congelada.json +checksum, sin ejecutar hasta ahora.
+- T08/T09/T08R: autenticación sesión HttpOnly/CSRF/roles, lectura/API/UI conectadas; mocks solo con demo=1 rotulado. Exactitud racional R05 y proxy local R06 corregidos; histórica corregida activa y anterior superseded conservada. Congelación final previa al test en docs/SELECCION_CONGELADA.md y config/seleccion_congelada.json +checksum, conservada como registro previo al test; evaluación ejecutada en T12.
 - T10/T10R: carga web/admin, cola durable, generación promedio_28, worker, timer manual/deshabilitado por defecto; login atómico, publicación por intento, limpieza con reserva CAS, takeover con lease leído, reserva por mes/fuente, recuperación de tick. Frontend/lector sin permisos de mutación. Desarrollo web continúa limitado a origen 01/06–10/07,H<=21, sin agosto.
 
 ## Revisión Codex10 y límites
@@ -36,7 +36,7 @@ Después de T12 y su revisión: T11 capacidad/archivo recuperable/HTTPS/almacena
 
 ## T12 evaluación final (17/10/2026, ejecutada una vez)
 
-- Fases: verificación → preparación (≤31/07, sellada: `docs/T12_SELLO.json`, commit 86325a7) → lectura de agosto (14 946 líneas, 24 404 unidades, 01–31/08) → evaluación predictiva → simulación secuencial → auditoría → reporte. Todas completas, sin errores ni repeticiones técnicas. Código de evaluación y pruebas fijados en a39d3e9 antes de la fase real. Selección congelada intacta (JSON `8a913805…`, documento `655e0322…`).
+- Fases: verificación → preparación (≤31/07, sellada: `docs/T12_SELLO.json`, commit 86325a7) → lectura de agosto (14 946 líneas, 24 404 unidades, 01–31/08) → evaluación predictiva → simulación secuencial → auditoría → reporte. Las cinco fases de cálculo completas; auditoría y reporte existen, pero no registran sus checkpoints (R11) y estado.json conserva completa=false. No se repitió la evaluación real. Código de evaluación y pruebas fijados en a39d3e9 antes de la fase real. Selección congelada intacta (JSON `8a913805…`, documento `655e0322…`).
 - Código congelado: 12 de 14 archivos vivos idénticos al commit e5466413; el motor de simulación se usó desde su copia exacta (`pipeline/final/frozen_code/`, `09cddb7d…`); `importer.py` (T10R) no interviene en el cálculo.
 - **Hallazgo primario** (WAPE acumulado H14, SKU, cohorte primaria, universo común n=3 401): promedio_28 **0,7810**; RF categoría distribuido 0,7910 (mejora relativa −1,3 %, RF no mejor); control cero 1,0000; sesgo/observado +2,0 % y +3,0 %. H10 0,8165 vs 0,8308; H21 0,7512 vs 0,7590. Categoría H14 (suma de SKU vs RF): 0,1170 vs 0,1166. Historia corta (357 SKU) H14: promedio_28 1,0618 (sesgo +46,7 %), RF 0,8009. Con un solo bloque RF no puede declararse ganador; el método operativo no cambia.
 - SKU nuevos: 103 SKU con venta en el bloque 01–21/08 (353 uds.; cobertura de unidades del universo conocido 97,85 %); 141 SKU / 568 uds. en todo agosto, fuera del universo simulado.
@@ -44,3 +44,11 @@ Después de T12 y su revisión: T11 capacidad/archivo recuperable/HTTPS/almacena
 - Auditoría separada aprobada (métricas recomputadas desde predicciones selladas y reales guardados; 27 combinaciones con balances re-verificados; sello anterior a la lectura de agosto).
 - Pruebas ejecutadas: 16 pruebas sintéticas T12 (bloqueo sin confirmación/congelación alterada/sello alterado, futuros no cambian el paquete, truncamiento por revisión, categorías = suma SKU, conservación RF, catálogo/cohortes/universo al 31/07, faltantes/ceros, SKU nuevos, igualdad de condiciones, balances, denominador cero, equivalencia con el motor vivo); `pytest tests`: 424 aprobadas, 6 omitidas (RUN_REALDATA), 0 fallos. No se repitieron T06/T07 ni los 4 folds.
 - Artefactos privados en `artifacts/private/final/` (fuera de Git). Pendientes: revisión Codex; integración web/publicación y plan de capacidad (T11); aceptación humana.
+
+## Revisión Codex11 y entrada a T11A
+
+16 pruebas sintéticas T12 aprobadas, 0 omitidas, 69,49 s; ruff afectado limpio. Evidencia propia: artifacts/private/codex_review11_verified_tests.xml/.log y codex_review11_audit.py/.json. Recalculados H14 primaria (3401 SKU, 10366 unidades): WAPE promedio_28=0,7809666, RF=0,7910422, cero=1; RF no mejora. Reconstruidos reales desde CSV mínimo y contrastadas las27simulaciones, saldos/valor/compras,9hashes y sello Git anterior a lectura. Sin repetir entrenamiento ni evaluación real. Resultados424pytest/6omitidas son de Claude, diferenciados.
+
+R11 P2: siete fases definidas, pero audit/report no actualizan estado ni sus errores. Corregir/reconciliar solo esas operaciones, con registro posterior y hashes de cálculo intactos. Integración local y plan de capacidad independientes pueden avanzar; cierre total de T12 tras R11. No migrar la base completa: forecasts267,06MB, recomendaciones66,43MB y ventas81,79MB antes de índices. Preparar base nueva con datos/fuentes y corridas pertinentes, archivo recuperable del resto, sin sesiones/usuarios/jobs demo, sin borrar v1/v2 ni evidencias.
+
+T11A no es despliegue: exige imagen(s), configuración producción, almacén durable, prueba de copia/restauración y plan de recursos/región/costo hasta23/10 y mensual. Cuentas ya creadas; acceso secreto por canal privado. Sin crear recursos/cargos, consumir crédito sin techo concreto acordado ni transferir datos en esta preparación. T13–T15 y publicación HTTPS real siguen pendientes.

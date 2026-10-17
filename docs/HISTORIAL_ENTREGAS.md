@@ -300,3 +300,8 @@ Entregado para revisión: limpieza de publicaciones con reserva CAS (R07), toma 
 ## T12 (17/10/2026): evaluación final de agosto bajo selección congelada
 
 Ejecutada una vez por fases: verificación de la congelación, preparación y sello de las predicciones ≤31/07 (86325a7), lectura de agosto por la ruta dedicada, evaluación predictiva fija (01–21/08), simulación secuencial (27 combinaciones), auditoría y reporte. Hallazgo primario: WAPE H14 SKU primaria promedio_28 0,7810 frente a RF 0,7910 y cero 1,0000; sin re-selección. 16 pruebas sintéticas nuevas; pytest 424 aprobadas/6 omitidas. Detalle en `docs/T12_RESULTADOS.md`. Sin despliegue.
+
+
+## Revisión Codex11: resultados T12 validados y preparación T11A
+
+17/10, entrega3f40176. Codex16pruebas sintéticas aprobadas sin omitidas,69,49s; ruff limpio. Auditoría propia recalcula WAPE H14 y reconstruye reales desde CSV mínimo, verifica9hashes/sello previo y27balances sin repetir evaluación real. R11 administrativo: audit/reporte no actualizan fases, estado completa=false; cerrar primero en ETAPA_11_CLAUDE.md sin repetir cálculos. Método promedio_28 permanece; no mejora RF ni impacto real demostrado. Siguiente T11A: integración final, contenedores, base nueva/capacidad, copia-restauración y plan de costo/accesos antes de despliegue. No cambios a artefactos finales ni DB original en esta revisión; evidencia en codex_review11_* privado.
