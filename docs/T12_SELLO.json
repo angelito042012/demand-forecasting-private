@@ -1,0 +1,22 @@
+{
+ "version": "t12-1",
+ "sello_sha256": "d587255d87fb2d99e449a098e4c1fa6e1c1c6d5838180b7aa8fe098e9a2ce663",
+ "creado_lima": "2026-10-17T17:52:53-05:00",
+ "git_commit_codigo": "a39d3e9ff896b8ca1dfe68dab1a603dc228f7acb",
+ "fingerprint_entrenamiento": "f73f00a79ad02b69bb3c8dfd3af8a7d9a6ff751842f5ad4c5ba5e8d20038c33b",
+ "archivos": {
+  "predicciones_fijas.npz": {
+   "bytes_sha256": "f4e829c5b9156984aad6b429959bbbba9528c1b792c4c3c7d8293cbe7cc6e710",
+   "logical_sha256": "47da165dbd03a5c206dbd7172b06f3cc3b59f7b75c6eb4a1b97bb419643183be"
+  },
+  "inicializacion_sim.npz": {
+   "bytes_sha256": "ec9ef830e4c0bc351358c329afc3515234d5f898f01156c20682017e64827670",
+   "logical_sha256": "c9eba01cc5ab05156397ed2828daf6f0dd04e24c0e27c1fcc6368e5f4b85dfb7"
+  },
+  "rf_categoria_T12.joblib": {
+   "bytes_sha256": "0c77cfeffbbaa59104464e35acf183de2a52efaa52a26e7d6f34392281ac04fb"
+  }
+ },
+ "agosto_consultado": false,
+ "nota": "Hashes de las predicciones fijas 01-21/08 emitidas con datos <= 31/07, antes de leer agosto."
+}
