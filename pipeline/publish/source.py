@@ -43,6 +43,7 @@ class VerifiedSource:
     artifacts: list = field(default_factory=list)   # {name, sha256, size_bytes}
     code: dict = field(default_factory=dict)
     source_fingerprint: str = ""
+    paths: dict = field(default_factory=dict)       # nombre de artefacto -> ruta verificada (solo uso interno)
 
 
 def sha256_file(path: Path) -> str:
@@ -171,9 +172,19 @@ def _load_forecasts(path: Path, entry: dict, manifest: dict) -> pd.DataFrame:
     return g.sort_values(["entidad", "fecha"]).reset_index(drop=True)
 
 
-def _load_sim(path: Path, entry: dict, manifest: dict) -> dict:
-    idx, key = int(entry["snapshot_index"]), entry["scenario_key"]
-    if (date.fromisoformat(entry["cutoff"]) - date.fromisoformat(entry["sim_start"])).days != idx:
+def _load_sim(path: Path, entry: dict, manifest: dict, origin: date | None = None) -> dict:
+    """Instantanea de la trayectoria simulada al cierre de `origin` (por defecto el corte del fold: indice
+    natural = origen - sim_start). Un origen distinto se admite solo dentro de los dias del escenario."""
+    key = entry["scenario_key"]
+    days_total = int(manifest["simulacion"]["dias"])
+    if origin is None:
+        idx = int(entry["snapshot_index"])
+        origin = date.fromisoformat(entry["cutoff"])
+    else:
+        idx = (origin - date.fromisoformat(entry["sim_start"])).days
+        if not 0 <= idx < days_total:
+            raise SourceVerificationError("origen fuera de la ventana de la simulacion")
+    if (origin - date.fromisoformat(entry["sim_start"])).days != idx:
         raise SourceVerificationError("indice de snapshot incoherente con las fechas")
     with np.load(path, allow_pickle=False) as z:
         need = ["skus", "costo", "demanda"] + [f"{key}__{r}" for r in NPZ_ROLES]
@@ -252,4 +263,20 @@ def verify_and_load(entry: dict, root: Path | None = None, *, code_repo: Path | 
         "v": PUBLISHER_VERSION, "arts": artifacts, "cfg": manifest["config_sha256"],
         "code": code["codigo_sha256"], "commit": code["commit"], "scenario": entry["scenario_id"],
         "fold": entry["fold"], "cutoff": entry["cutoff"], "ref": reference}, sort_keys=True).encode()).hexdigest()
-    return VerifiedSource(entry, manifest, metrics, cfg_t07, forecasts, sim, artifacts, code, fp)
+    return VerifiedSource(entry, manifest, metrics, cfg_t07, forecasts, sim, artifacts, code, fp, paths=paths)
+
+
+def load_snapshot(src: VerifiedSource, origin: date) -> dict:
+    """Snapshot de la simulacion T07 al cierre de `origin` (indice = origen - 2026-06-01), con las mismas
+    comprobaciones que la corrida historica (checksum ya verificado en `verify_and_load`, universo, dimensiones,
+    transito = pedidos - recepciones acumulados hasta ese dia). Devuelve ademas el indice natural."""
+    path = src.paths.get("simulacion_series.npz")
+    if path is None:
+        raise SourceVerificationError("artefacto de simulacion no verificado")
+    if origin == date.fromisoformat(src.entry["cutoff"]):
+        sim = src.sim
+    else:
+        sim = _load_sim(path, src.entry, src.manifest, origin)
+    if len(sim["skus"]) != int(src.manifest["simulacion"]["universo_skus"]):
+        raise SourceVerificationError("universo de la simulacion incoherente con el manifiesto")
+    return {**sim, "index": (origin - date.fromisoformat(src.entry["sim_start"])).days}

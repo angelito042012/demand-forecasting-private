@@ -5,6 +5,7 @@ Funciones puras (sin I/O): reciben VerifiedSource y el catalogo <= corte.
 from __future__ import annotations
 
 import math
+from datetime import date, timedelta
 from fractions import Fraction
 
 import numpy as np
@@ -24,9 +25,20 @@ CHOSEN = "promedio_28"
 LEAD, REVIEW, SAFETY_DAYS, HORIZON_REC = 7, 7, 7, 14
 SIN_SNAPSHOT_REASON = ("SIN_INVENTARIO_SIMULADO_AL_10_07: producto conocido despues del 31/05; "
                        "no se supone stock cero")
+GENERATED_KIND = "generated_baseline"
 NUM_FIELDS = ("on_hand", "in_transit", "position", "mean_28", "forecast_14d", "safety", "target",
               "order_qty", "unit_cost_assumed", "order_value_assumed")
 NULL_EXTRA = ("sum_28", "days_28", "mean_28_exact", "target_raw_exact", "signals")
+
+
+def _dm(d: date) -> str:
+    return d.strftime("%d/%m")
+
+
+def sin_snapshot_reason(origin: date) -> str:
+    """Motivo textual; para el origen historico 10/07 es EXACTAMENTE `SIN_SNAPSHOT_REASON`."""
+    return (f"SIN_INVENTARIO_SIMULADO_AL_{origin:%d_%m}: producto conocido despues del 31/05; "
+            "no se supone stock cero")
 
 
 def ceil_stable(x: float, decimals: int = 9) -> int:
@@ -56,30 +68,54 @@ def _fc_base(run_id: str) -> dict:
             "schema_version": SCHEMA_VERSION}
 
 
-def build_forecasts(src: VerifiedSource, catalog: dict, run_id: str) -> tuple[list, list, dict]:
+def build_forecasts(src: VerifiedSource | None, catalog: dict, run_id: str, *, frame=None,
+                    generated: bool = False) -> tuple[list, list, dict]:
     """(docs_sku, docs_categoria, info). Categorias = suma de los SKU del catalogo; SKU sin
-    categoria -> DESCONOCIDA (se informa, no se mezcla con otra categoria)."""
-    df = src.forecasts.copy()
+    categoria -> DESCONOCIDA (se informa, no se mezcla con otra categoria).
+
+    `frame` (mismas columnas que el CSV T07) sustituye al fold historico; `generated=True` produce documentos
+    de una corrida generada: observed=None, evaluable=False y rf_categoria_distribuido=None cuando el
+    comparador no esta disponible (nunca se convierte un dato ausente en cero)."""
+    df = (frame if frame is not None else src.forecasts).copy()
     parts = df["entidad"].str.split("|", expand=True)
     df["sku"], df["almacen"] = parts[0], parts[1]
     df["categoria"] = df["sku"].map(lambda s: catalog.get(s) or UNKNOWN)
     base = _fc_base(run_id)
+    if generated:
+        base["run_kind"] = GENERATED_KIND
+
+    def _rf(v):
+        return None if v is None or (isinstance(v, float) and math.isnan(v)) else float(v)
+
     sku_docs = []
     for r in df.itertuples(index=False):
+        rf = _rf(r.pred_rf_distribuido)
         sku_docs.append({
             **base, "level": "sku", "entity_id": r.entidad, "sku": r.sku, "almacen": r.almacen,
             "categoria": r.categoria, "cohorte": r.cohorte, "target_date": r.fecha, "h": int(r.h),
-            "pred": {"promedio_28": float(r.pred_promedio_28),
-                     "rf_categoria_distribuido": float(r.pred_rf_distribuido), "cero": 0.0},
-            "observed": int(r.real), "evaluable": bool(r.evaluable)})
-    g = df.groupby(["categoria", "fecha"], sort=True).agg(
-        p28=("pred_promedio_28", "sum"), prf=("pred_rf_distribuido", "sum"), real=("real", "sum"),
-        h=("h", "first"), ev=("evaluable", "all"), n=("sku", "nunique")).reset_index()
-    cat_docs = [{
-        **base, "level": "categoria", "entity_id": r.categoria, "sku": None, "almacen": None,
-        "categoria": r.categoria, "cohorte": None, "target_date": r.fecha, "h": int(r.h),
-        "pred": {"promedio_28": float(r.p28), "rf_categoria_distribuido": float(r.prf), "cero": 0.0},
-        "observed": int(r.real), "evaluable": bool(r.ev)} for r in g.itertuples(index=False)]
+            "pred": {"promedio_28": float(r.pred_promedio_28), "rf_categoria_distribuido": rf, "cero": 0.0},
+            "observed": None if generated else int(r.real), "evaluable": False if generated else bool(r.evaluable)})
+    if generated:
+        rf_ok = df["pred_rf_distribuido"].notna().all()
+        agg = df.groupby(["categoria", "fecha"], sort=True).agg(
+            p28=("pred_promedio_28", "sum"), prf=("pred_rf_distribuido", "sum"),
+            h=("h", "first"), n=("sku", "nunique")).reset_index()
+        cat_docs = [{
+            **base, "level": "categoria", "entity_id": r.categoria, "sku": None, "almacen": None,
+            "categoria": r.categoria, "cohorte": None, "target_date": r.fecha, "h": int(r.h),
+            "pred": {"promedio_28": float(r.p28), "rf_categoria_distribuido": float(r.prf) if rf_ok else None,
+                     "cero": 0.0},
+            "observed": None, "evaluable": False} for r in agg.itertuples(index=False)]
+        g = agg
+    else:
+        g = df.groupby(["categoria", "fecha"], sort=True).agg(
+            p28=("pred_promedio_28", "sum"), prf=("pred_rf_distribuido", "sum"), real=("real", "sum"),
+            h=("h", "first"), ev=("evaluable", "all"), n=("sku", "nunique")).reset_index()
+        cat_docs = [{
+            **base, "level": "categoria", "entity_id": r.categoria, "sku": None, "almacen": None,
+            "categoria": r.categoria, "cohorte": None, "target_date": r.fecha, "h": int(r.h),
+            "pred": {"promedio_28": float(r.p28), "rf_categoria_distribuido": float(r.prf), "cero": 0.0},
+            "observed": int(r.real), "evaluable": bool(r.ev)} for r in g.itertuples(index=False)]
     unknown = sorted(df.loc[df["categoria"] == UNKNOWN, "sku"].unique().tolist())
     info = {"skus": int(df["sku"].nunique()), "categorias": int(g["categoria"].nunique()),
             "skus_categoria_desconocida": len(unknown)}
@@ -99,18 +135,20 @@ def recompute_recommendation(on_hand: int, in_transit: int, sum_28: Fraction, da
             "order_qty": order_qty, "order_value_assumed": order_qty * unit_cost}
 
 
-def _steps_ok(d: dict, ordered: int, received: int) -> list[str]:
+def _steps_ok(d: dict, ordered: int, received: int, origin: date) -> list[str]:
     n = "unidades base"
+    o, o_full = _dm(origin), origin.strftime("%d/%m/%Y")
+    f1, f14 = _dm(origin + timedelta(days=1)), _dm(origin + timedelta(days=HORIZON_REC))
     return [
-        (f"1. Origen: cierre del 10/07/2026 de la trayectoria simulada {d['scenario_id']} "
+        (f"1. Origen: cierre del {o_full} de la trayectoria simulada {d['scenario_id']} "
          "(plazo 7 días, revisión cada 7, seguridad 7 días)."),
-        f"2. Saldo simulado en mano al cierre del 10/07: {d['on_hand']} {n}.",
-        (f"3. En tránsito al 10/07 = pedidos emitidos hasta esa fecha ({ordered}) menos recepciones hasta "
+        f"2. Saldo simulado en mano al cierre del {o}: {d['on_hand']} {n}.",
+        (f"3. En tránsito al {o} = pedidos emitidos hasta esa fecha ({ordered}) menos recepciones hasta "
          f"esa fecha ({received}) = {d['in_transit']} {n}."),
         f"4. Posición = {d['on_hand']} + {d['in_transit']} = {d['position']} {n}.",
-        (f"5. Promedio diario de 28 días conocido al 10/07 = {d['sum_28']} {n} en {d['days_28']} días útiles "
+        (f"5. Promedio diario de 28 días conocido al {o} = {d['sum_28']} {n} en {d['days_28']} días útiles "
          f"= {d['mean_28_exact']} por día (≈ {d['mean_28']:.4f})."),
-        f"6. Pronóstico de 14 días (11/07 a 24/07) = 14 × {d['mean_28_exact']} ≈ {d['forecast_14d']:.3f} {n}.",
+        f"6. Pronóstico de 14 días ({f1} a {f14}) = 14 × {d['mean_28_exact']} ≈ {d['forecast_14d']:.3f} {n}.",
         f"7. Seguridad = 7 × {d['mean_28_exact']} ≈ {d['safety']:.3f} {n}.",
         (f"8. Objetivo = techo(21 × {d['mean_28_exact']}) = techo({d['target_raw_exact']}) = {d['target']} {n} "
          "(aritmética racional exacta, sin redondeo previo)."),
@@ -122,28 +160,47 @@ def _steps_ok(d: dict, ordered: int, received: int) -> list[str]:
     ]
 
 
-def build_recommendations(src: VerifiedSource, catalog: dict, run_id: str, signals: Signals) -> list:
-    entry, sim = src.entry, src.sim
+def build_recommendations(src: VerifiedSource | None, catalog: dict, run_id: str, signals: Signals, *,
+                          entities: list[tuple[str, float]] | None = None, snapshot: dict | None = None,
+                          origin: date | None = None, scenario_id: str | None = None) -> list:
+    """Recomendaciones de vista previa. Sin argumentos opcionales: corrida historica (G4, snapshot del fold).
+
+    Generalizacion (corridas generadas): `entities` = [(\"sku|almacen\", media_prevista)] ordenado, `snapshot` =
+    instantanea de la simulacion al cierre de `origin` (`source.load_snapshot`) y `scenario_id`. La formula del
+    techo es la misma (`recompute_recommendation`); la media prevista solo sirve de control de coherencia."""
+    historic = snapshot is None
+    if historic:
+        sim, entry = src.sim, src.entry
+        origin = date.fromisoformat(entry["cutoff"])
+        scenario_id = entry["scenario_id"]
+        df = src.forecasts
+        first = df.sort_values(["entidad", "h"]).groupby("entidad", sort=True)
+        entities = [(ent, float(grp["pred_promedio_28"].to_numpy(float)[0])) for ent, grp in first]
+        forecast_from, forecast_to = entry["target_start"], "2026-07-24"
+    else:
+        if origin is None or scenario_id is None or entities is None:
+            raise ValueError("snapshot generalizado requiere origin, scenario_id y entities")
+        sim = snapshot
+        forecast_from = (origin + timedelta(days=1)).isoformat()
+        forecast_to = (origin + timedelta(days=HORIZON_REC)).isoformat()
     index = {s: i for i, s in enumerate(sim["skus"].tolist())}
-    df = src.forecasts
-    first = df.sort_values(["entidad", "h"]).groupby("entidad", sort=True)
+    reason = SIN_SNAPSHOT_REASON if origin == date(2026, 7, 10) else sin_snapshot_reason(origin)
     docs = []
-    for ent, grp in first:
+    for ent, csv_mean in entities:
         sku, almacen = ent.split("|")
-        pred = grp["pred_promedio_28"].to_numpy(float)
         base = {
-            "run_id": run_id, "scenario_id": entry["scenario_id"], "provenance": PROVENANCE_SIM,
-            "snapshot_date": entry["cutoff"], "sku": sku, "almacen": almacen,
+            "run_id": run_id, "scenario_id": scenario_id, "provenance": PROVENANCE_SIM,
+            "snapshot_date": origin.isoformat(), "sku": sku, "almacen": almacen,
             "categoria": catalog.get(sku) or UNKNOWN, "horizon_days": HORIZON_REC,
             "lead_time_days": LEAD, "review_days": REVIEW, "safety_days": SAFETY_DAYS,
-            "currency": "PEN", "unit": "unidad base", "origin": entry["cutoff"],
-            "forecast_from": entry["target_start"], "forecast_to": "2026-07-24", "model": CHOSEN,
+            "currency": "PEN", "unit": "unidad base", "origin": origin.isoformat(),
+            "forecast_from": forecast_from, "forecast_to": forecast_to, "model": CHOSEN,
             "schema_version": SCHEMA_VERSION}
         if sku not in index:
-            doc = {**base, "status": "sin_snapshot", "reason": SIN_SNAPSHOT_REASON,
+            doc = {**base, "status": "sin_snapshot", "reason": reason,
                    **{f: None for f in NUM_FIELDS}, **dict.fromkeys(NULL_EXTRA), "transit_breakdown": None,
                    "explanation_steps": [
-                       "No hay inventario simulado al 10/07 para este producto: " + SIN_SNAPSHOT_REASON + ".",
+                       f"No hay inventario simulado al {_dm(origin)} para este producto: " + reason + ".",
                        "No se calcula posición ni pedido; el pronóstico sigue disponible en /forecasts.",
                        SIM_LABEL + "."]}
             docs.append(doc)
@@ -158,19 +215,21 @@ def build_recommendations(src: VerifiedSource, catalog: dict, run_id: str, signa
         total, days = sig
         cost = float(sim["costo"][i])
         calc = recompute_recommendation(on_hand, in_transit, total, days, cost)
-        csv_mean = float(pred[0])
-        # coherencia con el CSV historico (10 cifras significativas): sirve de control, NUNCA de entrada
+        # coherencia con la media prevista (10 cifras significativas en el CSV): control, NUNCA entrada
         if abs(calc["mean_28"] - csv_mean) > 1e-9 * max(1.0, abs(csv_mean)):
             raise ValueError(f"senal exacta incoherente con el pronostico historico de {sku}|{almacen}")
         doc = {**base, "status": "ok", "reason": None, "on_hand": on_hand, "in_transit": in_transit,
                "sum_28": fraction_text(total), "days_28": int(days),
                "mean_28_exact": fraction_text(Fraction(total) / days), "unit_cost_assumed": cost, **calc,
                "signals": {"version": signals.version, "window": [signals.window_start, signals.window_end],
-                           "training_fingerprint": signals.training_fingerprint, "csv_mean_28": csv_mean,
+                           "training_fingerprint": signals.training_fingerprint,
+                           "csv_mean_28" if historic else "forecast_mean_28": csv_mean,
                            "nota": "media exacta recalculada desde historia aprobada <= origen; el CSV T07 "
-                                   "(10 cifras) solo se usa como control de coherencia"},
+                                   "(10 cifras) solo se usa como control de coherencia" if historic else
+                                   "media exacta recalculada desde historia aprobada <= origen; la media del "
+                                   "pronostico generado solo se usa como control de coherencia"},
                "transit_breakdown": {"ordered_until_snapshot": ordered, "received_until_snapshot": received}}
-        doc["explanation_steps"] = _steps_ok(doc, ordered, received)
+        doc["explanation_steps"] = _steps_ok(doc, ordered, received, origin)
         docs.append(doc)
     return docs
 

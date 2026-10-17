@@ -12,6 +12,8 @@ from pymongo import ASCENDING
 SCHEMA_VERSION = 1
 KIND = "historical_development"
 RUN_LABEL = "Corrida histórica de desarrollo al 10/07/2026"
+GENERATED_KIND = "generated_baseline"
+GENERATED_LABEL = "Corrida de desarrollo generada por la aplicación con origen {origin}"
 PROVENANCE_SIM = "SYNTHETIC_NOT_REAL_INVENTORY"
 PROVENANCE_OBS = "OBSERVED_EXCEL"
 SIM_LABEL = "Inventario simulado con supuestos; no corresponde al inventario real de la empresa"
@@ -93,12 +95,27 @@ def validate_doc(coll: str, doc: dict) -> None:
         raise SchemaError(f"{coll}: schema_version inesperada")
     if coll == "runs" and doc["status"] not in RUN_STATUSES:
         raise SchemaError("runs: status invalido")
+    if coll == "runs" and doc["kind"] == GENERATED_KIND:
+        counts = doc.get("counts")
+        if not isinstance(counts, dict) or counts.get("backtests") != 0:
+            raise SchemaError("runs: una corrida generada no lleva backtests (counts.backtests debe ser 0)")
+        if doc["method"].get("chosen") != "promedio_28":
+            raise SchemaError("runs: metodo elegido de la corrida generada debe ser promedio_28")
     if coll == "forecasts":
         if doc["level"] not in ("sku", "categoria"):
             raise SchemaError("forecasts: level invalido")
         if set(doc["pred"]) != {"promedio_28", "rf_categoria_distribuido", "cero"}:
             raise SchemaError("forecasts: metodos de pred incompletos")
-        if any(not isinstance(v, (int, float)) or v < 0 for v in doc["pred"].values()):
+        if doc.get("run_kind") == GENERATED_KIND:
+            # corrida generada: sin observaciones (no son cero) y comparador opcional (None = no disponible)
+            if doc.get("observed") is not None or doc["evaluable"] is not False:
+                raise SchemaError("forecasts: una corrida generada no admite observed ni evaluable=true")
+            for k, v in doc["pred"].items():
+                if v is None and k == "rf_categoria_distribuido":
+                    continue
+                if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0:
+                    raise SchemaError("forecasts: pred no numerica o negativa")
+        elif any(not isinstance(v, (int, float)) or v < 0 for v in doc["pred"].values()):
             raise SchemaError("forecasts: pred no numerica o negativa")
         if doc["target_date"] > "2026-07-31":
             raise SchemaError("forecasts: fecha objetivo posterior a 2026-07-31")
