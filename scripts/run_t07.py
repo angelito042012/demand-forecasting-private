@@ -30,7 +30,7 @@ from pipeline.forecast.t05 import _actual, _wide
 from pipeline.sim import engine as eng
 
 CFG = Path("config/t07_config.json")
-CODE = ["pipeline/forecast/features.py", "pipeline/forecast/models.py", "pipeline/forecast/metrics.py",
+CODE = ["pipeline/forecast/t05.py", "pipeline/data/importer.py", "pipeline/forecast/features.py", "pipeline/forecast/models.py", "pipeline/forecast/metrics.py",
         "pipeline/forecast/baselines.py", "pipeline/forecast/t07.py", "pipeline/sim/engine.py",
         "pipeline/data/training_access.py", "pipeline/data/sources.py", "pipeline/data/catalog.py",
         "pipeline/data/daily_series.py", "pipeline/data/calendar.py", "scripts/run_t07.py"]
@@ -134,10 +134,11 @@ def predictive(db, cfg, world, sha, models_dir: Path | None, log: list):
     cfg_r2 = 30
     sku_recs, cat_recs = rs(sku_stats), rs(cat_stats)
     sel = t7.select_candidate(sku_recs, cfg["seleccion_predictiva_provisional"], folds)
+    cov = {"sku": t7.coverage_records(sku_stats, folds), "categoria": t7.coverage_records(cat_stats, folds)}
     cols = ["fold", "entidad", "cohorte", "fecha", "h", "evaluable", "real", "pred_promedio_28", "pred_referencia_fija_0531",
             "pred_rf_distribuido"]
     # nota: promedio_28 y referencia fija son constantes diarias; se guarda el valor diario
-    return {"sku": sku_recs, "categoria": cat_recs, "seleccion": sel, "folds": info,
+    return {"sku": sku_recs, "categoria": cat_recs, "seleccion": sel, "folds": info, "cobertura": cov,
             "predicciones": pd.DataFrame(preds_rows, columns=cols)}
 
 
@@ -225,10 +226,12 @@ def diffs(results: dict, key: str, metrics_list) -> dict:
         for ref in ("referencia_fija", "promedio_28"):
             if pol == ref:
                 continue
-            base = results[(L, S, ref)]["total"]
-            out[f"L{L}_S{S}|{pol}|vs_{ref}"] = {
-                m: {"abs": (None if mt["total"][m] is None or base[m] is None else mt["total"][m] - base[m]),
-                    "rel": eng.rel_diff(mt["total"][m], base[m])} for m in metrics_list}
+            for part in ("total", "primaria", "historia_corta"):
+                base = results[(L, S, ref)][part]
+                cur = mt[part]
+                out[f"L{L}_S{S}|{pol}|vs_{ref}|{part}"] = {
+                    m: {"abs": (None if cur[m] is None or base[m] is None else cur[m] - base[m]),
+                        "rel": eng.rel_diff(cur[m], base[m])} for m in metrics_list}
     return out
 
 
@@ -291,7 +294,7 @@ def render(r, cfg, man) -> str:
           f"Costos: fuente del precio {rep['costo_fuentes']}. Fallbacks RF→promedio_28 (filas SKU-revisión-escenario): {rep['fallback_rf_a_promedio_filas']}. "
           "Costos, holding (20 %/365), lead time y seguridad son supuestos; 07/06 sin evento de demanda; demanda proxy exógena.", "",
           "### Escenario principal L=7, S=7 (total)", "",
-          "| Política | Demanda elegible | Atendidas | Perdidas | Fill rate | Días-SKU con faltante | Stock medio/día | Stock final | Pedidos (uds.) | Tránsito final | Holding supuesto | Compras desembolsadas | Costo consumido | Valor stock final |",
+          "| Política | Demanda elegible | Atendidas | Perdidas | Fill rate | Tasa de días-SKU con faltante | Stock medio/día | Stock final | Pedidos (uds.) | Tránsito final | Holding supuesto | Compras desembolsadas | Costo consumido | Valor stock final |",
           "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for pol in POLICIES:
         t = r["sim"][(7, 7, pol)]["total"]
@@ -314,9 +317,46 @@ def render(r, cfg, man) -> str:
         for ref in ("referencia_fija", "promedio_28"):
             if pol == ref:
                 continue
-            x = d[f"L7_S7|{pol}|vs_{ref}"]
+            x = d[f"L7_S7|{pol}|vs_{ref}|total"]
             L.append(f"| {pol} | {ref} | {_f(x['fill_rate']['abs'], 4)} | {_f(x['perdidas_unidades']['abs'], 0)} ({_f(x['perdidas_unidades']['rel'], 3)}) | "
                      f"{_f(x['stock_medio_unidades_por_dia']['rel'], 3)} | {_f(x['compras_desembolsadas_supuesto']['rel'], 3)} | {_f(x['valor_stock_final_supuesto']['rel'], 3)} |")
+    L += ["", "### Servicio frente a inventario: rf_categoria_distribuido vs promedio_28 en los nueve escenarios (total)", "",
+          "| L | S | Δ fill rate | Δ stock medio (rel) | Δ compras (rel) | Δ perdidas (rel) |", "|---|---|---|---|---|---|"]
+    for Lt in cfg["simulacion"]["matriz"]["L"]:
+        for S in cfg["simulacion"]["matriz"]["S"]:
+            x = d[f"L{Lt}_S{S}|rf_categoria_distribuido|vs_promedio_28|total"]
+            L.append(f"| {Lt} | {S} | {_f(x['fill_rate']['abs'], 4)} | {_f(x['stock_medio_unidades_por_dia']['rel'], 3)} | "
+                     f"{_f(x['compras_desembolsadas_supuesto']['rel'], 3)} | {_f(x['perdidas_unidades']['rel'], 3)} |")
+    L += ["", "Lectura: la Parte A muestra que rf_distribuido es peor que promedio_28 como pronóstico y sobrepronostica "
+          "(sesgo ≈ +17 % en H=14); su mayor fill rate en la simulación coincide con más stock y más compras, de modo que "
+          "**no** puede atribuirse a un mejor pronóstico: es compatible con simplemente pedir más. Sin una comparación a stock "
+          "o compras equivalentes, la ventaja de servicio no es concluyente.", ""]
+    L += ["### Escenario principal por cohorte inicial", "",
+          "| Cohorte | Política | Demanda elegible | Fill rate | Perdidas | Stock medio/día | Compras desembolsadas |",
+          "|---|---|---|---|---|---|---|"]
+    for part in ("primaria", "historia_corta"):
+        for pol in POLICIES:
+            t = r["sim"][(7, 7, pol)][part]
+            L.append(f"| {part} | {pol} | {t['demanda_proxy_elegible_unidades']:.0f} | {_f(t['fill_rate'], 4)} | "
+                     f"{t['perdidas_unidades']:.0f} | {t['stock_medio_unidades_por_dia']:.0f} | {t['compras_desembolsadas_supuesto']:.0f} |")
+    L += ["", "### Parte A: historia corta (SKU, universo común, acum14, agregado)", "",
+          "| Método | n | WAPE | Sesgo | Unidades obs. |", "|---|---|---|---|---|"]
+    for m in t7.METHODS_SKU:
+        x = next((q for q in r["pred"]["sku"] if (q["fold"], q["cohorte"], q["metodo"], q["vista"])
+                  == ("AGREGADO", "historia_corta", m, "acum14")), None)
+        if x and x["n"]:
+            L.append(f"| {m} | {x['n']} | {_f(x['WAPE'], 4)} | {_f(x['sesgo_acumulado'], 1)} | {x['unidades_observadas']:.0f} |")
+    L += ["", "### Cobertura de la referencia fija (no existe para SKU posteriores al 31/05)", "",
+          "| Fold | Cohorte | Entidades con predicción | Universo común |", "|---|---|---|---|"]
+    for c in r["pred"]["cobertura"]["sku"]:
+        if c["metodo"] == "referencia_fija_0531":
+            L.append(f"| {c['fold']} | {c['cohorte']} | {c['entidades_con_prediccion']} | {c['comunes']} |")
+    L += ["", "### Pesos y conservación por revisión de la simulación", "",
+          "| Origen | Cat. peso 28d / hist. / uniforme | Conservación cat→SKU |", "|---|---|---|"]
+    for v in r["sim_rep"]["revisiones"]:
+        w = v["pesos"]
+        L.append(f"| {v['dia']} | {w['categorias_peso_28d']}/{w['categorias_fallback_historico']}/"
+                 f"{w['categorias_fallback_uniforme']} | {v['conservacion_cat_a_sku']:.1e} |")
     L += ["", "Reducir compras con más faltantes o distinto stock terminal **no** es ahorro ni utilidad; los desembolsos y los costos consumidos se muestran por separado. "
           "Detalle por cohorte y por escenario en T07_METRICAS.json.", "",
           "## Verificaciones", "",
@@ -325,6 +365,10 @@ def render(r, cfg, man) -> str:
           f"- Tiempo total: {man['segundos_totales']:.0f} s.", "",
           "## Limitaciones", "",
           "- Folds y simulación de desarrollo con meses ya usados en T05/T06; sin independencia respecto de la elección de métodos.",
+          "- Los hashes de archivos .csv.gz/.npz incluyen metadatos de compresión; la repetición idéntica se comprobó en memoria dentro del mismo proceso.",
+          "- La base temporal de las pruebas con datos reales contiene también agosto; la ruta de entrenamiento lo bloquea (convención de ingeniería, no control de seguridad) y los resultados no lo usan.",
+          "- El RF por categoría usa solo 36 series; las features mes/día del mes salen del rango de entrenamiento al predecir y pueden explicar parte de su peor desempeño (no investigado).",
+          "- El almacén se agrega por categoría (un solo almacén en estos datos).",
           "- Demanda proxy = ventas observadas, posiblemente censuradas por stock real desconocido; sin backorders; 07/06 sin demanda conocida.",
           "- Costos, holding, lead time y seguridad supuestos; sin MOQ ni proveedores reales; un almacén; universo fijo al 31/05.",
           "- La simulación no demuestra impacto en la MYPE ni autoriza compras."]
@@ -350,6 +394,7 @@ def main(argv=None) -> int:
                         and np.array_equal(r["arrays"][k].ordered, r2["arrays"][k].ordered) for k in r["arrays"]))
     r["diffs"] = diffs(r["sim"], "total", KEYM)
     ident = max(abs(m["identidad_valor"]) for m in r["sim"].values())
+    assert ident < 1e-6, f"identidad de valor violada: {ident}"
     # artefactos privados
     r["pred"]["predicciones"].to_csv(args.out / "predicciones_folds.csv.gz", index=False, float_format="%.10g")
     np.savez_compressed(args.out / "simulacion_series.npz", **{
@@ -360,7 +405,7 @@ def main(argv=None) -> int:
         "etiqueta": LABEL, "agosto_usado": False, "commit_protocolo": args.commit_protocolo,
         "config_sha256": sha, "codigo_sha256": code_hash(), "git_commit": __import__("subprocess").run(
             ["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip(),
-        "repeticion_identica": same, "conservacion_ok": True, "identidad_valor_max_abs": ident,
+        "repeticion_identica": same, "conservacion_ok": bool(ident < 1e-6), "identidad_valor_max_abs": ident, "identidad_valor_tolerancia": 1e-6,
         "segundos_totales": time.perf_counter() - t0, "semilla_rf": cfg["rf_categoria"]["parametros"]["random_state"],
         "artefactos": {n: {"sha256": sha256_file(args.out / n)} for n in ("predicciones_folds.csv.gz", "simulacion_series.npz")},
         "modelos": {p.name: sha256_file(p) for p in sorted((args.out / "modelos").glob("*.joblib"))},
@@ -370,7 +415,8 @@ def main(argv=None) -> int:
     }
     sim_json = {f"L{L}_S{S}|{pol}": mt for (L, S, pol), mt in r["sim"].items()}
     DOCS.joinpath("T07_METRICAS.json").write_text(json.dumps(
-        {"predictivo": {"sku": r["pred"]["sku"], "categoria": r["pred"]["categoria"], "seleccion": r["pred"]["seleccion"]},
+        {"predictivo": {"sku": r["pred"]["sku"], "categoria": r["pred"]["categoria"], "seleccion": r["pred"]["seleccion"],
+                         "cobertura": r["pred"]["cobertura"]},
          "simulacion": sim_json, "diferencias": r["diffs"], "etiqueta": LABEL}, ensure_ascii=False, indent=1, default=str) + "\n",
         encoding="utf-8")
     DOCS.joinpath("T07_MANIFIESTO.json").write_text(json.dumps(man, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")

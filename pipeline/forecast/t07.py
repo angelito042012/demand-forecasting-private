@@ -180,6 +180,16 @@ def summarize(stats_by_fold: dict, folds: list[str], r2_min_n: int = 30) -> list
     return recs
 
 
+def coverage_records(stats_by_fold: dict, folds: list[str]) -> list[dict]:
+    """Cobertura por fold/cohorte (universo comun) y de metodos no-core (p. ej. referencia fija)."""
+    out = []
+    for f in folds:
+        for key, v in stats_by_fold[f].items():
+            if "cobertura" in key:
+                out.append({"fold": f, "cohorte": key[0], "metodo": key[1] if len(key) == 3 else "universo_comun", **v})
+    return out
+
+
 def select_candidate(recs: list[dict], rule: dict, folds: list[str]) -> dict:
     c = rule["criterio_primario"]
     view = f"acum{c['H']}"
