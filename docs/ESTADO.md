@@ -25,15 +25,24 @@ Sistema Demand Forecasting para la MYPE, entrega el 23/10/2026. Claude Code ejec
 - **Pruebas**: suite completa con `RUN_REALDATA=1`: 65 aprobadas, 0 omitidas, 1 aviso (httpx/Starlette), 69 s; `ruff` limpio en backend, pipeline, tests y scripts nuevos. Salud de la API con v2: 200 ok (cliente de prueba).
 - **Hallazgos de datos clave** (medidos, ver perfil): un solo almacén y unidad UND; 3 días enmascarados sin registros en los Excel; 88 % de los días-par posteriores a la primera venta son cero observado; 2 568 de 3 758 pares son intermitentes y 729 irregulares; 357 SKU con <56 días de historia.
 
+## Entrega vigente (17/10/2026, Claude): T05 baselines y validación temporal, pendiente de revisión de Codex
+
+- **Aceptado por Codex antes de esta entrega**: R04, base v2 (activa) y T04 (REVISION_CODEX_03.md).
+- **Detalles menores cerrados**: `unidad_base` en el fingerprint; catálogo con `start` y máscara de la ventana de ventas; céntimos sin truncado (error si hay más de dos decimales); `SIN_REGISTROS_DIA` en diccionario y conservado en el agregado por categoría; remediación no destructiva en `docs/REMEDIACION_FUENTES.md`. Contenido de las series T04 sin cambios (mismos hashes); el fingerprint de entrenamiento cambió por incluir `unidad_base` (T04_FIRMA.json actualizado).
+- **T05**: protocolo y configuración congelados y comprometidos (d763bed) antes de evaluar: `docs/T05_PROTOCOLO.md`, `config/t05_config.json`. Cinco folds de 7 días, cuatro baselines (cero, último día, naive semanal con fallback contabilizado, promedio 28 días), niveles SKU y categoría, cohorte primaria/historia corta/nuevos. Código en `pipeline/forecast/` y `scripts/run_t05.py`. Resultados: `docs/T05_RESULTADOS.md`, `T05_METRICAS.json`, `T05_MANIFIESTO.json`; predicciones fila a fila en `artifacts/private/t05/` (ignorado). Repetición idéntica verificada; agosto no se leyó.
+- **Resultado, tal como salió**: en SKU-almacén diario (cohorte primaria, universo común, 104 533 filas) ningún baseline distinto de cero supera al control cero (WAPE cero 1,000; último día 1,431; naive 1,627; promedio 28 d 1,535). En el acumulado a 7 días solo promedio_28 queda marginalmente por debajo (0,992 frente a 1,000). En categoría los tres baselines superan al cero (WAPE diario 0,40–0,44 frente a 1,0; R² 0,76–0,83). Por la regla fijada de antemano la referencia para T06 es **ultimo_dia** (SKU, diario), pero su ventaja sobre el cero no existe a ese nivel: T06 debe comparar también contra el control cero y el acumulado a 7 días. Es un hallazgo descriptivo de cinco semanas con ventas posiblemente censuradas; no sustenta mejora de inventario.
+- **Angular**: `scripts/prepare-frontend.ps1` funcionó (Angular CLI 21.2.27, Node 24.19.0, npm 11.17.0); `npm run build` compila (bundle principal 214 kB); `frontend/` con `package-lock.json` versionados. Sin pantallas; `ng test` no ejecutado.
+- **Pruebas**: suite completa con `RUN_REALDATA=1`: 83 aprobadas, 0 omitidas, 1 aviso (httpx/Starlette), 71 s (log en `artifacts/private/t05/pytest_full.log`). `ruff` limpio en backend, pipeline, tests y scripts nuevos.
+
 ## Pendiente
 
-- T05 pendiente: aplicar ETAPA_03_CLAUDE.md. Cerrar los detalles menores de ventana/catalogo, unidad en firma, precisión monetaria y diccionario como parte del inicio de esa entrega. No se entrenaron modelos ni se evaluó agosto.
-- Límites de R04: sin procedimiento de resolución de conflictos ni detección de líneas ausentes en un archivo reemplazado; la comprobación contra el manifiesto exacto de líneas sigue pendiente. Línea de recarga en v2 validada solo por no-op de sha256 (la idempotencia línea a línea está cubierta por pruebas en bases temporales).
-- Angular: `npm ping` al registro funciona hoy (PONG 661 ms); no se intentó instalar. frontend/ sigue ausente.
+- Revisión de Codex de T05 y encargo T06 (ML). No se entrenó Random Forest ni boosting; no se evaluó agosto.
+- Límites: un solo almacén/unidad; 5 folds de una semana; la cohorte primaria cuenta ceros observados como utilizables (según protocolo); sin inventario real; una fuente aprobada por mes; resolución de conflictos no implementada.
+- Angular: pantallas y `ng test` pendientes.
 
 ## Entorno
 
-Python 3.12 con dependencias locales; Git con checkpoints locales (ver TRASPASO.md). Contenedor df-mongo-dev activo en 127.0.0.1:27017 con bases demand_forecasting_dev (v1) y demand_forecasting_v2 (activa). Sin cuentas Azure/Atlas. API sin autenticación completa.
+Python 3.12; Git con checkpoints locales (ver TRASPASO.md). Contenedor df-mongo-dev activo con demand_forecasting_dev (v1) y demand_forecasting_v2 (activa). Sin cuentas Azure/Atlas. API sin autenticación completa.
 
 ## Decisiones que no deben preguntarse otra vez
 

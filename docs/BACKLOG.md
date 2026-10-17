@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al 17/10: R04, base v2 y T04 aceptados para las fuentes canónicas tras REVISION_CODEX_03.md. T01 parcial por Angular. Próximo incremento: T05 según ETAPA_03_CLAUDE.md; las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
+Estado al 17/10 (tarde): T05 ejecutado (baselines y folds, marzo-julio) y pendiente de revisión de Codex; Angular base compila. Siguiente: T06 tras la revisión. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
 
 T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04 está aceptado; T05 y etapas posteriores siguen pendientes. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 

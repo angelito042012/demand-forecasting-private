@@ -153,3 +153,11 @@ Reemplazar el registro actual con hechos comprobados al cambiar de etapa o ejecu
 Campos mínimos: ejecutor; fecha; tarea; último paso terminado; paso en curso; archivos; commit/checkpoint; comandos y resultado; evidencia; base activa; procesos útiles; bloqueos; siguiente acción exacta; pendiente de revisión.
 
 No escribir claves, tokens o URI con credenciales. Si una prueba no se ejecutó o un proceso dejó de ser observable, indicarlo.
+
+## Entrega 17/10/2026 (Claude): T05 baselines y validación temporal (pendiente de revisión de Codex)
+
+- Código: `pipeline/forecast/{baselines,metrics,t05}.py`, `scripts/run_t05.py`, `config/t05_config.json`; detalles menores de datos en `catalog.py`, `training_access.py`, `daily_series.py`, `build_t04.py`.
+- Protocolo congelado en d763bed antes de la primera ejecución; sin enmiendas. Cinco folds, cuatro baselines, SKU y categoría.
+- Pruebas nuevas: 14 en tests/forecast (baselines, métricas ponderadas, cohortes, máscara, fallback, ausencia de fuga, repetición) y 4 de datos. Suite completa: 83 aprobadas.
+- Resultado: SKU diario, ningún baseline vence al cero; categoría, los tres lo vencen. Referencia por regla previa: ultimo_dia. Ver T05_RESULTADOS.md.
+- Angular 21.2.27 generado y compilado en frontend/ (sin pantallas ni ng test).

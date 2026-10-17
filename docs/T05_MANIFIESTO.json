@@ -1,0 +1,181 @@
+{
+  "generado_lima": "2026-10-17 08:27",
+  "base_de_datos": "demand_forecasting_v2",
+  "config_sha256": "9dd450a6dafbd94758b5980fa24b70fcdd04d2808e7c768aaedefcdc7a02c222",
+  "commit_protocolo": "d763bed",
+  "codigo_sha256": "0b9ec57897682df1ff5b83f312d9904acc318ff41b0de1a8b6e7f22a341ee916",
+  "codigo_archivos": [
+    "pipeline/forecast/baselines.py",
+    "pipeline/forecast/metrics.py",
+    "pipeline/forecast/t05.py",
+    "pipeline/data/training_access.py",
+    "pipeline/data/sources.py",
+    "pipeline/data/catalog.py",
+    "pipeline/data/daily_series.py",
+    "pipeline/data/calendar.py",
+    "scripts/run_t05.py"
+  ],
+  "git_commit": "0cd01595e478c90acacf40cdec68d5c85494d0ca",
+  "git_sucio": false,
+  "repeticion_identica": true,
+  "agosto_usado": false,
+  "predicciones": {
+    "filas": 125391,
+    "sha256_archivo": "e972b5b442929a80d65540c1cfe9023f79210d2bab27cbf3c6d21cff7f2cc0a5",
+    "sha256_contenido": "a9054980651a01e8234592367df6db96f204ad6a90dad365b5dce00b49226f42"
+  },
+  "folds": {
+    "F1": {
+      "corte": "2026-05-31",
+      "fingerprint": "9fa7f64e61d691ba4e3774ff000b572ed8918bfbf617836baf6a755beb177f23",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        }
+      ],
+      "dias_evaluables": 6,
+      "dias_no_evaluables": [
+        "2026-06-07"
+      ]
+    },
+    "F2": {
+      "corte": "2026-06-14",
+      "fingerprint": "5bcca4c1be49d350fb0d5cc5d6f0635900a69eccfb35b0c4325a2a76a3a60410",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        }
+      ],
+      "dias_evaluables": 7,
+      "dias_no_evaluables": []
+    },
+    "F3": {
+      "corte": "2026-06-28",
+      "fingerprint": "64b79cfb621356ef88e91367f7ace804dca9eb867335940371b3fe4dc3730d00",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        }
+      ],
+      "dias_evaluables": 7,
+      "dias_no_evaluables": []
+    },
+    "F4": {
+      "corte": "2026-07-12",
+      "fingerprint": "590ec26ce58fbc80c6ee17ed70070ecccd5cc2198a7975ef0da062942cae7695",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        },
+        {
+          "mes": "2026-07",
+          "archivo": "julio.xlsx",
+          "sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae"
+        }
+      ],
+      "dias_evaluables": 7,
+      "dias_no_evaluables": []
+    },
+    "F5": {
+      "corte": "2026-07-24",
+      "fingerprint": "d31225df74d2dc2ad95b51ff28043cd705c48c53606f892c2b129b260c3606b7",
+      "fuentes": [
+        {
+          "mes": "2026-03",
+          "archivo": "marzo.xlsx",
+          "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+        },
+        {
+          "mes": "2026-04",
+          "archivo": "abril.xlsx",
+          "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+        },
+        {
+          "mes": "2026-05",
+          "archivo": "mayo.xlsx",
+          "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+        },
+        {
+          "mes": "2026-06",
+          "archivo": "junio.xlsx",
+          "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+        },
+        {
+          "mes": "2026-07",
+          "archivo": "julio.xlsx",
+          "sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae"
+        }
+      ],
+      "dias_evaluables": 7,
+      "dias_no_evaluables": []
+    }
+  },
+  "versiones": {
+    "python": "3.12.14",
+    "pandas": "2.3.3",
+    "numpy": "2.5.4"
+  }
+}
