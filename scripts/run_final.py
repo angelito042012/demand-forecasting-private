@@ -5,6 +5,7 @@
     python -m scripts.run_final evaluate --confirm-frozen-selection [--db ...]       # lee agosto SOLO con el sello commiteado
     python -m scripts.run_final audit    [--out ...]                                 # sin MongoDB ni reentrenamiento
     python -m scripts.run_final report   [--out ...]                                 # docs/T12_RESULTADOS.md, T12_METRICAS.json, T12_MANIFIESTO.json
+    python -m scripts.run_final reconcile [--out ...]                              # R11: solo auditoria+reporte sobre un paquete ya calculado
     python -m scripts.run_final status   [--out ...]
 
 La base se usa en SOLO LECTURA. No toca la base v1/v2, los Excel, las cargas ni el puntero historico.
@@ -28,7 +29,7 @@ DEFAULT_OUT = Path("artifacts/private/final")
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("fase", choices=["verify", "prepare", "evaluate", "audit", "report", "status"])
+    ap.add_argument("fase", choices=["verify", "prepare", "evaluate", "audit", "report", "reconcile", "status"])
     ap.add_argument("--db", default="demand_forecasting_v2")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--confirm-frozen-selection", action="store_true", help="solo evaluate: confirma la seleccion congelada")
@@ -43,6 +44,10 @@ def main(argv=None) -> int:
             res = run_audit(args.out)
             print(json.dumps({"ok": res["ok"], "predictivo_ok": res["predictivo"]["ok"], "simulacion_ok": res["simulacion"]["ok"]}))
             return 0 if res["ok"] else 1
+        if args.fase == "reconcile":
+            from pipeline.final.reconcile import reconcile
+            print(json.dumps(reconcile(args.out)))
+            return 0
         if args.fase == "report":
             write_report(args.out)
             print("reporte escrito en docs/T12_RESULTADOS.md, T12_METRICAS.json y T12_MANIFIESTO.json")

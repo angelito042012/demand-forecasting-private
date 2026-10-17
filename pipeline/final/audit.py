@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from pipeline.final import core
-from pipeline.final.runner import _load_npz, sha_bytes
+from pipeline.final.runner import StateFile, _load_npz, sha_bytes
 
 POLICIES = core.POLICIES
 TOL = 1e-9
@@ -129,6 +129,23 @@ def audit_simulation(out: Path, sim_json: dict) -> dict:
 
 
 def run_audit(out: Path) -> dict:
+    """Fase `auditoria`: registra inicio/fin/error; si no aprueba, la fase queda en error y `completa=false`."""
+    out = Path(out)
+    store = StateFile(out)
+    store._begin("auditoria")
+    try:
+        res = _run_audit(out)
+    except BaseException as exc:
+        store._fail("auditoria", exc)
+        raise
+    if res["ok"]:
+        store._end("auditoria", auditoria_sha256=sha_bytes(out / "auditoria.json"), combinaciones=res["simulacion"]["combinaciones"])
+    else:
+        store._fail("auditoria", "la auditoria no aprobo; ver auditoria.json")
+    return res
+
+
+def _run_audit(out: Path) -> dict:
     out = Path(out)
     state = json.loads((out / "estado.json").read_text(encoding="utf-8"))
     man = json.loads((out / "preparacion" / "manifiesto_preparacion.json").read_text(encoding="utf-8"))

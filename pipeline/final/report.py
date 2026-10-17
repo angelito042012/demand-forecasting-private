@@ -9,7 +9,15 @@ import json
 from pathlib import Path
 
 from pipeline.final import core
-from pipeline.final.runner import ROOT, env_info, git, now_lima
+from pipeline.final.runner import (
+    ROOT,
+    FinalGateError,
+    StateFile,
+    env_info,
+    git,
+    now_lima,
+    sha_bytes,
+)
 
 POL = core.POLICIES
 
@@ -131,7 +139,7 @@ def render(pred: dict, sim: dict, man: dict, state: dict, aud: dict, cfg: dict) 
           f"- Auditoría separada (recomputa desde predicciones selladas y reales guardados, sin reentrenar): **{'aprobada' if aud['ok'] else 'NO aprobada'}**; "
           f"{aud['simulacion']['combinaciones']} combinaciones con balances re-verificados; identidad de valor máx. {sim['identidad_valor_max_abs']:.2e}.",
           f"- Sello anterior a la lectura de agosto: {aud['sello_anterior_a_lectura_agosto']}. Fingerprint de entrenamiento: `{man['fingerprint_entrenamiento']}`.",
-          "- Fases: " + ", ".join(f"{k}={v.get('estado')}" for k, v in state["fases"].items()) + ".", "",
+          "- Fases de cálculo: " + ", ".join(f"{k}={v.get('estado')}" for k, v in state["fases"].items() if k not in ("auditoria", "reporte")) + ".", "",
           "## Limitaciones", "",
           "- Un solo bloque de 21 días: sin intervalo de confianza ni prueba de tres folds; los resultados no son extrapolables por sí solos.",
           "- Demanda proxy = ventas observadas, posiblemente censuradas por stock real desconocido; sin backorders.",
@@ -147,7 +155,6 @@ def build_manifest(out: Path, man: dict, state: dict, aud: dict) -> dict:
               "reales_bloque.npz", "ventas_agosto_min.csv.gz", "predictivo.json", "simulacion.json", "simulacion_series.npz", "auditoria.json"):
         p = out / n
         if p.exists():
-            from pipeline.final.runner import sha_bytes
             files[n] = {"bytes_sha256": sha_bytes(p), "bytes": p.stat().st_size}
     return {"version": "t12-1", "generado_lima": now_lima(), "git_commit": git("rev-parse", "HEAD"), "entorno": env_info(),
             "sello_sha256": man["sello_sha256"], "seleccion_congelada_sha256": man["seleccion_congelada_sha256"],
@@ -161,7 +168,28 @@ def build_manifest(out: Path, man: dict, state: dict, aud: dict) -> dict:
 
 
 def write_report(out: Path, docs: Path = ROOT / "docs") -> dict:
+    """Fase `reporte`: exige la auditoria aprobada; registra inicio/fin/error. Sin auditoria valida no hay reporte valido."""
     out = Path(out)
+    store = StateFile(out)
+    store._begin("reporte")
+    try:
+        if not store.done("auditoria") or not json.loads((out / "auditoria.json").read_text(encoding="utf-8")).get("ok"):
+            raise FinalGateError("el reporte exige la auditoria completa y aprobada")
+        manifest = _write_report(out, docs)
+    except BaseException as exc:
+        store._fail("reporte", exc)
+        raise
+    store._end("reporte", resultados_sha256=sha_bytes(docs / "T12_RESULTADOS.md"), metricas_sha256=sha_bytes(docs / "T12_METRICAS.json"))
+    # el manifiesto versionado refleja el estado final (siete fases); su hash no forma parte del checkpoint
+    man = json.loads((out / "preparacion" / "manifiesto_preparacion.json").read_text(encoding="utf-8"))
+    aud = json.loads((out / "auditoria.json").read_text(encoding="utf-8"))
+    manifest = build_manifest(out, man, store.state, aud)
+    manifest["correcciones"] = store.state.get("correcciones", [])
+    (docs / "T12_MANIFIESTO.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1, default=str) + "\n", encoding="utf-8")
+    return manifest
+
+
+def _write_report(out: Path, docs: Path) -> dict:
     pred = json.loads((out / "predictivo.json").read_text(encoding="utf-8"))
     sim = json.loads((out / "simulacion.json").read_text(encoding="utf-8"))
     man = json.loads((out / "preparacion" / "manifiesto_preparacion.json").read_text(encoding="utf-8"))

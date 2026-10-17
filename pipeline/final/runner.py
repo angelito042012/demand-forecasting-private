@@ -96,20 +96,17 @@ def _load_npz(path: Path) -> dict:
         return {k: z[k] for k in z.files}
 
 
-class FinalRun:
-    def __init__(self, db, out_dir: Path, *, seal_path: Path = SEAL_PATH, require_commit: bool = True):
-        self.db, self.out = db, Path(out_dir)
+class StateFile:
+    """Estado y checkpoints de las siete fases (`estado.json`). Lo comparten el runner y las fases que no usan MongoDB
+    (auditoria y reporte): inicio/fin/error/intentos de cada fase y `completa` solo si las siete estan completas."""
+
+    def __init__(self, out_dir: Path):
+        self.out = Path(out_dir)
         self.out.mkdir(parents=True, exist_ok=True)
-        (self.out / "preparacion").mkdir(exist_ok=True)
-        self.seal_path, self.require_commit = Path(seal_path), require_commit
         self.state_path = self.out / "estado.json"
         self.state = (json.loads(self.state_path.read_text(encoding="utf-8")) if self.state_path.exists()
                       else {"version": VERSION, "fases": {}, "eventos": [], "completa": False})
-        self.cfg = load_frozen_config()
-        self.t07 = json.loads((ROOT / "config" / "t07_config.json").read_text(encoding="utf-8"))
-        self.t07_sha = sha_bytes(ROOT / "config" / "t07_config.json")    # igual que T07: hash de bytes del archivo
 
-    # ------------------------------------------------------------------ estado / checkpoints
     def _save(self) -> None:
         _write_json(self.state_path, self.state)
 
@@ -120,6 +117,7 @@ class FinalRun:
     def _begin(self, fase: str) -> None:
         f = self.state["fases"].setdefault(fase, {})
         f.update({"estado": "en_curso", "inicio": now_lima(), "intentos": f.get("intentos", 0) + 1})
+        f.pop("error", None)
         self.state["completa"] = False
         self._save()
 
@@ -128,14 +126,32 @@ class FinalRun:
         self.state["completa"] = all(self.state["fases"].get(p, {}).get("estado") == "completa" for p in PHASES)
         self._save()
 
-    def _fail(self, fase: str, exc: BaseException) -> None:
+    def _fail(self, fase: str, exc: BaseException | str) -> None:
         f = self.state["fases"].setdefault(fase, {})
-        f.update({"estado": "error", "fin": now_lima(), "error": f"{type(exc).__name__}: {str(exc)[:300]}"})
+        msg = exc if isinstance(exc, str) else f"{type(exc).__name__}: {str(exc)[:300]}"
+        f.update({"estado": "error", "fin": now_lima(), "error": msg})
         self.state["completa"] = False
         self._save()
 
     def done(self, fase: str) -> bool:
         return self.state["fases"].get(fase, {}).get("estado") == "completa"
+
+    def correction(self, motivo: str, **extra) -> None:
+        """Registra una correccion tecnica POSTERIOR (sin tocar fechas ni hashes de las fases originales)."""
+        self.state.setdefault("correcciones", []).append({"t": now_lima(), "git_commit_base": git("rev-parse", "HEAD"),
+                                                           "motivo": motivo, **extra})
+        self._save()
+
+
+class FinalRun(StateFile):
+    def __init__(self, db, out_dir: Path, *, seal_path: Path = SEAL_PATH, require_commit: bool = True):
+        super().__init__(out_dir)
+        self.db = db
+        (self.out / "preparacion").mkdir(exist_ok=True)
+        self.seal_path, self.require_commit = Path(seal_path), require_commit
+        self.cfg = load_frozen_config()
+        self.t07 = json.loads((ROOT / "config" / "t07_config.json").read_text(encoding="utf-8"))
+        self.t07_sha = sha_bytes(ROOT / "config" / "t07_config.json")    # igual que T07: hash de bytes del archivo
 
     # ------------------------------------------------------------------ 1. verificacion
     def verify(self) -> dict:
