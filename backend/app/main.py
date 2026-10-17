@@ -11,6 +11,7 @@ from backend.app.routers import (
     backtests,
     forecasts,
     imports,
+    jobs,
     recommendations,
     runs,
     sales,
