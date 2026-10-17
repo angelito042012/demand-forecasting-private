@@ -72,7 +72,6 @@ def profile(data, df, pairs, cats, inter, db) -> dict:
     mask = {d.isoformat() for d in EXCLUDED_DATES}
     by_day = df.groupby(df["fecha"].dt.strftime("%Y-%m-%d")).size()
     no_sales = [d for d in cal if d not in by_day.index and d not in mask]
-    mask_with_rows = sorted(d for d in mask if d in by_day.index)
     df["mes"] = df["fecha"].dt.strftime("%Y-%m")
     months = {}
     for m, g in df.groupby("mes"):
@@ -88,7 +87,7 @@ def profile(data, df, pairs, cats, inter, db) -> dict:
     hist = (pd.Timestamp(CUTOFF) - first["f"]).dt.days + 1
     first_by_month = first["f"].dt.strftime("%Y-%m").value_counts().sort_index().to_dict()
     nuevos = int((first["f"] > pd.Timestamp(NEW_PRODUCT_AFTER)).sum())
-    non_mask = pairs[pairs["estado"] != ds.MASCARA]
+    non_mask = pairs[~pairs["estado"].isin(ds.NO_USABLE)]
     zero_share = float((non_mask["estado"] == ds.CERO).mean())
     long_hist = first.loc[hist >= 56, ["sku", "almacen"]]
     nm_long = non_mask.merge(long_hist, on=["sku", "almacen"])
@@ -110,7 +109,7 @@ def profile(data, df, pairs, cats, inter, db) -> dict:
                     "categorias_catalogo": len(set(data.catalog.values())),
                     "dias_calendario": len(cal), "dias_enmascarados": len(data.excluded_days),
                     "dias_sin_registro_no_mascara": no_sales,
-                    "dias_enmascarados_con_filas_en_base": mask_with_rows},
+                    "filas_en_dias_enmascarados_omitidas": data.omitted_excluded_rows},
         "meses": months,
         "unidades": {"unidad_base": df["unidad"].value_counts().to_dict(),
                      "cantidades_no_enteras": int((df["qty"] % 1 != 0).sum()),
@@ -152,7 +151,7 @@ def render_profile(p: dict, sig: dict) -> str:
          f"- Calendario natural: {t['dias_calendario']} dias, {t['dias_enmascarados']} enmascarados (03/04, 12/04, 07/06). "
          f"Filas de venta omitidas por mascara: {t['filas_omitidas_por_mascara']}. "
          f"Dias sin ningun registro y no enmascarados: {t['dias_sin_registro_no_mascara'] or 'ninguno'}. "
-         f"Enmascarados que si tienen filas en la base: {t['dias_enmascarados_con_filas_en_base'] or 'ninguno (no hay registros en los Excel esos dias)'}.", "",
+         f"Filas en dias enmascarados: {t['filas_en_dias_enmascarados_omitidas']} (filas de venta fechadas en dias enmascarados halladas en la base).", "",
          "| Mes | Lineas | SKU | Unidades | Importe (S/) | Dias con venta / calendario | Sin registro (no masc.) | Enmascarados |",
          "|---|---|---|---|---|---|---|---|"]
     for m, v in p["meses"].items():

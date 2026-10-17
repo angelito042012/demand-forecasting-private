@@ -27,6 +27,8 @@ from .catalog import lookup
 from .training_access import TrainingData
 
 VENTA, CERO, MASCARA = "VENTA_OBSERVADA", "CERO_OBSERVADO", "EXCLUIDO_MASCARA"
+SIN_COBERTURA = "SIN_REGISTROS_DIA"   # dia no enmascarado sin ninguna linea: no se convierte en cero
+NO_USABLE = (MASCARA, SIN_COBERTURA)
 SBC_ADI, SBC_CV2 = 1.32, 0.49   # umbrales de Syntetos-Boylan (clasificacion de intermitencia)
 SERIES_COLUMNS = ["fecha", "sku", "almacen", "categoria_corte", "estado", "cantidad_base",
                   "n_lineas", "importe_centimos", "dias_desde_primera_obs"]
@@ -51,6 +53,7 @@ def pair_daily(data: TrainingData, df: pd.DataFrame | None = None) -> pd.DataFra
     df = sales_frame(data) if df is None else df
     cal = pd.DatetimeIndex(pd.to_datetime(list(data.calendar)))
     masked = {pd.Timestamp(d) for d in data.excluded_days}
+    uncovered = set(cal) - masked - set(df["fecha"].unique())
     agg = (df.groupby(["sku", "almacen", "fecha"], sort=True)
              .agg(cantidad_base=("qty", "sum"), n_lineas=("qty", "size"), importe_centimos=("centimos", "sum"))
              .reset_index())
@@ -65,9 +68,11 @@ def pair_daily(data: TrainingData, df: pd.DataFrame | None = None) -> pd.DataFra
     grid["dias_desde_primera_obs"] = offs
     out = grid.merge(agg, on=["sku", "almacen", "fecha"], how="left")
     is_mask = out["fecha"].isin(masked)
-    out["estado"] = np.where(is_mask, MASCARA, np.where(out["cantidad_base"].notna(), VENTA, CERO))
+    no_cov = out["fecha"].isin(uncovered)
+    out["estado"] = np.where(is_mask, MASCARA, np.where(no_cov, SIN_COBERTURA,
+                                                       np.where(out["cantidad_base"].notna(), VENTA, CERO)))
     out.loc[out["estado"] == CERO, ["cantidad_base", "n_lineas", "importe_centimos"]] = 0.0
-    out.loc[is_mask, ["cantidad_base", "n_lineas", "importe_centimos"]] = np.nan
+    out.loc[is_mask | no_cov, ["cantidad_base", "n_lineas", "importe_centimos"]] = np.nan
     out["categoria_corte"] = out["sku"].map(lambda s: lookup(data.catalog, s))
     out["fecha"] = out["fecha"].dt.strftime("%Y-%m-%d")
     for c in ("n_lineas", "importe_centimos"):
@@ -84,7 +89,7 @@ def category_daily(pairs: pd.DataFrame) -> pd.DataFrame:
     g = sold.groupby(["categoria_corte", "fecha"]).agg(
         cantidad_base_suma_heterogenea=("cantidad_base", "sum"), n_lineas=("n_lineas", "sum"),
         n_sku_con_venta=("sku", "nunique"), importe_centimos=("importe_centimos", "sum")).reset_index()
-    masked = set(pairs.loc[pairs["estado"] == MASCARA, "fecha"])
+    masked = set(pairs.loc[pairs["estado"].isin(NO_USABLE), "fecha"])
     rows = [(c, d) for c, f in first.items() for d in cal if d >= f]
     grid = pd.DataFrame(rows, columns=["categoria_corte", "fecha"])
     out = grid.merge(g, on=["categoria_corte", "fecha"], how="left")
@@ -101,7 +106,7 @@ def category_daily(pairs: pd.DataFrame) -> pd.DataFrame:
 def intermittency(pairs: pd.DataFrame, by=("sku", "almacen")) -> pd.DataFrame:
     """ADI, CV2 de tamanos no nulos y clase Syntetos-Boylan sobre dias NO enmascarados
     desde la primera observacion. Descriptivo; no se usa para seleccionar modelos."""
-    use = pairs.loc[pairs["estado"] != MASCARA].copy()
+    use = pairs.loc[~pairs["estado"].isin(NO_USABLE)].copy()
     use["pos"] = use["cantidad_base"].astype(float) > 0
     use["q_pos"] = np.where(use["pos"], use["cantidad_base"].astype(float), np.nan)
     use["q2"] = use["q_pos"] ** 2
@@ -137,6 +142,8 @@ def content_sha256(df: pd.DataFrame) -> str:
 __all__ = [
     "CERO",
     "MASCARA",
+    "NO_USABLE",
+    "SIN_COBERTURA",
     "VENTA",
     "category_daily",
     "content_sha256",

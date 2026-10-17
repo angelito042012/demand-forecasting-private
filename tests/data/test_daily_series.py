@@ -7,8 +7,10 @@ from pipeline.data import daily_series as ds
 from pipeline.data.training_access import TrainingData
 
 
-def _data(rows, first=date(2026, 4, 1), last=date(2026, 4, 14)):
+def _data(rows, first=date(2026, 4, 1), last=date(2026, 4, 14), skip_cover=()):
     cal = tuple(first + timedelta(days=i) for i in range((last - first).days + 1))
+    mask0 = {date(2026, 4, 3), date(2026, 4, 12)}   # SKU de relleno 'Z': todo dia no enmascarado tiene filas
+    rows = list(rows) + [(d.isoformat(), "Z", 1, "CAT Z") for d in cal if d not in mask0 and d.isoformat() not in skip_cover]
     sales = tuple({"linea_id": f"l{i}", "fecha": f, "sku": sku, "cantidad_base": q, "importe": Decimal128(str(q * 5)),
                    "categoria_original": cat, "almacen": "1", "unidad_base": "UND"}
                   for i, (f, sku, q, cat) in enumerate(rows))
@@ -58,3 +60,12 @@ def test_serialization_is_deterministic():
     p = ds.pair_daily(_data(ROWS))
     assert ds.to_csv_gz_bytes(p) == ds.to_csv_gz_bytes(p.copy())
     assert ds.content_sha256(p) == ds.content_sha256(ds.pair_daily(_data(ROWS)))
+
+
+def test_day_without_any_rows_is_not_turned_into_zero():
+    rows = [r for r in ROWS if r[0] != "2026-04-06"] + [("2026-04-07", "A", 1, "CAT X")]
+    p = ds.pair_daily(_data(rows, skip_cover=("2026-04-06",)))
+    a = p[p.sku == "A"].set_index("fecha")
+    assert a.loc["2026-04-06", "estado"] == ds.SIN_COBERTURA and a.loc["2026-04-06"].isna()["cantidad_base"]
+    assert a.loc["2026-04-02", "estado"] == ds.VENTA or a.loc["2026-04-02", "estado"] == ds.CERO
+    assert ds.intermittency(p).set_index("sku").loc["A", "dias"] == 11

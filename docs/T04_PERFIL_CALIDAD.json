@@ -48,7 +48,7 @@
     "dias_calendario": 153,
     "dias_enmascarados": 3,
     "dias_sin_registro_no_mascara": [],
-    "dias_enmascarados_con_filas_en_base": []
+    "filas_en_dias_enmascarados_omitidas": 0
   },
   "meses": {
     "2026-03": {
@@ -205,25 +205,25 @@
     "sku_16140041": "MAQUILLAJE PARA ROSTRO"
   },
   "notas_credito_informativas_hasta_corte": {
-    "2026-06": {
-      "lineas": 81,
-      "importe": -9680.6
-    },
-    "2026-04": {
-      "lineas": 72,
-      "importe": -2927.5
+    "2026-05": {
+      "lineas": 78,
+      "importe": -2769.38
     },
     "2026-03": {
       "lineas": 89,
       "importe": -3128.0
     },
-    "2026-05": {
-      "lineas": 78,
-      "importe": -2769.38
+    "2026-04": {
+      "lineas": 72,
+      "importe": -2927.5
     },
     "2026-07": {
       "lineas": 112,
       "importe": -4548.76
+    },
+    "2026-06": {
+      "lineas": 81,
+      "importe": -9680.6
     }
   }
 }

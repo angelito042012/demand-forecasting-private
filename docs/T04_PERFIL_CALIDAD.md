@@ -1,12 +1,12 @@
 # T04 Perfil de calidad (marzo-julio 2026)
 
-Generado el 2026-10-17 07:58 (America/Lima). Dataset: `a07df648eeb546fd...` (firma completa en T04_FIRMA.json). Solo marzo-julio; agosto no se uso. Cifras agregadas medidas por scripts/build_t04.py; nada aqui es un resultado de modelo.
+Generado el 2026-10-17 08:02 (America/Lima). Dataset: `a07df648eeb546fd...` (firma completa en T04_FIRMA.json). Solo marzo-julio; agosto no se uso. Cifras agregadas medidas por scripts/build_t04.py; nada aqui es un resultado de modelo.
 
 ## Fuentes y cobertura
 
 - Fuentes aprobadas usadas: 5 (marzo.xlsx, abril.xlsx, mayo.xlsx, junio.xlsx, julio.xlsx); meses requeridos 2026-03, 2026-04, 2026-05, 2026-06, 2026-07; problemas de fuente: 0.
 - Lineas de venta: 71931; SKU: 3758; pares SKU-almacen: 3758; almacenes: ['1']; categorias en catalogo al corte: 37.
-- Calendario natural: 153 dias, 3 enmascarados (03/04, 12/04, 07/06). Filas de venta omitidas por mascara: 0. Dias sin ningun registro y no enmascarados: ninguno. Enmascarados que si tienen filas en la base: ninguno (no hay registros en los Excel esos dias).
+- Calendario natural: 153 dias, 3 enmascarados (03/04, 12/04, 07/06). Filas de venta omitidas por mascara: 0. Dias sin ningun registro y no enmascarados: ninguno. Filas en dias enmascarados: 0 (filas de venta fechadas en dias enmascarados halladas en la base).
 
 | Mes | Lineas | SKU | Unidades | Importe (S/) | Dias con venta / calendario | Sin registro (no masc.) | Enmascarados |
 |---|---|---|---|---|---|---|---|
@@ -39,7 +39,7 @@ Generado el 2026-10-17 07:58 (America/Lima). Dataset: `a07df648eeb546fd...` (fir
 
 ## Notas de credito (informativo, fuera del objetivo)
 
-Hasta el corte: {'2026-06': {'lineas': 81, 'importe': -9680.6}, '2026-04': {'lineas': 72, 'importe': -2927.5}, '2026-03': {'lineas': 89, 'importe': -3128.0}, '2026-05': {'lineas': 78, 'importe': -2769.38}, '2026-07': {'lineas': 112, 'importe': -4548.76}}. Separadas de ventas brutas; no implican devolucion fisica.
+Hasta el corte: {'2026-05': {'lineas': 78, 'importe': -2769.38}, '2026-03': {'lineas': 89, 'importe': -3128.0}, '2026-04': {'lineas': 72, 'importe': -2927.5}, '2026-07': {'lineas': 112, 'importe': -4548.76}, '2026-06': {'lineas': 81, 'importe': -9680.6}}. Separadas de ventas brutas; no implican devolucion fisica.
 
 ## Limites
 

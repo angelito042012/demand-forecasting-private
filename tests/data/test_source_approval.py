@@ -145,3 +145,19 @@ def test_august_never_in_training_even_with_approved_source(xlsx, db):
     data = load_training_data(db, date(2026, 7, 31), required_months=RM)
     assert all(r["fecha"] <= "2026-07-31" for r in data.sales)
     assert data.sources.manifest[-1]["mes"] == "2026-07"
+
+
+def test_truncated_month_is_blocked_even_if_import_is_completed(xlsx, db):
+    import_workbook(xlsx("julio.xlsx", [s(1, 3), s(2, 4)]), db)
+    db.sales.delete_one({"fecha": "2026-07-04"})
+    with pytest.raises(SourceApprovalError) as exc:
+        load_training_data(db, date(2026, 7, 31), required_months=RM)
+    assert "PERSISTENCIA_INCOMPLETA" in {i["codigo"] for i in exc.value.issues}
+
+
+def test_two_approved_sources_for_the_same_month_are_blocked(xlsx, db):
+    import_workbook(xlsx("julio.xlsx", [s(1, 3)]), db)
+    import_workbook(xlsx("julio_v2.xlsx", [s(2, 5)]), db, expected_month="2026-07")
+    with pytest.raises(SourceApprovalError) as exc:
+        load_training_data(db, date(2026, 7, 31), required_months=RM)
+    assert "MES_CON_VARIAS_FUENTES" in {i["codigo"] for i in exc.value.issues}

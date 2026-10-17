@@ -80,6 +80,20 @@ def evaluate_sources(db, cutoff, *, required_months=None, collection: str = "sal
         if m not in covered:
             issues.append({"codigo": "MES_SIN_FUENTE_APROBADA", "detalle": m, "mes": m})
 
+    by_month: dict = {}
+    for sha in shas:
+        imp = approved[sha]
+        if imp["mes"] > cutoff_month:
+            continue
+        by_month.setdefault(imp["mes"], []).append(sha)
+        persisted = db.sales.count_documents({"sources.source_sha256": sha})
+        if persisted != imp["ventas_aceptadas"]:
+            issues.append({"codigo": "PERSISTENCIA_INCOMPLETA", "mes": imp["mes"], "sha256": sha,
+                           "detalle": f"{imp['archivo']}: declaradas {imp['ventas_aceptadas']}, persistidas {persisted}"})
+    for m, lst in by_month.items():
+        if len(lst) > 1:
+            issues.append({"codigo": "MES_CON_VARIAS_FUENTES", "mes": m, "detalle": f"{m}: {len(lst)} fuentes"})
+
     seen = set()
     for imp in db.imports.find({"estado": {"$in": ["failed", "running", "completed_with_conflicts"]},
                                 "noop": {"$ne": True}, "mes": {"$lte": cutoff_month}}):

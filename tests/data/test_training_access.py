@@ -59,6 +59,7 @@ def test_changes_after_cutoff_do_not_change_dataset_catalog_or_fingerprint(loade
     loaded.sales.insert_one({"linea_id": "late", "fecha": "2026-07-25", "sku": "100", "cantidad_base": 50,
                              "importe": None, "categoria_original": "ZZZ", "almacen": "1",
                              "sources": [{"source_sha256": jul_sha}]})
+    loaded.imports.update_one({"sha256": jul_sha}, {"$inc": {"ventas_aceptadas": 1}})  # coherente con la importacion
     loaded.sales.delete_many({"fecha": "2026-08-15"})
     after = load_training_data(loaded, cutoff, required_months=RM_JUL)
     assert after.sales == before.sales

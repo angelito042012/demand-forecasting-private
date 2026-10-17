@@ -113,7 +113,7 @@ T03 **no se marca completo**: queda a la espera de la segunda revisión de Codex
 ## Entrega 17/10/2026 (Claude): R04, base v2 y T04 (pendiente de revisión de Codex)
 
 - Código: `pipeline/data/sources.py` (nuevo), `training_access.py`, `catalog.py`, `reconcile.py`, `daily_series.py` (nuevo), `scripts/compare_v1_v2.py`, `scripts/build_t04.py`, `backend/app/config.py`, `.env.example`.
-- Pruebas nuevas: `test_source_approval.py` (10: carga parcial, reintento completo una sola vez, conflicto abierto, procedencia inválida, meses ausentes, base vacía, invariancia ante carga fallida posterior al corte, agosto), `test_daily_series.py` (5). Suite completa con RUN_REALDATA=1: 62 aprobadas, 0 omitidas, 1 aviso.
+- Pruebas nuevas: `test_source_approval.py` (10: carga parcial, reintento completo una sola vez, conflicto abierto, procedencia inválida, meses ausentes, base vacía, invariancia ante carga fallida posterior al corte, agosto), `test_daily_series.py` (5). Suite completa con RUN_REALDATA=1: 65 aprobadas (tras revisión), 0 omitidas, 1 aviso.
 - v2: 86 877 ventas / 560 créditos; comparación con v1 por mes: conteos, importes y líneas normalizadas idénticos; 0 conflictos, 0 rechazos, 0 duplicados. Recarga: no-op por sha256.
 - T04: 459 375 filas SKU-día, 5 441 categoría-día; fingerprint de entrenamiento a07df648eeb5...; hashes de contenido estables en dos corridas.
 - Cambio de API interna: `load_*` exigen fuentes aprobadas y por defecto los meses 2026-03..mes del corte; las pruebas sintéticas de un mes pasan `required_months` explícito.
