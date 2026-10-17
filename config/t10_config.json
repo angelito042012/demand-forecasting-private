@@ -1,0 +1,37 @@
+{
+  "version": "t10-1",
+  "politica_desarrollo": {
+    "nota": "Configuracion del SERVIDOR: el cliente no puede ampliarla. Tras la evaluacion final se ampliara en un encargo separado.",
+    "origen_minimo": "2026-06-01",
+    "origen_maximo": "2026-07-10",
+    "horizonte_maximo": 21,
+    "metodos_permitidos": ["promedio_28"],
+    "ultimo_dia_de_datos": "2026-07-31",
+    "meses_permitidos_de_carga": ["2026-03", "2026-04", "2026-05", "2026-06", "2026-07"],
+    "origen_demostracion": "2026-07-10"
+  },
+  "subidas": {
+    "extension": ".xlsx",
+    "tam_max_comprimido_bytes": 26214400,
+    "tam_max_expandido_bytes": 262144000,
+    "max_entradas_zip": 200,
+    "max_filas_hoja": 200000,
+    "directorio_privado": "data/private/uploads",
+    "nombre_cliente": "solo etiqueta saneada (<= 80 caracteres [A-Za-z0-9._ -]); nunca decide rutas",
+    "rechazar": ["macros (vbaProject.bin)", "enlaces externos", "contenido no zip", "encabezados distintos a los del importador", "fechas fuera de marzo-julio 2026"]
+  },
+  "cola": {"tipos": ["import_excel", "generate_run"], "lease_segundos": 60, "latido_segundos": 15, "max_intentos": 3,
+           "backoff_base_segundos": 5, "sondeo_segundos": 3},
+  "temporizador": {
+    "habilitado_por_defecto": false,
+    "zona_horaria": "America/Lima",
+    "hora_normal_lima": "06:00",
+    "intervalo_normal_minutos": 1440,
+    "clave_de_ranura": "slot UTC = piso(ahora_utc / intervalo); una ranura = un tick registrado (indice unico)",
+    "ticks_perdidos": "se descartan: solo cuenta la ranura vigente (politica coalescente); no se reejecutan ranuras pasadas",
+    "origen_elegible": "min(fecha de negocio Lima de la ranura, origen_maximo) acotado a origen_minimo",
+    "sin_cambios": "si la corrida de esa entrada ya existe (misma identidad) se registra sin cambios y se conserva el resultado anterior"
+  },
+  "generador": {"version": "gen-promedio28-1", "ventana_dias": 28, "recomendacion": {"escenario": "L7_S7_promedio_28", "horizonte_pedido_dias": 14, "seguridad_dias": 7}},
+  "etiqueta_simulado": "Inventario simulado con supuestos; no corresponde al inventario real de la empresa"
+}

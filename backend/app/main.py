@@ -30,7 +30,7 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type", "X-CSRF-Token"],
     )
     install_error_handlers(app)
-    for module in (auth, admin, imports, sales, runs, forecasts, recommendations, backtests):
+    for module in (auth, admin, imports, sales, runs, jobs, forecasts, recommendations, backtests):
         app.include_router(module.router, prefix="/api/v1")
 
     @app.get("/api/v1/health")
