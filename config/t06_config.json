@@ -24,7 +24,7 @@
     }
   },
   "prediccion_negativa": "recorte a 0 en todos los modelos y folds; se cuenta cuantos valores se recortan",
-  "computo": {"max_hilos": 4, "presupuesto_minutos_por_fold": 15, "repeticion_determinista_en_fold": "F1"},
+  "computo": {"max_hilos": 4, "presupuesto_minutos_por_fold": 15, "repeticion_determinista_en_fold": "F1", "repeticion_tolerancia_abs": 1e-9},
   "seleccion": {
     "sku": {"vista": "bloque7", "descripcion": "WAPE de cantidad acumulada en 7 dias, cohorte primaria, universo comun"},
     "categoria": {"vista": "diaria", "descripcion": "WAPE diario, cohorte primaria, universo comun; el bloque semanal se reporta igualmente"},

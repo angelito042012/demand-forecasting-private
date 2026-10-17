@@ -101,7 +101,7 @@ def render(res, sel, log, man, folds) -> str:
     for e in log:
         L.append(f"| {e['fold']} | {e['nivel']} | {e['modelo']} | {e['filas']} | {e['caracteristicas']} | {e['origenes']} | "
                  f"{e['segundos_ajuste']} | {e['memoria_matriz_mb']} | {e['negativos_recortados']} |")
-    L += ["", f"Tiempo total de la ejecución completa: {man['segundos_totales']:.0f} s. Repetición de F1 idéntica: {man['repeticion_f1_identica']}. "
+    L += ["", f"Tiempo total de la ejecución completa: {man['segundos_totales']:.0f} s. Repetición de F1 equivalente (tolerancia 1e-9): {man['repeticion_f1_identica']} (diferencia máxima {man['repeticion_f1_diferencia_maxima']:.2e}). "
           f"Baselines idénticos a T05: {man['baselines_identicos_a_t05']}.", "",
           "## Limitaciones", "",
           "- Folds de desarrollo ya observados; la apertura de agosto y la selección final se deciden tras la revisión.",
@@ -129,7 +129,11 @@ def main(argv=None) -> int:
     log_rep: list = []
     rep = run_all(db, cfg5, extras_fn=make_extras_fn(cfg6, sha6, args.out / "modelos_repeticion", log_rep), only_folds={"F1"})
     a = res["predicciones"][res["predicciones"]["fold"] == "F1"].reset_index(drop=True)
-    same_f1 = bool(a.equals(rep["predicciones"].reset_index(drop=True)))
+    b = rep["predicciones"].reset_index(drop=True)
+    num = [c for c in a.columns if a[c].dtype.kind == "f"]
+    max_diff = float(np.nanmax(np.abs(a[num].to_numpy() - b[num].to_numpy()))) if len(a) else 0.0
+    same_f1 = bool(a.drop(columns=num).equals(b.drop(columns=num)) and max_diff <= cfg6["computo"]["repeticion_tolerancia_abs"]
+                   and np.array_equal(np.isnan(a[num].to_numpy()), np.isnan(b[num].to_numpy())))
     # identidad de los baselines con T05
     t05 = json.loads(Path("docs/T05_METRICAS.json").read_text(encoding="utf-8"))["metricas"]
     key = lambda r: (r["fold"], r["nivel"], r["cohorte"], r["universo"], r["metodo"], r["vista"])
@@ -147,7 +151,7 @@ def main(argv=None) -> int:
         "commit_protocolo": args.commit_protocolo, "codigo_sha256": code_hash(), "codigo_archivos": CODE,
         "git_commit": _git("rev-parse", "HEAD"),
         "git_sucio": bool(_git("status", "--porcelain", "--", "pipeline", "scripts", "config")),
-        "agosto_usado": False, "repeticion_f1_identica": same_f1, "baselines_identicos_a_t05": bool(ident),
+        "agosto_usado": False, "repeticion_f1_identica": same_f1, "repeticion_f1_diferencia_maxima": max_diff, "baselines_identicos_a_t05": bool(ident),
         "segundos_totales": time.perf_counter() - t0, "semillas": 20261017,
         "predicciones": {"filas": len(res["predicciones"]), "sha256_archivo": sha256_file(pred_path)},
         "folds": {fid: {"corte": f["corte"], "fingerprint": f["fingerprint"], "fuentes": f["fuentes"]}

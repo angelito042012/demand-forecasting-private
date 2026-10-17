@@ -37,7 +37,7 @@ Se comparan Random Forest, XGBoost y los cuatro baselines (incluido el control c
 
 ## Evidencia e inferencia
 
-Modelos entrenados y predicciones en `artifacts/private/t06/` (ignorados por Git); se versionan protocolo, configuración, métricas agregadas, reporte y manifiesto (hashes de código/config/datos/fuentes, seeds, versiones, tiempos, filas, memoria de la matriz). Cada paquete guarda modelo, vocabulario, nombres de features, corte, versión y hash de configuración (joblib: cargar solo artefactos generados localmente). Interfaz `forecast_origin`: desde un origen devuelve siete fechas futuras con cantidades no negativas, modelo, corte y versión. Reproducibilidad: el fold F1 se reentrena y se exige igualdad exacta de predicciones.
+Modelos entrenados y predicciones en `artifacts/private/t06/` (ignorados por Git); se versionan protocolo, configuración, métricas agregadas, reporte y manifiesto (hashes de código/config/datos/fuentes, seeds, versiones, tiempos, filas, memoria de la matriz). Cada paquete guarda modelo, vocabulario, nombres de features, corte, versión y hash de configuración (joblib: cargar solo artefactos generados localmente). Interfaz `forecast_origin`: desde un origen devuelve siete fechas futuras con cantidades no negativas, modelo, corte y versión. Reproducibilidad: el fold F1 se reentrena y se exige igualdad de predicciones con tolerancia absoluta 1e-9 (ver Enmienda 1).
 
 ## Límites declarados
 
@@ -45,4 +45,4 @@ Cinco semanas de validación en desarrollo; un solo almacén y unidad; ventas po
 
 ## Enmiendas
 
-Ninguna al momento de la congelación.
+**Enmienda 1 (17/10/2026, tras la primera ejecución completa, antes de re-evaluar).** La primera ejecución dio `repeticion_f1_identica=false`. Diagnóstico: XGBoost reproduce exactamente; Random Forest con `n_jobs=4` difiere hasta 5,7e-14 (suma de árboles en orden de hilos no determinista, ruido de coma flotante). Motivo del cambio: el criterio «igualdad exacta» era demasiado estricto para un ensamble paralelo; no cambia modelos, features, folds, parámetros ni la regla de selección. Nuevo criterio: diferencia absoluta máxima ≤ 1e-9 en las columnas numéricas e igualdad en las demás; se informa la diferencia máxima observada. Esta enmienda se redacta tras conocer el resumen de la primera ejecución (selección SKU sin ganador ML; categoría con ganador), pero no depende de él: se aplica igual a cualquier resultado. La ejecución se repite para que el manifiesto corresponda a la configuración enmendada.
