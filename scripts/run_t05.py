@@ -111,6 +111,16 @@ def render(res: dict, cfg: dict, man: dict) -> str:
           f"{ref.get('control_cero_wape')}; dentro del umbral de empate: {ref.get('empatados_dentro_del_umbral')}.",
           "- Límites: cinco semanas de validación, un solo almacén, ventas posiblemente censuradas por stock, WAPE diario dominado "
           "por intermitencia. No confirma mejora del inventario; sirve solo como referencia mínima para comparar ML en T06."]
+    L += ["", "## Lectura automática frente al control cero (WAPE agregado, primaria, universo común)", ""]
+    for lv in ("sku", "categoria"):
+        for view in ("diaria", "bloque7"):
+            w = {r["metodo"]: r["WAPE"] for r in rec if r["fold"] == "AGREGADO" and r["nivel"] == lv
+                 and r["cohorte"] == "primaria" and r["universo"] == "comun" and r["vista"] == view}
+            better = [m for m in METHODS if m != "cero" and w.get(m) is not None and w[m] < w["cero"]]
+            L.append(f"- {lv}, {view}: métodos con WAPE menor que el control cero: {better or 'ninguno'} "
+                     f"(WAPE: { {m: round(v, 3) for m, v in w.items() if v is not None} }).")
+    L.append("- La cohorte primaria cuenta los ceros observados como observaciones utilizables (definición del protocolo); "
+             "por eso la antigüedad del último día utilizable es casi siempre 0 y la cohorte incluye productos que venden pocos días.")
     return "\n".join(L) + "\n"
 
 
