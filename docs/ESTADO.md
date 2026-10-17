@@ -4,11 +4,7 @@ Actualizado el 17/10/2026, Lima. Entrega final 23/10/2026. Claude ejecuta; Codex
 
 ## Siguiente encargo
 
-**T10 revisado, requiere T10R antes de aceptarse. Encargo vigente: ETAPA_09_CLAUDE.md; revisión docs/REVISION_CODEX_09.md**, entrega 9596d26. Corregir R07 limpieza/publicación (P1), R08 takeover tras renovación, R09 dos fuentes mensuales concurrentes y R10 recuperación de ranura del timer (P2). Flujo habitual construido; no rehacerlo. Codex: 119 pruebas selectivas aprobadas y cuatro reproducciones con Mongo real en bases temporales. Después de corregir/revisar: T12 final y T11 HTTPS/nube/backup/restauración; no iniciarlos ahora. Agosto permanece reservado.
-
-Nube actual: Azure for Students con US$100 disponibles hasta 17/10/2027; Atlas Free demand-forecasting-dev creado en São Paulo. No se verificó conexión/despliegue. Sin presupuesto de bolsillo ni pago por uso autorizados; rotación de credencial mostrada en captura pendiente de confirmación privada. **BD local actual: 459,39 MB de datos lógicos + índices** (15 colecciones), medición posterior a T10. Planificar crecimiento/archivo/restauración antes de migrar, sin borrar evidencia.
-
-Decisión de puntero: mantener activate_run=False para corridas de desarrollo; histórica auditada predeterminada y nuevas consultables por enlace/selector. Refactorizar validadores/estilo ajeno no es requisito de esta corrección.
+**T10R entregado para revisión de Codex** (`docs/T10R_REPORTE.md`): R07–R10 corregidos con regresiones que fallaban antes. Pendiente: revisión Codex; después, a su decisión, T12 (evaluación final en agosto bajo `SELECCION_CONGELADA`, no ejecutada) y T11 (publicación/HTTPS/copia-restauración; Azure for Students y Atlas Free sin conectar; sin presupuesto de bolsillo; 459,39 MB locales exigen plan de crecimiento antes de elegir qué publicar). Agosto sigue sin abrirse.
 
 ## Hitos aceptados
 
@@ -60,3 +56,10 @@ T10 no abre test: generación operativa de desarrollo con cortes habilitados 01/
 - Pruebas ejecutadas: pytest completo 376 aprobadas/6 omitidas; realdata generación 3/3 (agente, sin agosto); vitest 106 + build; E2E Chrome real 16/16 (incluye original → «Sin cambios» con hashes/conteos/fingerprint intactos, generación 10/07, lector denegado, worker detenido a mitad de trabajo y retomado sin duplicados); temporizador con reloj controlado.
 - Pendientes: decisión de Codex sobre `activate_run` (hoy la generada no mueve el puntero activo); validador de publicación único; diagnósticos de estilo preexistentes en `scripts/generate_synthetic_inventory.py`; temporizador `--loop` no probado como servicio continuo; T11/T12/aceptación humana.
 - Base de demostración: además de las históricas hay corridas generadas de prueba (orígenes 10/07, 22/06, 25/06, 28/06, 30/06, 03/07) y una `gen-20260620-…` en `staging` de un intento interrumpido. Etiquetadas; no son evidencia de mejora.
+
+## T10R (17/10/2026, verificado)
+
+- Archivos: `pipeline/publish/protocol.py` (reserva CAS antes de limpiar; toma de control con lease leído), `pipeline/data/month_lock.py` (nuevo) e `importer.py`/`jobs/handlers.py` (reserva de mes y valla de escritura), `pipeline/jobs/scheduler.py` (recuperación de ranuras, `--poll-seconds`), regresiones `tests/publish/test_t10r_publication.py`, `tests/jobs/test_t10r_{import,scheduler}.py`, `tests/ops/test_t10r_loop.py`; `docs/T10_CONTRATO.md` §8, `docs/REMEDIACION_FUENTES.md`, `docs/T10R_REPORTE.md`.
+- Pruebas ejecutadas: regresiones T10R fallaban antes (7 + 9 + 6) y pasan (32); `pytest tests`: 408 aprobadas, 6 omitidas (RUN_REALDATA, no ejecutadas), 0 fallos; `ruff` limpio; `--loop` real con worker y Mongo reales en base aislada, procesos terminados. No se repitieron navegador, frontend ni T06/T07.
+- Staging `gen-20260620-d438bef389c9`: quedó `failed/INTENTO_ABANDONADO` por el mantenimiento corregido (documento conservado, sin hijos, nada más cambió); ruta de recuperación en el reporte.
+- Pendientes: importador CLI sin reserva de mes; `release_month` solo privilegiado; validadores duplicados y avisos de estilo de `generate_synthetic_inventory.py` por decisión de Codex; T11/T12/aceptación humana.

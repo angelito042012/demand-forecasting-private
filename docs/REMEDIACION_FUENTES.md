@@ -8,3 +8,7 @@ Situación: `SourceApprovalError` por `CARGA_NO_COMPLETADA`, `MES_CON_VARIAS_FUE
 4. **Verificar** con `scripts/compare_v1_v2.py --v1 demand_forecasting_v2 --v2 <nueva>`: conteos, importes y líneas normalizadas iguales; 0 conflictos y 0 rechazos; después `scripts/build_t04.py --db <nueva>` y comparar hashes de contenido con la firma vigente.
 5. **Cambiar** `mongodb_database` localmente solo si todo coincide; conservar la base anterior para auditoría. El borrado de bases antiguas queda fuera de cualquier encargo salvo petición explícita.
 6. Si el archivo nuevo es un reemplazo legítimo, registrar la decisión (qué fuente queda activa y por qué) antes de reconstruir; el sistema admite una sola fuente aprobada por mes.
+
+## Reserva de mes parcial (T10R)
+
+Si una importación web falló después de escribir filas, `month_reservations` conserva el mes en estado `partial` para esa fuente y rechaza cualquier otra: no se libera como si estuviera vacío. La misma fuente puede reintentar (idempotente). Si se decide abandonar esa fuente, no se borran ventas: se reconstruye en una base nueva (pasos anteriores). La liberación privilegiada de la reserva (`pipeline.data.month_lock.release_month`) solo desbloquea el mes y debe registrarse con su motivo; no está expuesta en la API.

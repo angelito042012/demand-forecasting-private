@@ -154,7 +154,7 @@ def test_failure_before_any_write_releases_the_month_for_another_source(env, mon
 
 def test_late_return_of_a_replaced_owner_cannot_write_or_finalize(env):
     db, uploads, tmp = env
-    (sha_a, size_a), _ = two_sources_march(uploads, tmp)
+    (sha_a, _), _ = two_sources_march(uploads, tmp)
     path = uploads / f"{sha_a}.xlsx"
     old = month_lock.reserve(db, "2026-03", sha_a)
     db.month_reservations.update_one({"_id": "2026-03"}, {"$set": {"lease_expires_at": datetime.now(UTC) - timedelta(seconds=9)}})
@@ -175,7 +175,7 @@ def test_late_return_of_a_replaced_owner_cannot_write_or_finalize(env):
 
 def test_owner_replaced_in_the_middle_of_the_import_stops_after_the_current_batch(env):
     db, uploads, tmp = env
-    (sha_a, size_a), _ = two_sources_march(uploads, tmp)
+    (sha_a, _), _ = two_sources_march(uploads, tmp)
     path = uploads / f"{sha_a}.xlsx"
     old = month_lock.reserve(db, "2026-03", sha_a)
     hits = {"n": 0}

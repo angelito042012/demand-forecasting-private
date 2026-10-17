@@ -286,3 +286,8 @@ Entregado para revisión: garantías de concurrencia, API de carga/corridas/trab
 ## Revisión Codex09 y encargo T10R (17/10/2026)
 
 T10/9596d26 no aceptado todavía. 119 pruebas selectivas aprobadas y cuatro defectos adicionales reproducidos con Mongo real aislado: R07 limpieza/promoción (P1), R08 takeover tras renovación, R09 dos fuentes mensuales concurrentes y R10 tick incompleto sin recuperación (P2). Revisión docs/REVISION_CODEX_09.md; encargo correctivo ETAPA_09_CLAUDE.md. Sin código productivo modificado ni base principal alterada. Auditoría solo lectura confirma histórica activa e hijos intactos, hash congelado correcto y tamaño459,39MB tras T10. Decisión: generadas de desarrollo no activan puntero por defecto; evitar refactorización ajena. Azure estudiantes/Atlas Free ya creados según capturas, conexión/despliegue/capacidad pendientes y sin presupuesto de bolsillo. No se abrió agosto ni se inició T11/T12.
+
+
+## T10R (17/10/2026): cierre de R07–R10
+
+Entregado para revisión: limpieza de publicaciones con reserva CAS (R07), toma de control que respeta renovaciones (R08), reserva durable de una fuente por mes con valla de escritura (R09) y recuperación de ranuras del temporizador con prueba de `--loop` real (R10). Pruebas: 32 regresiones nuevas (fallaban antes), pytest completo 408 aprobadas/6 omitidas. Detalle y límites en `docs/T10R_REPORTE.md`. Sin agosto, sin cambio de selección congelada, sin despliegue.
