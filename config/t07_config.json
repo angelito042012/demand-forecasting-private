@@ -1,0 +1,55 @@
+{
+  "version": "t07-1",
+  "congelado_antes_de_evaluar": true,
+  "zona_horaria": "America/Lima",
+  "agosto_usado": false,
+  "datos": {"inicio": "2026-03-01", "ultimo_dia_usado": "2026-07-31", "fuentes": "aprobadas via load_training_data; ventas hasta 31/07"},
+  "horizontes": {"revision_R": 7, "lead_times_L": [3, 7, 14], "proteccion_H": [10, 14, 21], "acumulados_evaluados": [10, 14, 21],
+                 "horizonte_maximo_modelo": 21},
+  "folds_predictivos": [
+    {"id": "G1", "corte": "2026-05-31", "bloque": ["2026-06-01", "2026-06-21"]},
+    {"id": "G2", "corte": "2026-06-14", "bloque": ["2026-06-15", "2026-07-05"]},
+    {"id": "G3", "corte": "2026-06-28", "bloque": ["2026-06-29", "2026-07-19"]},
+    {"id": "G4", "corte": "2026-07-10", "bloque": ["2026-07-11", "2026-07-31"]}
+  ],
+  "cohorte_primaria": {"historia_minima_dias": 56, "observaciones_utilizables_minimas_en_28": 21},
+  "ventana_promedio_dias": 28,
+  "rf_categoria": {
+    "clase": "sklearn.ensemble.RandomForestRegressor",
+    "parametros": {"n_estimators": 100, "max_depth": 12, "min_samples_leaf": 20, "max_features": 0.5, "bootstrap": true,
+                   "random_state": 20261017, "n_jobs": 1},
+    "nota_hilos": "n_jobs=1 (enmienda de computo respecto a T06: el conjunto por categoria es pequeno y asi la suma de arboles es determinista)",
+    "origenes_entrenamiento": {"paso_dias": 3, "origen_minimo_indice": 27, "horizontes": "1..21", "alineacion": "hacia atras desde origen-21"},
+    "prediccion_negativa": "recorte a 0"
+  },
+  "pesos_asignacion": {
+    "base": "unidades positivas de los 28 dias anteriores al origen (incluido el origen) dentro de la categoria/almacen, solo SKU conocidos",
+    "fallback_1": "si la categoria suma cero: proporcion historica de unidades positivas hasta el origen",
+    "fallback_2": "si sigue sin masa: reparto uniforme entre SKU conocidos de la categoria"
+  },
+  "seleccion_predictiva_provisional": {
+    "criterio_primario": {"nivel": "sku", "vista": "acumulado", "H": 14, "cohorte": "primaria", "universo": "comun"},
+    "comparador": "promedio_28", "mejora_relativa_minima": 0.02, "folds_favorables_minimos": 3,
+    "sesgo_relativo_maximo_abs": 0.25, "denominador_cero": "no evaluable",
+    "nota": "H10, H21 y categoria se reportan igualmente; no se selecciona por el horizonte mas favorable; no se congela seleccion para agosto"
+  },
+  "simulacion": {
+    "inicio": "2026-06-01", "fin": "2026-07-31", "datos_de_inicializacion_hasta": "2026-05-31",
+    "universo": "SKU conocidos al 31/05 (primera venta <= 31/05); catalogo fijado al 31/05",
+    "politicas": ["referencia_fija", "promedio_28", "rf_categoria_distribuido"],
+    "escenario_principal": {"L": 7, "S": 7},
+    "matriz": {"L": [3, 7, 14], "S": [0, 7, 14], "R": 7},
+    "dias_revision": "dias 1, 8, 15, ... desde 2026-06-01 (final del dia)",
+    "stock_inicial": "ceil(media_inicial*(L+R)); transito inicial 0; igual entre politicas",
+    "media_inicial": "promedio de observaciones utilizables de los 28 dias <= 2026-05-31",
+    "objetivo_referencia": "ceil(media_inicial*(L+R+S))",
+    "objetivo_pronostico": "ceil(suma_pronostico_proximos_H + S*media_historica_28_al_origen), H=L+R",
+    "redondeo_estabilidad": "los objetivos se redondean a 9 decimales antes del techo",
+    "costo_unitario": {"factor_sobre_mediana_precio_base": 0.65, "precio_base": "PRECIO/EQUIVALENCIA de lineas de venta positivas <= 2026-05-31",
+                       "fallback_1": "mediana de las medianas de la categoria", "fallback_2": "mediana global", "supuesto": true},
+    "holding_anual": 0.20, "dias_anio": 365, "empaque_minimo": 1,
+    "dia_enmascarado": "2026-06-07: sin evento de demanda ni denominador de servicio; calendario, recepciones y revisiones continuan"
+  },
+  "repeticion": "motor y evaluacion se ejecutan dos veces; deben coincidir exactamente",
+  "etiqueta": "Inventario simulado con supuestos; no corresponde al inventario real de la empresa"
+}
