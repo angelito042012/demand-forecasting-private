@@ -1,10 +1,10 @@
 # Traspaso vigente
 
-- Ejecutor: Claude Code, 17/10/2026. Tarea: T08 + lectura integrada T09 (ETAPA_06_CLAUDE.md), terminada y entregada a revisión de Codex. Nada en curso.
-- Commits: d59703b (motor + contrato), c49160c (selección congelada), 03cf93c (auth), a442983 (frontend), ff8b030 (publicador/rutas), y el commit final de entrega (HEAD; ver `git log`).
-- Pruebas: suite integral RUN_REALDATA=1 → 226 aprobadas, 0 omitidas, 509 s (`artifacts/private/t08/pytest_full.log`); frontend 42 aprobadas + build; E2E navegador real 24/24 (`artifacts/private/t08/e2e_resultado.json`, capturas en `artifacts/private/t08/screens/`, privadas). Reporte: `docs/T08_REPORTE.md`.
-- Estado de la base real `demand_forecasting_v2`: ventas importadas + colecciones nuevas `runs`, `run_pointer`, `forecasts`, `recommendations`, `backtests`, `users` (demo_admin, demo_lector), `sessions`, `login_attempts`. Corrida activa `hist-20260710-52b01cd999dd`. Credenciales locales de demostración solo en `artifacts/private/t08/e2e_credentials.json` (no versionado, no impreso). v1 y Excel intactos.
-- Procesos: al cerrar se detienen los propios con `scripts/stop-local.ps1`; para usar la app: `scripts/start-local.ps1` (ver `docs/GUIA_LOCAL.md`). df-mongo-dev sigue activo y no se tocó.
-- Congelación: `docs/SELECCION_CONGELADA.md` + `config/seleccion_congelada.json`: preparada, NO ejecutada; agosto y reference_v1 sin consultar.
-- Bloqueos: ninguno. Pendientes: T10 (carga web/batch), T11 (despliegue HTTPS, respaldo/restauración; requiere accesos de nube listados en la guía), T12 (ejecución final bajo congelación revisada), aceptación humana e informe.
-- Siguiente acción exacta: revisión de Codex de T08; luego decidir T10 y la autorización de la ejecución final.
+- Saliente: Codex, dirección/revisión, 17/10/2026 Lima. Próximo ejecutor Claude. Nada en curso; no se iniciaron servidores ni entrenamientos.
+- Entrega revisada 960638d (T08), **aceptación completa pendiente R05–R06**. Revisión docs/REVISION_CODEX_07.md; encargo ETAPA_07_CLAUDE.md.
+- Pruebas Codex: 118 selectivas aprobadas,1 aviso, 91.02 s y ruff correcto. Suite 226/frontend 42/Chrome 24 son evidencia Claude. No repetición de entrenamiento/suite real costosa.
+- Auditoría real solo lectura: 3347 recomendaciones con snapshot;225 objetivos/118 pedidos inflados en 1 por precisión CSV. Fuentes/catálogo G4 y métricas T07 coinciden hoy con referencias aprobadas. Reproducción middleware confirmó IP controlable vía XFF.
+- Evidencia privada: artifacts/private/codex_review07_audit.json, codex_review07_tests.xml, logs/capturas T08. No leer/imprimir e2e_credentials.json ni .env en el traspaso.
+- Siguiente acción exacta: leer ETAPA_07_CLAUDE.md, comprobar Git/procesos; añadir regresión exacta que falle para R05 y corregir señal/publicación versionada. Después R06 y presentación; auditoría de 3347 SKU, pruebas pertinentes y navegador; entregar a revisión.
+- Base activa demand_forecasting_v2; corrida actual hist-20260710-52b01cd999dd tiene recomendaciones defectuosas. Publicar nueva versión y marcar anterior sustituida, sin borrar evidencia/ventas/usuarios/v1. df-mongo-dev útil; procesos web/API de Claude detenidos, verificar al retomar.
+- Agosto reservado, selección congelada sin ejecutar. No T10 ni entrenamiento T06/T07 en este encargo. Posteriores carga/batch, evaluación final, nube/restauración y cierre académico. Sin cuentas/presupuesto de nube.

@@ -236,3 +236,22 @@ T07 aceptado al commit 5790103. Codex ejecutó 22 pruebas selectivas, comprobó 
 ## Entrega 17/10/2026 (Claude): T08 + lectura integrada T09 (pendiente de revision de Codex)
 
 - Contrato T08, seleccion congelada (sin ejecutar), auth por cookie HttpOnly, publicador versionado, rutas de lectura, frontend conectado. Suite 226, frontend 42, E2E navegador 24/24. Detalle: docs/T08_REPORTE.md.
+
+
+## Traspaso T08 previo a revisión Codex07
+
+# Traspaso vigente
+
+- Ejecutor: Claude Code, 17/10/2026. Tarea: T08 + lectura integrada T09 (ETAPA_06_CLAUDE.md), terminada y entregada a revisión de Codex. Nada en curso.
+- Commits: d59703b (motor + contrato), c49160c (selección congelada), 03cf93c (auth), a442983 (frontend), ff8b030 (publicador/rutas), y el commit final de entrega (HEAD; ver `git log`).
+- Pruebas: suite integral RUN_REALDATA=1 → 226 aprobadas, 0 omitidas, 509 s (`artifacts/private/t08/pytest_full.log`); frontend 42 aprobadas + build; E2E navegador real 24/24 (`artifacts/private/t08/e2e_resultado.json`, capturas en `artifacts/private/t08/screens/`, privadas). Reporte: `docs/T08_REPORTE.md`.
+- Estado de la base real `demand_forecasting_v2`: ventas importadas + colecciones nuevas `runs`, `run_pointer`, `forecasts`, `recommendations`, `backtests`, `users` (demo_admin, demo_lector), `sessions`, `login_attempts`. Corrida activa `hist-20260710-52b01cd999dd`. Credenciales locales de demostración solo en `artifacts/private/t08/e2e_credentials.json` (no versionado, no impreso). v1 y Excel intactos.
+- Procesos: al cerrar se detienen los propios con `scripts/stop-local.ps1`; para usar la app: `scripts/start-local.ps1` (ver `docs/GUIA_LOCAL.md`). df-mongo-dev sigue activo y no se tocó.
+- Congelación: `docs/SELECCION_CONGELADA.md` + `config/seleccion_congelada.json`: preparada, NO ejecutada; agosto y reference_v1 sin consultar.
+- Bloqueos: ninguno. Pendientes: T10 (carga web/batch), T11 (despliegue HTTPS, respaldo/restauración; requiere accesos de nube listados en la guía), T12 (ejecución final bajo congelación revisada), aceptación humana e informe.
+- Siguiente acción exacta: revisión de Codex de T08; luego decidir T10 y la autorización de la ejecución final.
+
+
+## Revisión Codex07: R05–R06 abiertos
+
+118 pruebas seleccionadas aprobadas, pero auditoría independiente detectó225objetivos/118pedidos inflados por CSV de precisión reducida. Middleware Uvicorn reproduce IP manipulable por XFF. Catálogo/fuentes y métricas T07 coinciden hoy con referencias aprobadas. Ver REVISION_CODEX_07.md. T08 parcialmente verificado, no aceptado completo. Siguiente ETAPA_07_CLAUDE.md: precisión/publicación nueva, confianza de proxy y presentación acotada. Agosto reservado y T10 no iniciado.

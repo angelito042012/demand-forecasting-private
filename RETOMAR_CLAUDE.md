@@ -1,9 +1,7 @@
 # Retomar sin repetir trabajo
 
-Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente: **ETAPA_06_CLAUDE.md (T08 + integración de lectura T09)**, tras aceptar T07 al commit 5790103 en docs/REVISION_CODEX_06.md.
+Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente **ETAPA_07_CLAUDE.md (corrección T08)** tras revisión docs/REVISION_CODEX_07.md de entrega 960638d.
 
-Comprueba Git, cambios y procesos. Conserva Excel, bases y artefactos; no editar archivos de un trabajador activo ni repetir T04–T07. Primero ajustes pequeños del motor y contrato; después API/auth, publicación versionada de resultados existentes y pantallas conectadas. Se permite delegación de ámbitos separados con un integrador.
+T08 no está aceptado completo: R05 precisión provoca 118 pedidos inflados; R06 cabeceras proxy alteran IP del límite de login. Primero pruebas de regresión/corrección, nueva publicación con señales exactas y versión propia, luego presentación legible y navegador. Conservar corrida anterior como historial sustituido, Excel, bases y artefactos T07. Anclar fingerprints/hashes antes de combinar resultados.
 
-Método operativo: promedio_28 SKU y categorías agregadas; RF comparador experimental. Preparar congelación documentada de evaluación final, **sin abrir agosto ni entrenar paquetes finales**. La demostración es histórica al 10/07 y todo inventario sigue etiquetado como simulado. No representar mocks o una publicación local como despliegue completo.
-
-Guardar checkpoints/traspaso por unidad; actualizar ESTADO/BACKLOG/HISTORIAL al cerrar. Respuesta breve con commit, flujo demostrado, pruebas realmente ejecutadas y pendientes. Entregar a revisión Codex. Un único ejecutor principal activo.
+Verificar Git/procesos antes de editar. No repetir T06/T07, no modificar selección congelada, no abrir agosto ni iniciar T10. Guardar checkpoints y traspaso por unidad. Al cerrar actualizar ESTADO/BACKLOG/HISTORIAL, commit y resumen breve con auditoría/pruebas/evidencias, run_id nuevo y límites. Claude ejecuta; Codex revisa. Un ejecutor principal activo.
