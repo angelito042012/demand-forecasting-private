@@ -1,8 +1,8 @@
 # Backlog de ejecución
 
-Estado al 17/10: T08R aceptado; R05/R06 cerrados. T10/9596d26 revisado: requiere **T10R (ETAPA_09_CLAUDE.md, REVISION_CODEX_09.md), R07–R10** antes de aceptación. Codex119 pruebas verdes y cuatro casos de fallo adicionales reproducidos. Azure estudiantes y Atlas Free ya creados, sin despliegue/conexión verificados ni presupuesto de bolsillo; BD459,39MB requiere plan de capacidad. Agosto reservado; fechas de tabla son objetivos, no evidencia. Ver ESTADO/TRASPASO.
+Estado al 17/10: T08R y **T10R/6212f6a aceptados** (REVISION_CODEX_10.md), R05–R10 cerrados para demostración local. Codex 59 regresiones aprobadas incluida cadena loop/worker real; históricas intactas y congelación verificada. Encargo siguiente **ETAPA_10_CLAUDE.md (T12)**: evaluación final dedicada de agosto autorizada tras preflight/preparación, sin re-selección. Azure estudiantes/Atlas Free creados, sin despliegue/conexión ni presupuesto de bolsillo; BD 459,39 MB requiere plan de capacidad. Fechas de tabla son objetivos, no evidencia. Ver ESTADO/TRASPASO.
 
-T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04–T07 aceptados como desarrollo. T08 y lectura T09 aceptados tras T08R; T10 y posteriores pendientes. Método operativo v1 promedio_28; RF comparador, no ganador. Congelación final documentada en T08 antes de abrir agosto. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
+T01 está parcial; T03 aceptado para seis fuentes auditadas tras R01–R04. T02A tiene controles de importación pero no conciliación con reporte externo de la MYPE. T04–T07 aceptados como desarrollo; T08/T09/T10 aceptados para alcance local. T11–T15 pendientes; T12 es el encargo vigente. Método operativo promedio_28; RF comparador, no ganador. Congelación registrada antes del test; no modificarla para acomodar resultados. Ver ANALISIS_Y_PLAN.md y DECISIONES_DATOS.md.
 
 | ID | Entrega | Dependencia | Responsable / agente | Fecha objetivo | Aceptación |
 |---|---|---|---|---|---|
@@ -16,9 +16,9 @@ T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregi
 | T07 | Simulación de referencia sintética y política con ML | T02B, T05 | Rogelio / backend-inventory | 19 | A06–A08 |
 | T08 | API autenticada y persistencia versionada | T01, contratos | Rogelio / backend-inventory | 20 | A09 |
 | T09 | Pantallas conectadas, filtros y estados | T08; mocks antes | Fabricio / frontend | 20 | A10 |
-| T10 | Flujo local construido; T10R pendiente R07–R10, ETAPA_09_CLAUDE.md | T06–T08 | Fabricio y Rogelio | 20 | A11; cierre regresiones de concurrencia/recuperación |
+| T10 | Flujo local aceptado tras T10R/6212f6a | T06–T08 | Fabricio y Rogelio | 20 | A11 local; revisión10 y59 pruebas |
 | T11 | Despliegue de prueba, backups y restauración | Accesos, T08–T10 | Fabricio | 21 | A12–A13 |
-| T12 | Evaluación final reservada e impacto | T06–T07 congelados | Blanca y Mauro | 21 | Informe reproducible sin cambiar selección |
+| T12 | Encargo vigente: evaluación final bajo congelación, ETAPA_10_CLAUDE.md | T06–T07 congelados; T10 aceptado | Blanca y Mauro | 21 | Predicción fija/simulación separadas, auditoría, sin re-selección |
 | T13 | Revisión independiente y aceptación | T09–T12 | Fabricio / quality-reviewer | 22 | A14, sin críticos |
 | T14 | Informe, manual, fuentes y video | Evidencia acumulada | Milton y equipo | 23 | Anexos y conclusiones verificables |
 | T15 | Versión final y entrega | T13–T14 | Rogelio y Milton | 23, 18:00 Lima | Repositorio, URL, copia recuperable |

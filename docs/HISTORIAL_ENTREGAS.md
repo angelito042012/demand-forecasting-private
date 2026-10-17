@@ -1,5 +1,9 @@
 # Historial de entregas anteriores
 
+## Revisión Codex10: T10R aceptado y encargo T12 (17/10/2026)
+
+Entrega 6212f6a revisada; T10/T10R aceptados para demostración local, R07–R10 cerrados. Codex ejecutó 59 pruebas selectivas aprobadas, sin omitidas, 43,65 s, incluida cadena continua timer/worker/Mongo real con reloj acelerado; ruff afectado limpio. Auditoría solo lectura conserva ambas históricas y hash de congelación; staging abandonado conservado como failed; tamaño 459,39 MB. No se abrió agosto en esta revisión. Límites: CLI serial sin concurrencia web y scheduler con fuentes/config estables. Encargo posterior ETAPA_10_CLAUDE.md autoriza evaluación final T12 dedicada bajo congelación, con preparación sellada antes de leer el test, sin re-selección; paquete local antes de integración/capacidad/despliegue. Revisiones y pruebas detalladas en REVISION_CODEX_10.md.
+
 Se conserva el registro anterior al reinicio de sesión del 17/10/2026. Para el estado actual leer ESTADO.md.
 
 # Estado vigente y traspaso

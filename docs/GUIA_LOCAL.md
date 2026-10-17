@@ -34,6 +34,8 @@ Acceso → Corridas (corrida histórica de desarrollo al 10/07/2026, con su anti
 
 HTTPS, copia/restauración y despliegue en la nube (T11), evaluación final en agosto (T12) y aceptación humana. La carga masiva por CLI sigue disponible: `python -m pipeline.data.importer --source <carpeta> --db <base>`.
 
+Tras T10R: la importación CLI es administrativa **serial, nunca simultánea con cargas web/worker**, porque no usa la reserva mensual del handler. El timer continúa deshabilitado por defecto y requiere fuentes/config estables durante recuperación; no afirmar exclusión global de cualquier escritor ni cancelación instantánea de un lote ya enviado. T12 es un runner dedicado de evaluación final, no una ampliación de la carga web o de la generación de desarrollo.
+
 ## Accesos necesarios para el despliegue posterior (sin contratar nada ahora)
 
 - Suscripción Azure con permiso para crear: App Service o Container Apps (API), Static Web Apps o almacenamiento (frontend), Key Vault, Application Insights; presupuesto autorizado y región.
