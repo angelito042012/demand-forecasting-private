@@ -43,7 +43,7 @@ def _actual(index: list, sales: pd.DataFrame, key_cols: list[str], days: list[st
     return out, pd.DataFrame(unknown, columns=key_cols + ["fecha", "qty"]) if unknown else grouped.iloc[0:0]
 
 
-def evaluate_level(level, index, values, actual, eval_days, cfg) -> dict:
+def evaluate_level(level, index, values, actual, eval_days, cfg, extra=None) -> dict:
     """Estadisticos y cobertura por cohorte/universo/metodo/vista para un nivel de un fold."""
     block = forecast_block(values, horizon=cfg["horizonte_dias"], window=cfg["ventana_promedio_dias"])
     cp = cfg["cohorte_primaria"]
@@ -51,23 +51,24 @@ def evaluate_level(level, index, values, actual, eval_days, cfg) -> dict:
                         min_usable=cp["observaciones_utilizables_minimas_en_28"])
     known = block.history_days > 0
     out: dict = {"stats": {}, "cobertura": {}, "n_entidades": {}, "naive_fallback_filas": {}, "antiguedad_ultimo_dia": {}}
-    preds = block.forecasts
+    preds = {**block.forecasts, **(extra or {})}   # extra: predicciones adicionales (T06) sobre los mismos targets
+    methods = tuple(preds)
     for cohort, mask in (("primaria", prim & known), ("historia_corta", known & ~prim)):
         out["n_entidades"][cohort] = int(mask.sum())
         rows = mask[:, None] & eval_days[None, :]
-        avail = {m: rows & ~np.isnan(preds[m]) for m in METHODS}
+        avail = {m: rows & ~np.isnan(preds[m]) for m in methods}
         common = rows.copy()
-        for m in METHODS:
+        for m in methods:
             common &= ~np.isnan(preds[m])
         out["cobertura"][cohort] = {"filas_objetivo": int(rows.sum()), "filas_comunes": int(common.sum()),
-                                    **{m: int(avail[m].sum()) for m in METHODS}}
+                                    **{m: int(avail[m].sum()) for m in methods}}
         fb = block.naive_fallback & rows
         out["naive_fallback_filas"][cohort] = int(fb.sum())
         ages = block.last_day_age[mask & ~np.isnan(block.last_day_age)]
         out["antiguedad_ultimo_dia"][cohort] = ({"mediana": float(np.median(ages)), "p90": float(np.quantile(ages, .9)),
                                                  "max": float(ages.max())} if ages.size else None)
-        for universe, sel in (("propio", avail), ("comun", {m: common for m in METHODS})):
-            for m in METHODS:
+        for universe, sel in (("propio", avail), ("comun", {m: common for m in methods})):
+            for m in methods:
                 r = sel[m]
                 out["stats"][(cohort, universe, m, "diaria")] = (
                     stats(actual[r], preds[m][r]) if r.any() else new_stats())
@@ -81,11 +82,13 @@ def evaluate_level(level, index, values, actual, eval_days, cfg) -> dict:
                 else:
                     out["stats"][(cohort, universe, m, "bloque7")] = new_stats()
     out["_block"] = block
+    out["_preds"] = preds
+    out["metodos"] = methods
     out["_primary"] = prim
     return out
 
 
-def run_fold(db, fold_cfg: dict, cfg: dict, *, required_months=None) -> dict:
+def run_fold(db, fold_cfg: dict, cfg: dict, *, required_months=None, extras_fn=None) -> dict:
     cut = date.fromisoformat(fold_cfg["corte"])
     v0, v1 = (date.fromisoformat(x) for x in fold_cfg["validacion"])
     fold = load_fold(db, cut, v1, start=date.fromisoformat(cfg["inicio_entrenamiento"]),
@@ -109,7 +112,9 @@ def run_fold(db, fold_cfg: dict, cfg: dict, *, required_months=None) -> dict:
     # --- SKU
     idx, vals = _wide(pairs, ["sku", "almacen"], "cantidad_base", cal)
     act, new = _actual(idx, vs, ["sku", "almacen"], days)
-    ev = evaluate_level("sku", idx, vals, act, eval_days, cfg)
+    info = {"train": train, "pairs": pairs, "cats": cats, "cal": cal, "fold": fold_cfg}
+    extra = extras_fn("sku", idx, vals, info) if extras_fn else None
+    ev = evaluate_level("sku", idx, vals, act, eval_days, cfg, extra)
     new_ev = new[new["fecha"].isin([d for d, e in zip(days, eval_days, strict=True) if e])]
     ev["nuevos_en_validacion"] = {"entidades": int(new[["sku", "almacen"]].drop_duplicates().shape[0]),
                                   "unidades_evaluables": float(new_ev["qty"].sum()),
@@ -121,7 +126,8 @@ def run_fold(db, fold_cfg: dict, cfg: dict, *, required_months=None) -> dict:
     vs_c = vs.assign(categoria_corte=[lookup(train.catalog, s) for s in vs["sku"]])
     cidx, cvals = _wide(cats, "categoria_corte", "cantidad_base_suma_heterogenea", cal)
     cact, cnew = _actual(cidx, vs_c, ["categoria_corte"], days)
-    cev = evaluate_level("categoria", cidx, cvals, cact, eval_days, cfg)
+    cextra = extras_fn("categoria", cidx, cvals, info) if extras_fn else None
+    cev = evaluate_level("categoria", cidx, cvals, cact, eval_days, cfg, cextra)
     cnew_ev = cnew[cnew["fecha"].isin([d for d, e in zip(days, eval_days, strict=True) if e])]
     cev["nuevos_en_validacion"] = {"categorias": sorted(set(cnew["categoria_corte"])),
                                    "unidades_evaluables": float(cnew_ev["qty"].sum())}
@@ -140,7 +146,7 @@ def _prediction_rows(level, index, ev, actual, days, eval_days) -> list:
         cohort = "primaria" if prim[i] else "historia_corta"
         for h, d in enumerate(days):
             rows.append((level, ent, cohort, d, h + 1, bool(eval_days[h]), actual[i, h],
-                         *(block.forecasts[m][i, h] for m in METHODS), bool(block.naive_fallback[i, h]),
+                         *(ev["_preds"][m][i, h] for m in ev["metodos"]), bool(block.naive_fallback[i, h]),
                          block.last_day_age[i], int(block.history_days[i])))
     return rows
 
@@ -149,10 +155,17 @@ PRED_COLUMNS = ["nivel", "entidad", "cohorte", "fecha", "h", "evaluable", "real"
                 "naive_fallback", "antiguedad_ultimo_dia", "historia_dias"]
 
 
-def run_all(db, cfg: dict, *, required_months=None) -> dict:
-    folds = {f["id"]: run_fold(db, f, cfg, required_months=required_months) for f in cfg["folds"]}
-    preds = pd.DataFrame([[f["id"], *r] for f in cfg["folds"] for r in folds[f["id"]]["predicciones"]],
-                         columns=["fold", *PRED_COLUMNS])
+def pred_columns(methods) -> list:
+    return ["nivel", "entidad", "cohorte", "fecha", "h", "evaluable", "real", *[f"pred_{m}" for m in methods],
+            "naive_fallback", "antiguedad_ultimo_dia", "historia_dias"]
+
+
+def run_all(db, cfg: dict, *, required_months=None, extras_fn=None, only_folds=None) -> dict:
+    folds = {f["id"]: run_fold(db, f, cfg, required_months=required_months, extras_fn=extras_fn)
+             for f in cfg["folds"] if only_folds is None or f["id"] in only_folds}
+    methods = next(iter(folds.values()))["niveles"]["sku"]["metodos"]
+    preds = pd.DataFrame([[fid, *r] for fid, fr in folds.items() for r in fr["predicciones"]],
+                         columns=["fold", *pred_columns(methods)])
     records = []
     for lv in LEVELS:
         pooled: dict = {}
