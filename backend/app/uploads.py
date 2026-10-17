@@ -47,7 +47,7 @@ def get_upload_policy() -> UploadPolicy:
     return UploadPolicy(
         max_bytes=int(up["tam_max_comprimido_bytes"]), max_expanded=int(up["tam_max_expandido_bytes"]),
         max_entries=int(up["max_entradas_zip"]), max_rows=int(up["max_filas_hoja"]),
-        directory=ROOT / up["directorio_privado"],
+        directory=Path(os.environ["DF_UPLOADS_DIR"]) if os.environ.get("DF_UPLOADS_DIR") else ROOT / up["directorio_privado"],  # variable solo para pruebas/operacion
         allowed_months=tuple(cfg["politica_desarrollo"]["meses_permitidos_de_carga"]), extension=up["extension"])
 
 

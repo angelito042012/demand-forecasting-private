@@ -1,19 +1,17 @@
 """Trabajos (T10 §2-3): encolado desde la API y lectura saneada. La API nunca ejecuta el trabajo."""
 from __future__ import annotations
 
-import hashlib
 import re
 from datetime import date, datetime
 
 from backend.app.errors import ApiError, page_response
-from pipeline.data.sources import approved_sources
 from pipeline.jobs import queue
+from pipeline.jobs.keys import generate_run_key
 
 from .common import HEX32_RE, RUN_ID_RE, iso_utc
 
 _ID = re.compile(HEX32_RE)
 _RUN = re.compile(RUN_ID_RE)
-_IDEM_BAD = re.compile(r"[^A-Za-z0-9._-]+")
 SORT = [("created_at", -1), ("job_id", 1)]
 
 
@@ -73,26 +71,10 @@ def enqueue_import(db, *, sha256: str, size_bytes: int, month: str, label: str, 
     return queue.enqueue(db, "import_excel", job_input, f"import:{sha256}", created_by, public=public)
 
 
-def sources_digest(db, origin: date) -> str:
-    """sha256 de los sha256 ordenados de las fuentes aprobadas con mes <= mes del origen."""
-    month = origin.strftime("%Y-%m")
-    shas = sorted(sha for sha, imp in approved_sources(db).items() if str(imp.get("mes", "9999-99")) <= month)
-    return hashlib.sha256("\n".join(shas).encode("ascii")).hexdigest()
-
-
-def clean_idempotency_key(raw: str | None) -> str | None:
-    if not raw:
-        return None
-    cleaned = _IDEM_BAD.sub("", raw)[:40]
-    return cleaned or None
-
-
 def enqueue_generate(db, *, origin: date, horizon_days: int, method: str, generator: str,
                      idempotency_header: str | None, created_by: str) -> tuple[dict, bool]:
     queue.ensure_indexes(db)
-    key = f"gen:{origin.isoformat()}:{horizon_days}:{method}:{generator}:{sources_digest(db, origin)}"
-    extra = clean_idempotency_key(idempotency_header)
-    if extra:
-        key += f":k={extra}"
+    # misma funcion de clave que usa el temporizador: una sola definicion de identidad del trabajo
+    key = generate_run_key(db, origin, horizon_days, method, idempotency_header, generator)
     job_input = {"origin": origin.isoformat(), "horizon_days": horizon_days, "method": method}
     return queue.enqueue(db, "generate_run", job_input, key, created_by, public=dict(job_input))
