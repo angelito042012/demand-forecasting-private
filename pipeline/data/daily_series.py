@@ -36,12 +36,21 @@ CATEGORY_COLUMNS = ["fecha", "categoria_corte", "estado", "cantidad_base_suma_he
                     "n_lineas", "n_sku_con_venta", "importe_centimos"]
 
 
+def _centimos(imp, row) -> int:
+    """Importe en centimos sin truncar: debe ser representable con dos decimales."""
+    cents = imp * 100
+    if cents != cents.to_integral_value():
+        raise ValueError(f"importe {imp} (linea {row.get('linea_id')}) no es representable con dos decimales; "
+                         "no se trunca ni se redondea")
+    return int(cents)
+
+
 def sales_frame(data: TrainingData) -> pd.DataFrame:
     rows = []
     for r in data.sales:
         imp = r["importe"].to_decimal() if r.get("importe") is not None else None
         rows.append((r["fecha"], r["sku"], r["almacen"], float(r["cantidad_base"]),
-                     None if imp is None else int(imp * 100), r.get("unidad_base", ""),
+                     None if imp is None else _centimos(imp, r), r.get("unidad_base", ""),
                      r.get("categoria_original", "")))
     df = pd.DataFrame(rows, columns=["fecha", "sku", "almacen", "qty", "centimos", "unidad", "cat_orig"])
     df["fecha"] = pd.to_datetime(df["fecha"])
@@ -89,12 +98,13 @@ def category_daily(pairs: pd.DataFrame) -> pd.DataFrame:
     g = sold.groupby(["categoria_corte", "fecha"]).agg(
         cantidad_base_suma_heterogenea=("cantidad_base", "sum"), n_lineas=("n_lineas", "sum"),
         n_sku_con_venta=("sku", "nunique"), importe_centimos=("importe_centimos", "sum")).reset_index()
-    masked = set(pairs.loc[pairs["estado"].isin(NO_USABLE), "fecha"])
+    non_usable = pairs.loc[pairs["estado"].isin(NO_USABLE)].drop_duplicates("fecha").set_index("fecha")["estado"]
+    masked = set(non_usable.index)
     rows = [(c, d) for c, f in first.items() for d in cal if d >= f]
     grid = pd.DataFrame(rows, columns=["categoria_corte", "fecha"])
     out = grid.merge(g, on=["categoria_corte", "fecha"], how="left")
     is_mask = out["fecha"].isin(masked)
-    out["estado"] = np.where(is_mask, MASCARA, np.where(out["n_lineas"].notna(), VENTA, CERO))
+    out["estado"] = np.where(is_mask, out["fecha"].map(non_usable), np.where(out["n_lineas"].notna(), VENTA, CERO))
     num = ["cantidad_base_suma_heterogenea", "n_lineas", "n_sku_con_venta", "importe_centimos"]
     out.loc[out["estado"] == CERO, num] = 0
     out.loc[is_mask, num] = np.nan

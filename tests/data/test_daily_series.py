@@ -69,3 +69,19 @@ def test_day_without_any_rows_is_not_turned_into_zero():
     assert a.loc["2026-04-06", "estado"] == ds.SIN_COBERTURA and a.loc["2026-04-06"].isna()["cantidad_base"]
     assert a.loc["2026-04-02", "estado"] == ds.VENTA or a.loc["2026-04-02", "estado"] == ds.CERO
     assert ds.intermittency(p).set_index("sku").loc["A", "dias"] == 11
+
+
+def test_amount_not_representable_in_cents_raises_instead_of_truncating():
+    import pytest
+    d = _data(ROWS)
+    bad = d.sales[0] | {"importe": Decimal128("10.505")}
+    with pytest.raises(ValueError, match="dos decimales"):
+        ds.sales_frame(TrainingData(**{**d.__dict__, "sales": (bad, *d.sales[1:])}))
+
+
+def test_category_series_preserves_no_coverage_state():
+    rows = [r for r in ROWS if r[0] != "2026-04-06"] + [("2026-04-07", "A", 1, "CAT X")]
+    p = ds.pair_daily(_data(rows, skip_cover=("2026-04-06",)))
+    c = ds.category_daily(p).set_index(["categoria_corte", "fecha"])
+    assert c.loc[("CAT X", "2026-04-06"), "estado"] == ds.SIN_COBERTURA
+    assert c.loc[("CAT X", "2026-04-03"), "estado"] == ds.MASCARA

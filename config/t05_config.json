@@ -1,0 +1,26 @@
+{
+  "version": "t05-1",
+  "congelado_antes_de_evaluar": true,
+  "zona_horaria": "America/Lima",
+  "inicio_entrenamiento": "2026-03-01",
+  "horizonte_dias": 7,
+  "emision": "una vez en el origen (fin de entrenamiento); sin actualizar con ventas del bloque",
+  "folds": [
+    {"id": "F1", "corte": "2026-05-31", "validacion": ["2026-06-01", "2026-06-07"]},
+    {"id": "F2", "corte": "2026-06-14", "validacion": ["2026-06-15", "2026-06-21"]},
+    {"id": "F3", "corte": "2026-06-28", "validacion": ["2026-06-29", "2026-07-05"]},
+    {"id": "F4", "corte": "2026-07-12", "validacion": ["2026-07-13", "2026-07-19"]},
+    {"id": "F5", "corte": "2026-07-24", "validacion": ["2026-07-25", "2026-07-31"]}
+  ],
+  "metodos": ["cero", "ultimo_dia", "naive_semanal", "promedio_28"],
+  "ventana_promedio_dias": 28,
+  "cohorte_primaria": {"historia_minima_dias": 56, "observaciones_utilizables_minimas_en_28": 21},
+  "r2_minimo_n": 30,
+  "referencia_t06": {
+    "regla": "baseline distinto de cero con menor WAPE agregado en cohorte primaria SKU, universo comun, valores diarios; si la diferencia relativa con el siguiente es menor a 1% se prefiere el mas simple en el orden promedio_28, ultimo_dia, naive_semanal",
+    "candidatos": ["ultimo_dia", "naive_semanal", "promedio_28"],
+    "desempate_orden": ["promedio_28", "ultimo_dia", "naive_semanal"],
+    "umbral_empate_relativo": 0.01
+  },
+  "agosto_usado": false
+}

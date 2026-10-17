@@ -105,7 +105,7 @@ def _fingerprint(rows, cutoff: date, catalog: dict, report: SourceReport) -> str
         h.update(f"cat|{sku}|{catalog[sku]}\n".encode())
     for r in rows:
         h.update(f"{r['linea_id']}|{r['fecha']}|{r['sku']}|{r['cantidad_base']}|{r['importe']}|"
-                 f"{r.get('categoria_original', '')}|{r.get('almacen', '')}\n".encode())
+                 f"{r.get('categoria_original', '')}|{r.get('almacen', '')}|{r.get('unidad_base', '')}\n".encode())
     return h.hexdigest()
 
 
@@ -121,7 +121,8 @@ def load_training_data(db, cutoff, *, start=None, required_months=None) -> Train
     kept = [r for r in rows if to_date(r["fecha"]) not in EXCLUDED_DATES]
     cal_first = first or (to_date(kept[0]["fecha"]) if kept else last)
     calendar = _days(cal_first, last) if cal_first <= last else ()
-    catalog = build_category_catalog(db, last, source_filter=approved_filter(report))
+    catalog = build_category_catalog(db, last, source_filter=approved_filter(report), start=first,
+                                     excluded_dates=EXCLUDED_DATES)
     return TrainingData(
         cutoff=last, sales=tuple(kept), calendar=calendar,
         excluded_days=frozenset(d for d in calendar if d in EXCLUDED_DATES),

@@ -35,7 +35,7 @@ DICTIONARY = {
         ("sku", "texto", "ID_ARTICULO del Excel."),
         ("almacen", "texto", "ID_ALMACEN del Excel (en marzo-julio solo existe '1')."),
         ("categoria_corte", "texto", "Categoria del catalogo versionado al corte 2026-07-31 (DESCONOCIDA si no hay). categoria_original no se modifica en la base."),
-        ("estado", "VENTA_OBSERVADA | CERO_OBSERVADO | EXCLUIDO_MASCARA", "VENTA_OBSERVADA: hay al menos una linea de venta. CERO_OBSERVADO: sin venta desde la primera observacion del par; es un cero de venta observada, NO prueba ausencia de demanda ni stock disponible. EXCLUIDO_MASCARA: 03/04, 12/04 y 07/06 de 2026; cantidad vacia, fuera de entrenamiento y metricas."),
+        ("estado", "VENTA_OBSERVADA | CERO_OBSERVADO | EXCLUIDO_MASCARA | SIN_REGISTROS_DIA", "VENTA_OBSERVADA: hay al menos una linea de venta. CERO_OBSERVADO: sin venta desde la primera observacion del par; es un cero de venta observada, NO prueba ausencia de demanda ni stock disponible. EXCLUIDO_MASCARA: 03/04, 12/04 y 07/06 de 2026; cantidad vacia, fuera de entrenamiento y metricas. SIN_REGISTROS_DIA: dia no enmascarado sin ninguna linea en las fuentes; cantidad vacia, no es cero (no ocurre en marzo-julio). Ambos estados se conservan en el agregado por categoria."),
         ("cantidad_base", "decimal", "Suma de CANTIDAD_UM_BASE de lineas de venta (TIPO_DOC distinto de 7, importe > 0). Unidad base (todas UND en marzo-julio). Vacio en EXCLUIDO_MASCARA. Excluye notas de credito."),
         ("n_lineas", "entero", "Numero de lineas de venta del dia (0 en cero observado, vacio si mascara)."),
         ("importe_centimos", "entero", "Suma de TOTAL_LINEA de ventas en centimos de sol (exacto, sin coma flotante)."),

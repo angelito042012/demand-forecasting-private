@@ -113,3 +113,21 @@ def test_final_test_requires_explicit_confirmation(loaded):
             load_final_test_sales(loaded, frozen_selection_confirmed=flag, required_months=RM_JUL)
     aug = load_final_test_sales(loaded, frozen_selection_confirmed=True, required_months=RM_JUL)
     assert [r["fecha"] for r in aug] == ["2026-08-02", "2026-08-15"]
+
+
+def test_catalog_respects_start_and_mask_of_the_sales_window(xlsx, db):
+    rows = [s(1, 1, 4, cat="CAT A"), s(2, 3, 4, cat="CAT MASK"), s(3, 6, 4, cat="CAT B")]
+    import_workbook(xlsx("abril.xlsx", rows), db)
+    full = load_training_data(db, date(2026, 4, 15), required_months=RM_APR)
+    assert full.catalog["100"] == "CAT B"          # el dia enmascarado no aporta categoria
+    from_5 = load_training_data(db, date(2026, 4, 15), start=date(2026, 4, 5), required_months=RM_APR)
+    assert from_5.catalog["100"] == "CAT B"
+    only_before = load_training_data(db, date(2026, 4, 15), start=date(2026, 4, 7), required_months=RM_APR)
+    assert "100" not in only_before.catalog        # categoria anterior a start no se usa
+
+
+def test_fingerprint_covers_unidad_base(xlsx, db):
+    import_workbook(xlsx("julio.xlsx", [s(1, 3)]), db)
+    a = load_training_data(db, date(2026, 7, 31), required_months=RM_JUL).fingerprint
+    db.sales.update_many({}, {"$set": {"unidad_base": "KG"}})
+    assert load_training_data(db, date(2026, 7, 31), required_months=RM_JUL).fingerprint != a
