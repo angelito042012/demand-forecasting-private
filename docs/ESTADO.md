@@ -1,10 +1,10 @@
 # Estado vigente del proyecto
 
-Actualizado el 17/10/2026, Lima. Entrega final 23/10/2026. Claude ejecuta; Codex dirige/revisa. Un ejecutor principal activo. Historial anterior en HISTORIAL_ENTREGAS.md; revisiones 01–07.
+Actualizado el 17/10/2026, Lima. Entrega final 23/10/2026. Claude ejecuta; Codex dirige/revisa. Un ejecutor principal activo. Historial anterior en HISTORIAL_ENTREGAS.md; revisiones 01–08.
 
 ## Siguiente encargo
 
-**Corrección T08R (R05–R06 y presentación) entregada a revisión de Codex (17/10/2026, Claude).** No se inició T10 ni se abrió agosto. Tras la revisión, Codex emitirá carga/batch (T10) y la ejecución final bajo la congelación, en el orden que decida. Informe: `docs/T08R_REPORTE.md`; auditoría: `docs/T08R_AUDITORIA.json`.
+**Encargo vigente ETAPA_08_CLAUDE.md (T10)**, tras aceptar T08R al commit 80117c0 en REVISION_CODEX_08.md. R05/R06 cerrados para demostración local; T08 y lectura integrada T09 aceptados con límites. Próximo ejecutor Claude: contrato/concurrencia antes de carga web, cola durable, worker, generación promedio_28 y timer local. Agosto sigue reservado; no repetir entrenamientos ni cambiar selección congelada.
 
 ## Hitos aceptados
 
@@ -22,7 +22,7 @@ Actualizado el 17/10/2026, Lima. Entrega final 23/10/2026. Claude ejecuta; Codex
 - Selección congelada (`docs/SELECCION_CONGELADA.md`, `config/seleccion_congelada.json`): sin ejecutar, sin paquetes finales, sin autorización de agosto; no se modificó en T08R.
 - Reportes de ejecuciones de Claude: T08 (suite 226, frontend 42, E2E 24/24) y T08R (abajo). Codex07 verificó 118 pruebas seleccionadas de T08 y su auditoría de recomendaciones.
 
-## T08R: correcciones aplicadas (commit final de esta entrega; antecedente 960638d)
+## T08R aceptado: correcciones de R05/R06 y presentación (80117c0)
 
 - **R05 (precisión)**: la recomendación usa ahora señales exactas (suma de unidades y días útiles de la ventana de 28 días, derivadas de ventas aprobadas ≤ 10/07, aritmética racional, sin épsilon); el CSV T07 solo es control de coherencia. Reproducido antes de corregir (registro `artifacts/private/t08r/r05_fallo_previo.log`). **Corrida corregida `hist-20260710-4ea348836e35`** (activa; identidad con versión `t08r-1` y señales). La anterior `hist-20260710-52b01cd999dd` se **conserva como `superseded`** (`quality_issue` R05, `superseded_by`); sus hijos no se alteraron y la API/UI la marcan como no válida.
 - **Auditoría independiente** (`scripts/audit_recommendations.py`, sin builders ni helpers; agregación directa de ventas aprobadas + NPZ, enteros): 3 347 recomendaciones, **0 diferencias** de objetivo/posición/pedido; **582 sugerencias positivas / 2 655 unidades** (igual que la referencia de Codex) frente a 640/2 773 de la corrida anterior: 58 sugerencias y 118 unidades menos; la corrida anterior tenía 225 objetivos y 118 pedidos inflados en una unidad. Los 300 sin snapshot siguen con todo nulo.
@@ -40,4 +40,12 @@ REVISION_CODEX_07.md; artifacts/private/codex_review07_audit.json y codex_review
 
 TIPO_DOC=7 son notas de crédito; no implican retorno físico. Excluir 03/04,12/04 y 07/06/2026 sin comprimir calendario ni escribir cero observado. Categoría por corte. Inventario sintético autorizado y etiquetado; ventas pueden estar censuradas por stock desconocido. Sin impacto real demostrado. Marzo-julio desarrollo; agosto reservado. Ver DECISIONES_DATOS.md.
 
-Después de corregir y revisar T08: T10 carga web/batch/timer, T12 ejecución final bajo congelación, T11 HTTPS/despliegue/backup/restauración, pruebas de carga/accesibilidad/aceptación humana e informe. Sin cuentas Azure/Atlas ni presupuesto autorizado. No hay alternancia automática de cuotas; el usuario avisa del cambio. Commits locales autorizados con secretos/datos privados excluidos.
+Ahora T10 carga web/batch/timer, con concurrencia como prerrequisito. Después T12 ejecución final bajo congelación, T11 HTTPS/despliegue/backup/restauración, rendimiento/accesibilidad/aceptación humana e informe. Sin cuentas Azure/Atlas ni presupuesto autorizado. No hay alternancia automática de cuotas; el usuario avisa del cambio. Commits locales autorizados con secretos/datos privados excluidos.
+
+## Revisión independiente Codex08 (17/10)
+
+31 pruebas selectivas de exactitud/publicación y servidor Uvicorn real aprobadas, un aviso, 31,62 s. Ruff detectó dos diagnósticos de estilo en scripts/audit_recommendations.py (noqa/contador), sin defecto funcional; limpiar al iniciar T10. No se repitieron entrenamiento ni Chrome. Codex inspeccionó capturas de pedido y comparación y el registro E2E16/16 de Claude; frontend79/build y suite254/3 omitidas son evidencia del ejecutor.
+
+Auditoría propia desde agregación directa de fuentes G4 y NPZ verificado: 3347 recomendaciones, cero diferencias de señal/stock/tránsito/objetivo/posición/pedido, 582 positivas y 2655 unidades; 300 sin snapshot nulos. Corrida nueva activa/completed, antigua superseded con hijos conservados. Congelación con hash correcto. Consulta real solo lectura; tests escribieron bases temporales. Evidencia artifacts/private/codex_review08_audit.json y codex_review08_tests.xml; revisión REVISION_CODEX_08.md.
+
+T10 no abre test: generación operativa de desarrollo con cortes habilitados 01/06–10/07 y H<=21 hasta revisión posterior; carga web rechaza agosto y no sustituye fuentes canónicas silenciosamente. Baseline operativo, recomendaciones hipotéticas sobre snapshots simulados compatibles. Solicitud de cuentas/presupuesto pendiente de respuesta; desarrollar local sin asumir autorización de gasto.

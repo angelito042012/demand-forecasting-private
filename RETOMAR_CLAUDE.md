@@ -1,7 +1,9 @@
 # Retomar sin repetir trabajo
 
-Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente **ETAPA_07_CLAUDE.md (corrección T08)** tras revisión docs/REVISION_CODEX_07.md de entrega 960638d.
+Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente **ETAPA_08_CLAUDE.md (T10)** tras aceptar T08R al commit 80117c0 en docs/REVISION_CODEX_08.md. R05/R06 cerrados en alcance local.
 
-T08 no está aceptado completo: R05 precisión provoca 118 pedidos inflados; R06 cabeceras proxy alteran IP del límite de login. Primero pruebas de regresión/corrección, nueva publicación con señales exactas y versión propia, luego presentación legible y navegador. Conservar corrida anterior como historial sustituido, Excel, bases y artefactos T07. Anclar fingerprints/hashes antes de combinar resultados.
+Verificar Git/procesos antes de editar. Primero contrato y garantías de concurrencia (login/publicación/worker), después carga Excel, cola durable, generación promedio_28 y timer local comprobable. Mantener historial de corridas y precisión exacta. Se permite delegación con ámbitos separados y un integrador.
 
-Verificar Git/procesos antes de editar. No repetir T06/T07, no modificar selección congelada, no abrir agosto ni iniciar T10. Guardar checkpoints y traspaso por unidad. Al cerrar actualizar ESTADO/BACKLOG/HISTORIAL, commit y resumen breve con auditoría/pruebas/evidencias, run_id nuevo y límites. Claude ejecuta; Codex revisa. Un ejecutor principal activo.
+No repetir T06/T07, abrir agosto ni modificar selección congelada. Desarrollo temporal habilitado 01/06–10/07 y H<=21 en este incremento; recomendaciones solo con snapshot simulado compatible. No sustituir fuentes canónicas ni inventar datos actuales. Nube pendiente de accesos/presupuesto, sin gasto autorizado.
+
+Guardar checkpoints/traspaso por unidad; al cerrar actualizar ESTADO/BACKLOG/HISTORIAL y guía, commit y reporte breve con pruebas/evidencias y límites. Entregar T10 a revisión de Codex antes del test final. Un ejecutor principal activo.

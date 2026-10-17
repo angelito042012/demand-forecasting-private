@@ -1,8 +1,8 @@
 # Backlog de ejecución
 
-Estado al 17/10 (noche): T08R (R05 precisión, R06 proxy, presentación) entregado a revisión de Codex; corrida corregida activa y anterior sustituida. Siguiente: T10 carga/batch (con endurecimiento del límite de login y lease), T11, T12. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
+Estado al 17/10: T08R aceptado en REVISION_CODEX_08.md; R05/R06 cerrados en alcance local. Encargo ETAPA_08_CLAUDE.md (T10): concurrencia, carga web, cola/worker, generación baseline y timer. Agosto reservado; fechas de tabla son objetivos, no evidencia. Ver ESTADO/TRASPASO.
 
-T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04–T07 aceptados como desarrollo. T08 pendiente de aceptación R05–R06; T09 lectura funciona con presentación pendiente; T10 y posteriores pendientes. Método operativo v1 promedio_28; RF comparador, no ganador. Congelación final documentada en T08 antes de abrir agosto. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
+T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04–T07 aceptados como desarrollo. T08 y lectura T09 aceptados tras T08R; T10 y posteriores pendientes. Método operativo v1 promedio_28; RF comparador, no ganador. Congelación final documentada en T08 antes de abrir agosto. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 
 | ID | Entrega | Dependencia | Responsable / agente | Fecha objetivo | Aceptación |
 |---|---|---|---|---|---|

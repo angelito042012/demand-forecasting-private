@@ -259,3 +259,21 @@ T07 aceptado al commit 5790103. Codex ejecutó 22 pruebas selectivas, comprobó 
 ## Entrega 17/10/2026 (Claude): correccion T08R (pendiente de revision de Codex)
 
 - R05: senales exactas y corrida hist-20260710-4ea348836e35 (anterior superseded); auditoria independiente 0 diferencias, 582/2655. R06: --no-proxy-headers y prueba de cadena real. Presentacion legible. pytest 254, frontend 79, E2E 16/16. Detalle: docs/T08R_REPORTE.md.
+
+
+## Traspaso T08R antes de revisión Codex08
+
+# Traspaso vigente
+
+- Ejecutor: Claude Code, 17/10/2026. Tarea: corrección T08R (ETAPA_07_CLAUDE.md; R05, R06, presentación) terminada y entregada a revisión de Codex. Nada en curso; procesos propios detenidos al cerrar.
+- Commits: ac8ee8b (señales exactas R05, identidad t08r-1, anclaje, R06), 7fcc99c (auditoría independiente), e2cae1f (presentación) y el commit final de ajuste de contrato de UI + documentación (HEAD, ver `git log`).
+- Corridas en demand_forecasting_v2: **activa** `hist-20260710-4ea348836e35` (válida: 582 pedidos/2 655 uds.; auditoría independiente 0 diferencias); `hist-20260710-52b01cd999dd` **superseded** (R05) conservada. Usuarios locales demo_admin/demo_lector (credenciales solo en `artifacts/private/t08/e2e_credentials.json`, no versionado).
+- Pruebas: pytest 254 aprobadas, 3 omitidas (RUN_REALDATA, no repiten T07); frontend 79 + build; E2E Chrome T08R 16/16. Logs/capturas privados en `artifacts/private/t08r/`. Reporte: `docs/T08R_REPORTE.md`; auditoría: `docs/T08R_AUDITORIA.json`.
+- Pendientes declarados: límite de login no atómico y lease de publicación sin fencing (antes de exposición pública/T10/T11); T10 carga web/batch; T11 despliegue/HTTPS/respaldo (requiere accesos de nube de `docs/GUIA_LOCAL.md`); T12 ejecución final bajo `SELECCION_CONGELADA` (no ejecutada; agosto sin abrir); aceptación humana.
+- Siguiente acción exacta: revisión de Codex de T08R; después T10 y la autorización de la ejecución final en el orden que decida.
+- Iniciar para demostrar: `powershell -File scripts/start-local.ps1` (API con `--no-proxy-headers`), detener con `scripts/stop-local.ps1`.
+
+
+## Revisión Codex08 y encargo T10
+
+T08R aceptado al commit 80117c0 para alcance local. R05/R06 cerrados: 31 pruebas selectivas aprobadas y auditoría de 3347 recomendaciones sin diferencias (582 positivas/2655 unidades); anterior sustituida conservada. Dos diagnósticos de estilo menores en script de auditoría pasan a limpieza T10. Sin repetir entrenamiento o navegador. Siguiente ETAPA_08_CLAUDE.md: concurrencia, carga web, cola/worker, generación baseline y timer local. Agosto reservado y nube sin gasto autorizado.
