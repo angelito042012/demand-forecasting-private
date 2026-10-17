@@ -1,0 +1,109 @@
+"""Esquema de las colecciones publicadas (T08 §4): indices y validacion de documentos.
+
+La migracion es NO destructiva e idempotente: solo crea indices con nombre fijo; nunca
+borra ni modifica colecciones existentes (`sales`, `credit_notes`, `imports`, `import_*`
+quedan intactas). Si un indice del mismo nombre existe con otra definicion, PyMongo lo
+rechaza y la migracion se detiene sin alterarlo.
+"""
+from __future__ import annotations
+
+from pymongo import ASCENDING
+
+SCHEMA_VERSION = 1
+KIND = "historical_development"
+RUN_LABEL = "Corrida histórica de desarrollo al 10/07/2026"
+PROVENANCE_SIM = "SYNTHETIC_NOT_REAL_INVENTORY"
+PROVENANCE_OBS = "OBSERVED_EXCEL"
+SIM_LABEL = "Inventario simulado con supuestos; no corresponde al inventario real de la empresa"
+RUN_STATUSES = ("staging", "completed", "failed")
+
+_ASC = ASCENDING
+INDEXES: dict[str, list[tuple[list[tuple[str, int]], dict]]] = {
+    "runs": [
+        ([("run_id", _ASC)], {"unique": True, "name": "uq_run_id"}),
+        ([("idempotency_key", _ASC)], {"unique": True, "name": "uq_idempotency_key"}),
+        ([("status", _ASC), ("cutoff", _ASC)], {"name": "ix_status_cutoff"}),
+        ([("fingerprint", _ASC)], {"name": "ix_fingerprint"}),
+    ],
+    "forecasts": [
+        ([("run_id", _ASC), ("level", _ASC), ("entity_id", _ASC), ("target_date", _ASC)],
+         {"unique": True, "name": "uq_run_level_entity_date"}),
+        ([("run_id", _ASC), ("level", _ASC), ("categoria", _ASC), ("target_date", _ASC)],
+         {"name": "ix_run_level_cat_date"}),
+        ([("run_id", _ASC), ("level", _ASC), ("sku", _ASC)], {"name": "ix_run_level_sku"}),
+    ],
+    "recommendations": [
+        ([("run_id", _ASC), ("sku", _ASC), ("almacen", _ASC)],
+         {"unique": True, "name": "uq_run_sku_almacen"}),
+        ([("run_id", _ASC), ("categoria", _ASC)], {"name": "ix_run_categoria"}),
+        ([("run_id", _ASC), ("status", _ASC), ("order_qty", _ASC)], {"name": "ix_run_status_qty"}),
+    ],
+    "backtests": [
+        ([("backtest_id", _ASC)], {"unique": True, "name": "uq_backtest_id"}),
+        ([("run_id", _ASC)], {"name": "ix_run_id"}),
+    ],
+}
+
+
+class SchemaError(ValueError):
+    """Documento que no cumple el esquema de publicacion."""
+
+
+def ensure_schema(db) -> list[str]:
+    """Crea los indices que falten. Devuelve los nombres garantizados (idempotente)."""
+    names: list[str] = []
+    for coll, specs in INDEXES.items():
+        for keys, opts in specs:
+            names.append(f"{coll}.{db[coll].create_index(keys, **opts)}")
+    return names
+
+
+_REQUIRED: dict[str, dict[str, type | tuple]] = {
+    "runs": {"run_id": str, "status": str, "kind": str, "run_label": str, "idempotency_key": str,
+             "fingerprint": str, "cutoff": str, "origin": str, "target_start": str, "target_end": str,
+             "horizon_days": int, "method": dict, "sources": list, "artifacts": list, "code": dict,
+             "schema_version": int},
+    "forecasts": {"run_id": str, "level": str, "entity_id": str, "categoria": str, "target_date": str,
+                  "h": int, "pred": dict, "evaluable": bool, "provenance": str, "schema_version": int},
+    "recommendations": {"run_id": str, "scenario_id": str, "provenance": str, "sku": str, "almacen": str,
+                        "status": str, "categoria": str, "explanation_steps": list,
+                        "schema_version": int},
+    "backtests": {"backtest_id": str, "run_id": str, "kind": str, "predictive": dict,
+                  "simulation": list, "selection": dict, "coverage": dict, "assumptions": dict,
+                  "disclaimer": str, "scenario_id": str, "provenance": str, "schema_version": int},
+}
+_NUM_NULL_FIELDS = ("on_hand", "in_transit", "position", "mean_28", "forecast_14d", "safety",
+                    "target", "order_qty", "unit_cost_assumed", "order_value_assumed")
+
+
+def validate_doc(coll: str, doc: dict) -> None:
+    """Valida campos obligatorios y reglas del contrato; lanza SchemaError."""
+    for field, typ in _REQUIRED[coll].items():
+        if field not in doc or not isinstance(doc[field], typ) or (typ is int and isinstance(doc[field], bool)):
+            raise SchemaError(f"{coll}: campo '{field}' ausente o con tipo invalido")
+    if doc["schema_version"] != SCHEMA_VERSION:
+        raise SchemaError(f"{coll}: schema_version inesperada")
+    if coll == "runs" and doc["status"] not in RUN_STATUSES:
+        raise SchemaError("runs: status invalido")
+    if coll == "forecasts":
+        if doc["level"] not in ("sku", "categoria"):
+            raise SchemaError("forecasts: level invalido")
+        if set(doc["pred"]) != {"promedio_28", "rf_categoria_distribuido", "cero"}:
+            raise SchemaError("forecasts: metodos de pred incompletos")
+        if any(not isinstance(v, (int, float)) or v < 0 for v in doc["pred"].values()):
+            raise SchemaError("forecasts: pred no numerica o negativa")
+        if doc["target_date"] > "2026-07-31":
+            raise SchemaError("forecasts: fecha objetivo posterior a 2026-07-31")
+    if coll == "recommendations":
+        if doc["provenance"] != PROVENANCE_SIM:
+            raise SchemaError("recommendations: provenance debe ser SYNTHETIC_NOT_REAL_INVENTORY")
+        if doc["status"] == "sin_snapshot":
+            if any(doc.get(f) is not None for f in _NUM_NULL_FIELDS):
+                raise SchemaError("recommendations: sin_snapshot no admite campos numericos")
+        elif doc["status"] == "ok":
+            if any(not isinstance(doc.get(f), (int, float)) for f in _NUM_NULL_FIELDS):
+                raise SchemaError("recommendations: ok requiere campos numericos")
+        else:
+            raise SchemaError("recommendations: status invalido")
+    if coll == "backtests" and doc["provenance"] != PROVENANCE_SIM:
+        raise SchemaError("backtests: provenance invalida")

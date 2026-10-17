@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "nota": "Lista cerrada de manifiestos publicables. La CLI solo acepta estos nombres; nunca rutas ni modelos enviados por usuarios.",
+  "manifests": {
+    "t07": {
+      "manifest": "docs/T07_MANIFIESTO.json",
+      "metrics": "docs/T07_METRICAS.json",
+      "config": "config/t07_config.json",
+      "artifacts_dir": "artifacts/private/t07",
+      "artifacts": ["predicciones_folds.csv.gz", "simulacion_series.npz"],
+      "fold": "G4",
+      "cutoff": "2026-07-10",
+      "target_start": "2026-07-11",
+      "target_end": "2026-07-31",
+      "snapshot_index": 39,
+      "sim_start": "2026-06-01",
+      "scenario_key": "L7_S7_promedio_28",
+      "scenario_id": "T07_L7_S7_promedio_28_2026-07-10",
+      "code_files": [
+        "pipeline/forecast/t05.py", "pipeline/data/importer.py", "pipeline/forecast/features.py",
+        "pipeline/forecast/models.py", "pipeline/forecast/metrics.py", "pipeline/forecast/baselines.py",
+        "pipeline/forecast/t07.py", "pipeline/sim/engine.py", "pipeline/data/training_access.py",
+        "pipeline/data/sources.py", "pipeline/data/catalog.py", "pipeline/data/daily_series.py",
+        "pipeline/data/calendar.py", "scripts/run_t07.py"
+      ]
+    }
+  }
+}
