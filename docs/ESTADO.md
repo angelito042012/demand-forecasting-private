@@ -4,9 +4,7 @@ Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex 
 
 ## Siguiente encargo
 
-**ETAPA_10_CLAUDE.md (T12)** tras aceptar T10/T10R al commit 6212f6a en REVISION_CODEX_10.md. R07–R10 cerrados para demostración local. Preparar/verificar protocolo y referencias, sellar predicciones iniciales con marzo–julio y ejecutar evaluación final dedicada de agosto bajo selección congelada. No re-seleccionar ni alterar parámetros después del test. Mantener las barreras generales de entrenamiento/web, sin despliegue ni gasto en T12.
-
-La autorización de agosto es exclusiva del encargo T12; todavía no se ejecutó. Predicción fija 01–21/08 desde 31/07 y simulación secuencial 01–31/08 son diseños diferentes. Base principal solo lectura; paquete final inicial en artefactos locales/manifiesto, integración web/nube en siguiente encargo tras capacidad y restauración. No abrir reference_v1.
+**T12 ejecutada y entregada para revisión de Codex** (`docs/T12_RESULTADOS.md`, `T12_METRICAS.json`, `T12_MANIFIESTO.json`; protocolo `docs/T12_PROTOCOLO.md`). Pendiente: revisión Codex. Después, a su decisión: T11 (publicación/HTTPS/copia-restauración con capacidad verificada; Azure for Students y Atlas Free sin conectar; sin presupuesto de bolsillo; 459,39 MB locales), integración del paquete final en web, T13 aceptación, T14/T15 informe/manual/video. **No se inició despliegue.** Agosto fue leído una sola vez, por la ruta dedicada y tras sellar las predicciones.
 
 ## Hitos aceptados
 
@@ -35,3 +33,14 @@ Resultados propios de Claude, separados: T10R408 pytest/6 omitidas(sin RUN_REALD
 Azure for Students activado según captura:US$100 disponibles hasta 17/10/2027. Atlas Free demand-forecasting-dev creado en São Paulo; aplicación aún sin conexión/migración/despliegue verificados. Rotación de credencial mostrada en captura pendiente de confirmación privada; nunca pedir contraseña por chat. Sin presupuesto de bolsillo ni conversión a pago por uso autorizados.
 
 Después de T12 y su revisión: T11 capacidad/archivo recuperable/HTTPS/almacenamiento durable/copia-restauración, integración del paquete final; T13 rendimiento/accesibilidad y aceptación humana; T14 informe/manual/video; T15 entrega antes 23/10. T01CI/instalación limpia y conciliación con reporte externo de la MYPE siguen parciales cuando corresponda; no inventar su cierre. No alternancia automática de cuotas; usuario avisa del cambio de ejecutor. Commits locales autorizados, secretos/datos excluidos.
+
+## T12 evaluación final (17/10/2026, ejecutada una vez)
+
+- Fases: verificación → preparación (≤31/07, sellada: `docs/T12_SELLO.json`, commit 86325a7) → lectura de agosto (14 946 líneas, 24 404 unidades, 01–31/08) → evaluación predictiva → simulación secuencial → auditoría → reporte. Todas completas, sin errores ni repeticiones técnicas. Código de evaluación y pruebas fijados en a39d3e9 antes de la fase real. Selección congelada intacta (JSON `8a913805…`, documento `655e0322…`).
+- Código congelado: 12 de 14 archivos vivos idénticos al commit e5466413; el motor de simulación se usó desde su copia exacta (`pipeline/final/frozen_code/`, `09cddb7d…`); `importer.py` (T10R) no interviene en el cálculo.
+- **Hallazgo primario** (WAPE acumulado H14, SKU, cohorte primaria, universo común n=3 401): promedio_28 **0,7810**; RF categoría distribuido 0,7910 (mejora relativa −1,3 %, RF no mejor); control cero 1,0000; sesgo/observado +2,0 % y +3,0 %. H10 0,8165 vs 0,8308; H21 0,7512 vs 0,7590. Categoría H14 (suma de SKU vs RF): 0,1170 vs 0,1166. Historia corta (357 SKU) H14: promedio_28 1,0618 (sesgo +46,7 %), RF 0,8009. Con un solo bloque RF no puede declararse ganador; el método operativo no cambia.
+- SKU nuevos: 103 SKU con venta en el bloque 01–21/08 (353 uds.; cobertura de unidades del universo conocido 97,85 %); 141 SKU / 568 uds. en todo agosto, fuera del universo simulado.
+- Simulación L7/S7 (supuestos): fill rate referencia 0,7561, promedio_28 0,7792, RF 0,7812. Frente a la referencia, promedio_28 mejora servicio (+2,3 pp) con +9,7 % de stock medio y +15,8 % de compras; RF frente a promedio_28: +0,19 pp de servicio con +5,5 % de compras y +5,9 % de valor de stock final (RF mayor fill rate en 6 de 9 escenarios, con más compras en 9 de 9). No es mejora demostrada: más servicio coincide con más stock/compras.
+- Auditoría separada aprobada (métricas recomputadas desde predicciones selladas y reales guardados; 27 combinaciones con balances re-verificados; sello anterior a la lectura de agosto).
+- Pruebas ejecutadas: 16 pruebas sintéticas T12 (bloqueo sin confirmación/congelación alterada/sello alterado, futuros no cambian el paquete, truncamiento por revisión, categorías = suma SKU, conservación RF, catálogo/cohortes/universo al 31/07, faltantes/ceros, SKU nuevos, igualdad de condiciones, balances, denominador cero, equivalencia con el motor vivo); `pytest tests`: 424 aprobadas, 6 omitidas (RUN_REALDATA), 0 fallos. No se repitieron T06/T07 ni los 4 folds.
+- Artefactos privados en `artifacts/private/final/` (fuera de Git). Pendientes: revisión Codex; integración web/publicación y plan de capacidad (T11); aceptación humana.

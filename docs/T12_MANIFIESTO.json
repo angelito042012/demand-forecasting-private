@@ -1,0 +1,189 @@
+{
+ "version": "t12-1",
+ "generado_lima": "2026-10-17T17:54:13-05:00",
+ "git_commit": "86325a7e36253043b3c6cc3884593a27dd288ab1",
+ "entorno": {
+  "python": "3.12.14",
+  "numpy": "2.5.4",
+  "pandas": "2.3.3",
+  "sklearn": "1.9.1",
+  "plataforma": "Windows-11-10.0.26300-SP0"
+ },
+ "sello_sha256": "d587255d87fb2d99e449a098e4c1fa6e1c1c6d5838180b7aa8fe098e9a2ce663",
+ "seleccion_congelada_sha256": "8a9138059391f2b80b9a944b2ee25803cd1e54fe9b359b2dfec0a840f759ef8d",
+ "documento_congelado_sha256": "655e032267166d16707bbf251b6d7b65aeb0c47605db10ad5a21b27d8420616f",
+ "config_t07_sha256": "e695f95d5b75b035a9722a086775c6ad4ddf3d3b7709dc8cb7c4d4c907dc7f79",
+ "motor_congelado_sha256": "09cddb7db40fc336cb3936c3b3b67fdb7ea0e1bce03bcc1a1b3bdd5a6df4727b",
+ "codigo_vivo_no_coincide": {
+  "pipeline/data/importer.py": "endurecimiento T10R: reserva de mes/valla; no se usa en el calculo",
+  "pipeline/sim/engine.py": "endurecimiento d59703b (validacion de entradas); se usa la copia congelada"
+ },
+ "fingerprint_entrenamiento": "f73f00a79ad02b69bb3c8dfd3af8a7d9a6ff751842f5ad4c5ba5e8d20038c33b",
+ "fuentes": [
+  {
+   "mes": "2026-03",
+   "archivo": "marzo.xlsx",
+   "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+  },
+  {
+   "mes": "2026-04",
+   "archivo": "abril.xlsx",
+   "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+  },
+  {
+   "mes": "2026-05",
+   "archivo": "mayo.xlsx",
+   "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+  },
+  {
+   "mes": "2026-06",
+   "archivo": "junio.xlsx",
+   "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+  },
+  {
+   "mes": "2026-07",
+   "archivo": "julio.xlsx",
+   "sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae"
+  }
+ ],
+ "semilla_rf": 20261017,
+ "agosto": {
+  "filas": 14946,
+  "primera": "2026-08-01",
+  "ultima": "2026-08-31",
+  "unidades": 24404.0,
+  "bytes_sha256": "f05e0a01ed795d6d21c9f0835eb4c7dd9cecd96a421e91adb450629e5fdd4642",
+  "inicio": "2026-10-17T17:53:15-05:00",
+  "fin": "2026-10-17T17:53:15-05:00"
+ },
+ "fases": {
+  "verificacion": {
+   "estado": "completa",
+   "inicio": "2026-10-17T17:52:32-05:00",
+   "intentos": 1,
+   "fin": "2026-10-17T17:52:33-05:00",
+   "git_commit": "a39d3e9ff896b8ca1dfe68dab1a603dc228f7acb"
+  },
+  "preparacion": {
+   "estado": "completa",
+   "inicio": "2026-10-17T17:52:40-05:00",
+   "intentos": 1,
+   "fin": "2026-10-17T17:52:53-05:00",
+   "sello_sha256": "d587255d87fb2d99e449a098e4c1fa6e1c1c6d5838180b7aa8fe098e9a2ce663"
+  },
+  "lectura_agosto": {
+   "estado": "completa",
+   "inicio": "2026-10-17T17:53:15-05:00",
+   "intentos": 1,
+   "fin": "2026-10-17T17:53:15-05:00",
+   "filas": 14946,
+   "primera": "2026-08-01",
+   "ultima": "2026-08-31",
+   "bytes_sha256": "f05e0a01ed795d6d21c9f0835eb4c7dd9cecd96a421e91adb450629e5fdd4642",
+   "unidades": 24404.0
+  },
+  "evaluacion_predictiva": {
+   "estado": "completa",
+   "inicio": "2026-10-17T17:53:15-05:00",
+   "intentos": 1,
+   "fin": "2026-10-17T17:53:15-05:00",
+   "reales": {
+    "bytes_sha256": "b96ce83370cebdabba621c084b33ffb123a5501501e8c28cc3d6bd69080f44b4",
+    "logical_sha256": "42bebb0bd7656545a407a9d9d54e1f5ecf660ebd195c050c553b47ba9f4cbec6"
+   },
+   "predictivo_sha256": "0e954eac2299b145df6b481edcf2a1d0d23c38d9ef45eb282afe49567011bc74"
+  },
+  "simulacion": {
+   "estado": "completa",
+   "inicio": "2026-10-17T17:53:15-05:00",
+   "intentos": 1,
+   "fin": "2026-10-17T17:54:01-05:00",
+   "series": {
+    "bytes_sha256": "7921e58038ce8fb4861db9b244b0ecc26039888eaec5978a0094ec351d6837e4",
+    "logical_sha256": "eb38cba2d05613245619871adfd58b76e61848d56652349ab737d12cb6e66795"
+   },
+   "simulacion_sha256": "37f22610b7cbf4c62f7fcce27363b47ae0293b60d29b4d3474c9fcb2c64bf8bd",
+   "identidad_valor_max_abs": 1.0913936421275139e-10
+  }
+ },
+ "eventos": [
+  {
+   "t": "2026-10-17T17:53:15-05:00",
+   "fase": "lectura_agosto",
+   "mensaje": "INTENCION: leer agosto con load_final_test_sales(frozen_selection_confirmed=True)"
+  },
+  {
+   "t": "2026-10-17T17:53:26-05:00",
+   "fase": "simulacion",
+   "mensaje": "revision j=0 (origen col 153) pronostico listo",
+   "hash": "8f9a706b216fb0e1eec5199cb2500fb165f3286136e766d2a4966157228ad94e"
+  },
+  {
+   "t": "2026-10-17T17:53:34-05:00",
+   "fase": "simulacion",
+   "mensaje": "revision j=7 (origen col 160) pronostico listo",
+   "hash": "2f0e17db0278d1ebfa66aa86af72a0831618a44aa2fb66373789e248a871912d"
+  },
+  {
+   "t": "2026-10-17T17:53:42-05:00",
+   "fase": "simulacion",
+   "mensaje": "revision j=14 (origen col 167) pronostico listo",
+   "hash": "fabde4218fd51ed9f4ef44f9f54b552f34881eb80f2c3aff9d877cf1b1ebe04e"
+  },
+  {
+   "t": "2026-10-17T17:53:51-05:00",
+   "fase": "simulacion",
+   "mensaje": "revision j=21 (origen col 174) pronostico listo",
+   "hash": "cbc69002de487c821cf3a42d76aa5fdb18196c0433a797911f600bf874948a54"
+  },
+  {
+   "t": "2026-10-17T17:54:00-05:00",
+   "fase": "simulacion",
+   "mensaje": "revision j=28 (origen col 181) pronostico listo",
+   "hash": "db4c61a05a5a043cc218d0133bb203b9648ddb935e5d9aafd0f69fdca84f1383"
+  }
+ ],
+ "auditoria_ok": true,
+ "artefactos_privados": {
+  "preparacion/predicciones_fijas.npz": {
+   "bytes_sha256": "f4e829c5b9156984aad6b429959bbbba9528c1b792c4c3c7d8293cbe7cc6e710",
+   "bytes": 2908810
+  },
+  "preparacion/inicializacion_sim.npz": {
+   "bytes_sha256": "ec9ef830e4c0bc351358c329afc3515234d5f898f01156c20682017e64827670",
+   "bytes": 952098
+  },
+  "preparacion/rf_categoria_T12.joblib": {
+   "bytes_sha256": "0c77cfeffbbaa59104464e35acf183de2a52efaa52a26e7d6f34392281ac04fb",
+   "bytes": 4898913
+  },
+  "reales_bloque.npz": {
+   "bytes_sha256": "b96ce83370cebdabba621c084b33ffb123a5501501e8c28cc3d6bd69080f44b4",
+   "bytes": 663265
+  },
+  "ventas_agosto_min.csv.gz": {
+   "bytes_sha256": "f05e0a01ed795d6d21c9f0835eb4c7dd9cecd96a421e91adb450629e5fdd4642",
+   "bytes": 40033
+  },
+  "predictivo.json": {
+   "bytes_sha256": "0e954eac2299b145df6b481edcf2a1d0d23c38d9ef45eb282afe49567011bc74",
+   "bytes": 30380
+  },
+  "simulacion.json": {
+   "bytes_sha256": "37f22610b7cbf4c62f7fcce27363b47ae0293b60d29b4d3474c9fcb2c64bf8bd",
+   "bytes": 211539
+  },
+  "simulacion_series.npz": {
+   "bytes_sha256": "7921e58038ce8fb4861db9b244b0ecc26039888eaec5978a0094ec351d6837e4",
+   "bytes": 128459978
+  },
+  "auditoria.json": {
+   "bytes_sha256": "24b50a195043af4718399f33bfb91d90c2b2daf4a88387118195b53cdcb6eede",
+   "bytes": 13667
+  }
+ },
+ "etiqueta": "Inventario simulado con supuestos; no corresponde al inventario real de la empresa",
+ "publicado": false,
+ "desplegado": false,
+ "nota": "Los artefactos con datos y modelos permanecen en artifacts/private/final (fuera de Git)."
+}
