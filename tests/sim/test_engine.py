@@ -89,3 +89,33 @@ def test_identical_inputs_give_identical_results_and_policies_share_initial_stat
     assert np.array_equal(a.on_hand, b.on_hand) and np.array_equal(a.ordered, b.ordered)
     other = eng.simulate(dem, [0, 7], {0: np.array([9]), 7: np.array([9])}, 3, np.array([4]), np.array([1.0]))
     assert a.stock0[0] == other.stock0[0] == 4
+
+
+def test_conservation_detects_intermediate_balance_tampering_with_correct_final():
+    d, _, res = run([1, 1, 1, 1], [0], {0: 4}, 2, 3)
+    eng.check_conservation(res, d)
+    res.on_hand[1, 0] += 1          # altera un saldo intermedio...
+    res.on_hand[2, 0] -= 1          # ...y lo compensa: final y balance terminal intactos
+    assert res.on_hand[-1, 0] == run([1, 1, 1, 1], [0], {0: 4}, 2, 3)[2].on_hand[-1, 0]
+    with pytest.raises(AssertionError, match="saldo diario"):
+        eng.check_conservation(res, d)
+
+
+@pytest.mark.parametrize(("kw", "msg"), [
+    ({"L": 0}, "lead time"), ({"L": 2.5}, "lead time"), ({"L": True}, "lead time"),
+    ({"stock0": np.array([-1])}, "stock0"), ({"stock0": np.array([1.5])}, "entero"), ({"stock0": np.array([1, 2])}, "forma"),
+    ({"stock0": np.array([np.nan])}, "stock0"), ({"unit_cost": np.array([np.inf])}, "unit_cost"),
+    ({"unit_cost": np.array([-0.1])}, "unit_cost"), ({"annual_holding": np.nan}, "holding"),
+    ({"days_year": 0}, "holding"), ({"review_days": [0, 0]}, "unicos"), ({"review_days": [5]}, "unicos"),
+    ({"review_days": [-1]}, "unicos"), ({"targets": {}}, "exactamente"), ({"targets": {0: np.array([1.5])}}, "objetivo"),
+    ({"targets": {0: np.array([-1])}}, "objetivo"), ({"targets": {0: np.array([np.nan])}}, "objetivo"),
+    ({"targets": {0: np.array([1, 2])}}, "objetivo"), ({"demand": np.array([[np.inf, 1.0]])}, "infinitos"),
+    ({"demand": np.array([1.0, 2.0])}, "matriz"),
+])
+def test_simulate_rejects_invalid_external_inputs(kw, msg):
+    base = {"demand": np.array([[1.0, 1.0, 1.0]]), "review_days": [0], "targets": {0: np.array([3])}, "L": 2,
+            "stock0": np.array([2]), "unit_cost": np.array([1.0]), "annual_holding": 0.2, "days_year": 365}
+    base.update(kw)
+    with pytest.raises(ValueError, match=msg):
+        eng.simulate(base["demand"], base["review_days"], base["targets"], base["L"], base["stock0"], base["unit_cost"],
+                     base["annual_holding"], base["days_year"])

@@ -38,9 +38,45 @@ def ceil_stable(x: np.ndarray, decimals: int = 9) -> np.ndarray:
     return np.ceil(np.round(np.asarray(x, dtype=float), decimals)).astype(np.int64)
 
 
+def _is_int_array(a: np.ndarray) -> bool:
+    return bool(np.isfinite(a).all() and np.array_equal(a, np.round(a)))
+
+
+def _validate_inputs(demand, review_days, targets, L, stock0, unit_cost, annual_holding, days_year) -> None:
+    """Rechaza entradas invalidas antes de simular (parametros externos: API/CLI)."""
+    if not isinstance(L, (int, np.integer)) or isinstance(L, bool) or L < 1:
+        raise ValueError("L (lead time) debe ser un entero >= 1")
+    demand = np.asarray(demand, dtype=float)
+    if demand.ndim != 2 or demand.shape[1] < 1:
+        raise ValueError("demand debe ser una matriz (n, D) con D >= 1")
+    n, D = demand.shape
+    if np.isinf(demand).any():
+        raise ValueError("demand no puede contener infinitos (use NaN para dia sin demanda conocida)")
+    for name, arr in (("stock0", stock0), ("unit_cost", unit_cost)):
+        arr = np.asarray(arr, dtype=float)
+        if arr.shape != (n,):
+            raise ValueError(f"{name} debe tener forma ({n},), recibido {arr.shape}")
+        if not np.isfinite(arr).all() or (arr < 0).any():
+            raise ValueError(f"{name} debe ser finito y no negativo")
+    if not _is_int_array(np.asarray(stock0, dtype=float)):
+        raise ValueError("stock0 debe ser entero")
+    if not (np.isfinite(annual_holding) and annual_holding >= 0) or not (np.isfinite(days_year) and days_year > 0):
+        raise ValueError("tasa de holding y dias del anio deben ser finitos (holding >= 0, dias > 0)")
+    days = list(review_days)
+    if len(set(days)) != len(days) or any((not isinstance(d, (int, np.integer))) or d < 0 or d >= D for d in days):
+        raise ValueError("review_days debe contener indices enteros unicos dentro de [0, D)")
+    if set(targets) != set(days):
+        raise ValueError("targets debe tener exactamente una entrada por dia de revision")
+    for d in days:
+        t = np.asarray(targets[d], dtype=float)
+        if t.shape != (n,) or not _is_int_array(t) or (t < 0).any():
+            raise ValueError(f"objetivo del dia {d}: debe tener forma ({n},), ser entero y no negativo")
+
+
 def simulate(demand: np.ndarray, review_days: list[int], targets: dict, L: int, stock0: np.ndarray,
              unit_cost: np.ndarray, annual_holding: float = 0.20, days_year: int = 365) -> SimResult:
     """demand: (n, D) con NaN = sin demanda conocida. targets: {indice_dia_revision: (n,) enteros >= 0}."""
+    _validate_inputs(demand, review_days, targets, L, stock0, unit_cost, annual_holding, days_year)
     n, D = demand.shape
     known = ~np.isnan(demand)
     dem = np.where(known, demand, 0.0)
@@ -82,6 +118,8 @@ def check_conservation(res: SimResult, demand: np.ndarray) -> dict:
     dem = np.where(known, demand, 0).astype(np.int64)
     bal = res.stock0 + res.received.sum(0) - res.served.sum(0) - res.on_hand[-1]
     assert (bal == 0).all(), "stock inicial + recibido - atendido != stock final"
+    daily = res.stock0[None, :] + np.cumsum(res.received - res.served, axis=0)
+    assert (daily == res.on_hand).all(), "saldo diario != stock inicial + acumulado(recibido - atendido)"
     assert (res.served + res.lost == dem.T).all(), "atendido + perdido != demanda proxy"
     assert (res.ordered.sum(0) == res.received.sum(0) + res.pipeline_end).all(), "pedido != recibido + transito final"
     assert (res.on_hand >= 0).all() and (res.pipeline_end >= 0).all()
