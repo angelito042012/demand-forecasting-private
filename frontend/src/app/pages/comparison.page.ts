@@ -2,76 +2,373 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { map, tap } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { load } from '../core/load';
-import { BacktestDetail, BacktestItem, BacktestView, Page } from '../core/models';
+import { BacktestDetail, BacktestItem, Cohorte, Page, PredRow } from '../core/models';
+import {
+  AGREGADO, BASE_POLICY, COHORTES, METHOD_INFO, POLICIES, PRED_COHORTES, SIM_LABELS, SimRow, VISTAS,
+  coverageOf, foldsOf, kindOf, predRows, simRows,
+} from '../core/backtest';
+import { DASH, fmtDate, fmtInt, fmtPct, fmtPen, fmtPp, fmtDec } from '../core/format';
 import { StatePanel } from '../ui/state-panel';
-import { SimNotice } from '../ui/notices';
-import { DataTree } from '../ui/data-tree';
+import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
 
 @Component({
   selector: 'app-comparison-page',
-  imports: [StatePanel, SimNotice, DataTree],
+  imports: [StatePanel, SimNotice, RunBanner, SupersededBanner],
   template: `
-    <h2>Comparación de métodos y políticas (backtests T07)</h2>
+    <h2>Comparación de métodos y políticas</h2>
+    <p>
+      Resultados históricos de desarrollo, calculados sobre meses ya conocidos (hasta el
+      {{ cutoffText() }}). No son una prueba final: agosto sigue reservado.
+    </p>
     <app-sim-notice [scenarioId]="scenario()" />
-    <section class="limits" data-testid="limits">
-      <h3>Cómo leer esta pantalla</h3>
-      <ul>
-        <li>Backtest histórico de desarrollo (corrida al 10/07/2026), no una prueba final: agosto sigue reservado.</li>
-        <li>El método elegido es <strong>promedio_28</strong>. El comparador experimental <strong>rf_categoria_distribuido</strong> no ganó.</li>
-        <li>Más nivel de servicio viene con más stock y más compras: la mejora de un indicador no es una ganancia neta sin mirar su costo.</li>
-        <li>Los 4 pliegues (folds) se solapan; el agregado no es una evaluación independiente.</li>
-        <li>La simulación (nueve escenarios × 3 políticas = 27 combinaciones) usa inventario, costos y plazos supuestos; no evidencia una mejora real para la empresa.</li>
-        <li>La venta observada puede estar limitada por stock; los faltantes reales son desconocidos.</li>
-        <li>El MAPE se reporta con su cobertura; el R² queda indefinido cuando corresponde.</li>
+    @if (run(); as r) {
+      <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" />
+      <app-superseded-banner [run]="r" />
+    }
+    <section class="notice info" data-testid="limits" aria-labelledby="h-leer">
+      <h3 id="h-leer">Cómo leer esta pantalla</h3>
+      <ul class="plain">
+        <li>El método elegido es <strong>promedio de 28 días (promedio_28)</strong>. El comparador experimental <strong>RF</strong> (bosque aleatorio) <strong>no ganó</strong>:
+          @if (selectionText(); as t) { {{ t }} }
+        </li>
+        <li>Más nivel de servicio viene con más stock y más compras: una mejora en servicio no es una ganancia neta si no se mira su costo.</li>
+        <li>Los 4 pliegues (folds G1 a G4) se solapan; el agregado no es una evaluación independiente ni permite pruebas de significación.</li>
+        <li>La simulación (nueve escenarios × 3 políticas = 27 combinaciones) usa inventario, costos y plazos supuestos; no demuestra una mejora real para la empresa ni autoriza compras.</li>
+        <li>La demanda es la venta observada, que puede estar limitada por falta de stock: los faltantes reales son desconocidos.</li>
+        <li>Se muestran todos los resultados, también los desfavorables y el control «cero»; los selectores solo cambian qué parte se ve.</li>
       </ul>
     </section>
+
     <app-state-panel [state]="list.state()" emptyText="No hay backtests publicados." (retry)="list.reload()">
-      <label>Backtest
-        <select data-testid="bt-select" (change)="pick($any($event.target).value)">
-          @for (b of items(); track b.backtest_id) {
-            <option [value]="b.backtest_id" [selected]="b.backtest_id === chosen()">{{ b.label }} ({{ b.kind }})</option>
-          }
-        </select>
-      </label>
-      <label>Vista
-        <select data-testid="bt-view" (change)="setView($any($event.target).value)">
-          <option value="all" [selected]="view() === 'all'">Todo</option>
-          <option value="predictive" [selected]="view() === 'predictive'">Predictivo</option>
-          <option value="simulation" [selected]="view() === 'simulation'">Simulación de políticas</option>
-        </select>
-      </label>
+      @if (items().length > 1) {
+        <label>Backtest
+          <select data-testid="bt-select" aria-label="Backtest" (change)="pick($any($event.target).value)">
+            @for (b of items(); track b.backtest_id) {
+              <option [value]="b.backtest_id" [selected]="b.backtest_id === chosen()">{{ b.label }}</option>
+            }
+          </select>
+        </label>
+      } @else if (items()[0]; as b) {
+        <p class="muted" data-testid="bt-label">{{ b.label }}</p>
+      }
     </app-state-panel>
+
     @if (chosen()) {
       <app-state-panel [state]="detail.state()" emptyText="Datos insuficientes: el backtest no publicó resultados." (retry)="detail.reload()">
         @if (det(); as d) {
-          @if (d.disclaimer) { <p class="disc" data-testid="disclaimer">{{ d.disclaimer }}</p> }
-          <p>Procedencia: <code>{{ d.provenance ?? 'sin dato' }}</code> · escenario: <code>{{ d.scenario_id ?? 'sin dato' }}</code></p>
-          <app-data-tree [value]="d" />
+          @if (d.disclaimer) { <p class="notice warn" data-testid="disclaimer">{{ d.disclaimer }}</p> }
+
+          <section aria-labelledby="h-sim">
+            <h3 id="h-sim">Simulación de reposición: tres políticas</h3>
+            <p>
+              Cada fila es una política de pedidos aplicada a un inventario simulado entre el 01/06 y el 31/07/2026.
+              @if (isPrincipal()) { <span class="badge ok" data-testid="principal-badge">Escenario principal (L{{ L() }} / S{{ S() }})</span> }
+              @else { <span class="badge" data-testid="principal-badge">Escenario L{{ L() }} / S{{ S() }}; el principal es L{{ principal().L }} / S{{ principal().S }}</span> }
+            </p>
+            <fieldset class="selectors" aria-label="Selección de escenario de simulación">
+              <legend>Escenario</legend>
+              <label for="sel-l">Plazo de entrega L (días)
+                <select id="sel-l" data-testid="sel-L" (change)="userL.set(+$any($event.target).value)">
+                  @for (x of Ls(); track x) { <option [value]="x" [selected]="x === L()">{{ x }}</option> }
+                </select>
+              </label>
+              <label for="sel-s">Seguridad S (días)
+                <select id="sel-s" data-testid="sel-S" (change)="userS.set(+$any($event.target).value)">
+                  @for (x of Ss(); track x) { <option [value]="x" [selected]="x === S()">{{ x }}</option> }
+                </select>
+              </label>
+              <label for="sel-c">Cohorte
+                <select id="sel-c" data-testid="sel-coh" (change)="simCoh.set($any($event.target).value)">
+                  @for (c of cohortes; track c.id) { <option [value]="c.id" [selected]="c.id === simCoh()">{{ c.label }}</option> }
+                </select>
+              </label>
+            </fieldset>
+
+            @if (sim().some(hasBlock)) {
+              <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla de políticas de reposición">
+                <table data-testid="sim-table">
+                  <caption>L{{ L() }} / S{{ S() }} · {{ cohLabel(simCoh()) }} · diferencias frente a promedio_28 en la misma cohorte</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Política</th>
+                      <th scope="col" class="num">Servicio (% de la demanda atendida)</th>
+                      <th scope="col" class="num">Faltantes (unidades perdidas)</th>
+                      <th scope="col" class="num">Stock medio (unidades/día)</th>
+                      <th scope="col" class="num">Compras desembolsadas (PEN, supuesto)</th>
+                      <th scope="col" class="num">Dif. servicio</th>
+                      <th scope="col" class="num">Dif. faltantes</th>
+                      <th scope="col" class="num">Dif. stock medio</th>
+                      <th scope="col" class="num">Dif. compras</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of sim(); track row.policy) {
+                      <tr [attr.data-testid]="'sim-row-' + row.policy" [class.hl]="row.policy === base">
+                        <th scope="row">{{ policyLabel(row.policy) }}<br /><span class="badge">{{ policyRole(row.policy) }}</span></th>
+                        @if (row.block; as b) {
+                          <td class="num">{{ pct(b['fill_rate']) }}</td>
+                          <td class="num">{{ int(b['perdidas_unidades']) }}</td>
+                          <td class="num">{{ int(b['stock_medio_unidades_por_dia']) }}</td>
+                          <td class="num">{{ pen(b['compras_desembolsadas_supuesto']) }}</td>
+                          @if (row.policy === base) {
+                            <td class="num muted" colspan="4">base de comparación</td>
+                          } @else {
+                            <td class="num">{{ diff(row, 'fill_rate') }}</td>
+                            <td class="num">{{ diff(row, 'perdidas_unidades') }}</td>
+                            <td class="num">{{ diff(row, 'stock_medio_unidades_por_dia') }}</td>
+                            <td class="num">{{ diff(row, 'compras_desembolsadas_supuesto') }}</td>
+                          }
+                        } @else {
+                          <td colspan="8">Sin resultados publicados para esta combinación.</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <p class="muted">
+                Servicio = unidades atendidas / demanda proxy. Las diferencias son «política − promedio_28»: puntos porcentuales para el servicio y
+                unidades o PEN para el resto, con la variación relativa entre paréntesis. Mayor servicio vino con mayor stock y mayores compras.
+                Stock, compras y costos son supuestos del simulador.
+              </p>
+              <details class="tech" data-testid="sim-all-metrics">
+                <summary>Todas las métricas de esta combinación (L{{ L() }} / S{{ S() }}, {{ cohLabel(simCoh()) }})</summary>
+                <div class="table-wrap" tabindex="0" role="region" aria-label="Todas las métricas de simulación">
+                  <table>
+                    <thead>
+                      <tr><th scope="col">Métrica</th>@for (p of policies; track p.id) { <th scope="col" class="num">{{ p.label }}</th> }</tr>
+                    </thead>
+                    <tbody>
+                      @for (k of metricKeys(); track k) {
+                        <tr>
+                          <th scope="row">{{ metricLabel(k) }}</th>
+                          @for (row of sim(); track row.policy) { <td class="num">{{ metric(row, k) }}</td> }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="tech" data-testid="sim-tech">
+                <summary>Identificadores y datos técnicos de la simulación</summary>
+                <ul class="plain">
+                  @for (row of sim(); track row.policy) { <li>{{ row.policy }}: <code>{{ row.scenario?.scenario_id ?? 'sin dato' }}</code></li> }
+                  <li>Backtest: <code>{{ d.backtest_id ?? 'sin dato' }}</code> · corrida <code>{{ d['run_id'] ?? 'sin dato' }}</code> · procedencia <code>{{ d.provenance ?? 'sin dato' }}</code></li>
+                </ul>
+                <pre>{{ simJson() }}</pre>
+              </details>
+            } @else {
+              <p class="state" data-testid="sim-empty">Datos insuficientes: no hay simulación publicada para L{{ L() }} / S{{ S() }}.</p>
+            }
+
+            @if (assumptionList().length) {
+              <details class="tech" data-testid="assumptions">
+                <summary>Supuestos y límites de la simulación</summary>
+                <ul class="plain">@for (a of assumptionList(); track a) { <li>{{ a }}</li> }</ul>
+              </details>
+            }
+          </section>
+
+          <section aria-labelledby="h-pred">
+            <h3 id="h-pred">Precisión de los pronósticos (backtest)</h3>
+            <fieldset class="selectors" aria-label="Selección de resultados predictivos">
+              <legend>Resultados a mostrar</legend>
+              <label for="p-level">Nivel
+                <select id="p-level" data-testid="pred-level" (change)="level.set($any($event.target).value)">
+                  <option value="sku" [selected]="level() === 'sku'">SKU</option>
+                  <option value="categoria" [selected]="level() === 'categoria'">Categoría</option>
+                </select>
+              </label>
+              <label for="p-coh">Cohorte
+                <select id="p-coh" data-testid="pred-coh" (change)="predCoh.set($any($event.target).value)">
+                  @for (c of predCohortes; track c.id) { <option [value]="c.id" [selected]="c.id === predCoh()">{{ c.label }}</option> }
+                </select>
+              </label>
+              <label for="p-vista">Horizonte (vista)
+                <select id="p-vista" data-testid="pred-vista" (change)="userVista.set($any($event.target).value)">
+                  @for (v of vistas; track v.id) { <option [value]="v.id" [selected]="v.id === vista()">{{ v.label }}</option> }
+                </select>
+              </label>
+              <label for="p-fold">Pliegue (fold)
+                <select id="p-fold" data-testid="pred-fold" (change)="fold.set($any($event.target).value)">
+                  @for (f of folds(); track f) { <option [value]="f" [selected]="f === fold()">{{ f === agregado ? 'Agregado (G1 a G4)' : f }}</option> }
+                </select>
+              </label>
+            </fieldset>
+
+            @if (pred().length) {
+              <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla de métricas por método">
+                <table data-testid="pred-table">
+                  <caption>{{ level() === 'sku' ? 'SKU' : 'Categoría' }} · {{ predCohLabel() }} · {{ vistaLabel() }} · {{ fold() === agregado ? 'agregado de 4 folds solapados' : fold() }}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Método</th><th scope="col" class="num">n</th>
+                      <th scope="col" class="num">Unidades observadas</th><th scope="col" class="num">Unidades predichas</th>
+                      <th scope="col" class="num">WAPE (%)</th><th scope="col" class="num">MAE</th><th scope="col" class="num">RMSE</th>
+                      <th scope="col" class="num">Sesgo (unidades)</th><th scope="col" class="num">Subpronóstico</th><th scope="col" class="num">Sobrepronóstico</th>
+                      <th scope="col" class="num">MAPE (reales &gt; 0)</th><th scope="col" class="num">R²</th><th scope="col" class="num">Cobertura</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (r of pred(); track r.metodo) {
+                      <tr [attr.data-testid]="'pred-row-' + r.metodo" [class.hl]="r.metodo === base">
+                        <th scope="row">{{ methodLabel(r.metodo) }}<br /><span class="badge">{{ methodRole(r.metodo) }}</span></th>
+                        <td class="num">{{ int(r.n) }}</td>
+                        @if (r.n > 0 && r.WAPE !== undefined) {
+                          <td class="num">{{ int(r.unidades_observadas) }}</td>
+                          <td class="num">{{ int(r.unidades_predichas) }}</td>
+                          <td class="num" data-testid="wape">{{ pct(r.WAPE) }}</td>
+                          <td class="num">{{ dec(r.MAE, 2) }}</td>
+                          <td class="num">{{ dec(r.RMSE, 2) }}</td>
+                          <td class="num">{{ signedInt(r.sesgo_acumulado) }}</td>
+                          <td class="num">{{ pct(r.prop_subpronostico) }}</td>
+                          <td class="num">{{ pct(r.prop_sobrepronostico) }}</td>
+                          <td class="num" data-testid="mape">
+                            @if (r.MAPE === null || r.MAPE === undefined) { no evaluable } @else {
+                              {{ pct(r.MAPE) }}<br />
+                              <small>cobertura {{ pct(r.MAPE_cobertura_reales_positivos) }} de los casos; {{ int(r.MAPE_ceros_excluidos) }} ceros excluidos</small>
+                            }
+                          </td>
+                          <td class="num" data-testid="r2">
+                            @if (r.R2 === null || r.R2 === undefined) { no evaluable @if (r.R2_nota) { <br /><small>{{ r.R2_nota }}</small> } } @else { {{ dec(r.R2, 3) }} }
+                          </td>
+                          <td class="num">{{ coverage(r) }}</td>
+                        } @else {
+                          <td colspan="11" data-testid="pred-n0">Sin datos evaluables en este corte (n = 0).</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="state" data-testid="pred-empty">Datos insuficientes: no hay métricas publicadas para esta combinación.</p>
+            }
+            <ul class="plain muted" data-testid="pred-legend">
+              <li><strong>WAPE = error absoluto total / unidades observadas</strong> (se muestra en %; menor es mejor).</li>
+              <li>Sesgo = unidades predichas − observadas (negativo = se pronosticó de menos). Subpronóstico / sobrepronóstico = proporción de casos por debajo / por encima de lo observado.</li>
+              <li>MAPE solo se calcula con ventas reales positivas; se indica la cobertura de esos casos y cuántos ceros se excluyeron. El R² se muestra «no evaluable» cuando queda indefinido.</li>
+              <li>Cobertura = entidades con predicción / universo común del corte. El agregado suma bloques solapados, no unidades únicas.</li>
+            </ul>
+            @if (d.predictive?.nota; as n) { <p class="muted">{{ n }}</p> }
+          </section>
         }
       </app-state-panel>
     }
   `,
   styles: `
-    .limits { background: #f8f9fa; border: 1px solid #ddd; padding: 0 1rem; border-radius: 4px; margin: 0.6rem 0; }
-    .disc { background: #fff3cd; padding: 0.4rem 0.7rem; } label { display: inline-grid; gap: 0.2rem; margin-right: 1rem; }
+    .selectors select { min-width: 9rem; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft); padding: 0.5rem; max-height: 22rem; overflow: auto; font-size: 0.8rem; }
   `,
 })
 export class ComparisonPage {
   private api = inject(ApiService);
+  readonly policies = POLICIES;
+  readonly cohortes = COHORTES;
+  readonly predCohortes = PRED_COHORTES;
+  readonly vistas = VISTAS;
+  readonly agregado = AGREGADO;
+  readonly base = BASE_POLICY;
+
   chosen = signal<string | null>(null);
-  view = signal<BacktestView>('all');
   list = load<BacktestItem[]>(
-    () => this.api.backtests().pipe(map((r) => (Array.isArray(r) ? r : (r as Page<BacktestItem>).items)),
+    () => this.api.backtests().pipe(
+      map((r) => (Array.isArray(r) ? r : (r as Page<BacktestItem>).items)),
       // Selecciona el primer backtest al llegar la lista.
       tap((items) => { if (items.length && !this.chosen()) { this.chosen.set(items[0].backtest_id); queueMicrotask(() => this.detail.reload()); } }),
     ),
     (d) => d.length === 0,
   );
   items = computed(() => { const s = this.list.state(); return s.kind === 'data' ? s.data : []; });
-  detail = load<BacktestDetail>(() => this.api.backtest(this.chosen()!, this.view()), (d) => Object.keys(d).length === 0, false);
+  // Siempre se pide la vista completa; los selectores solo filtran lo que se muestra.
+  detail = load<BacktestDetail>(() => this.api.backtest(this.chosen()!, 'all'), (d) => Object.keys(d).length === 0, false);
   det = computed(() => { const s = this.detail.state(); return s.kind === 'data' ? s.data : null; });
   scenario = computed(() => this.det()?.scenario_id ?? null);
+  run = computed(() => this.det()?.run ?? null);
+  cutoffText = computed(() => fmtDate(this.run()?.cutoff ?? '2026-07-10'));
+
+  // Simulación: escenario principal por defecto (L7/S7 según los supuestos publicados).
+  userL = signal<number | null>(null);
+  userS = signal<number | null>(null);
+  simCoh = signal<Cohorte>('total');
+  principal = computed(() => this.det()?.assumptions?.escenario_principal ?? { L: 7, S: 7 });
+  L = computed(() => this.userL() ?? this.principal().L);
+  S = computed(() => this.userS() ?? this.principal().S);
+  Ls = computed(() => this.det()?.assumptions?.L ?? [3, 7, 14]);
+  Ss = computed(() => this.det()?.assumptions?.S ?? [0, 7, 14]);
+  isPrincipal = computed(() => this.L() === this.principal().L && this.S() === this.principal().S);
+  sim = computed<SimRow[]>(() => simRows(this.det(), this.L(), this.S(), this.simCoh()));
+  metricKeys = computed(() => {
+    const first = this.sim().find((r) => r.block)?.block;
+    return first ? Object.keys(first) : [];
+  });
+  simJson = computed(() => JSON.stringify(this.sim().map((r) => ({ policy: r.policy, [this.simCoh()]: r.block, diferencias_vs_promedio_28: r.diff?.metrics ?? null })), null, 1));
+  assumptionList = computed(() => {
+    const a = this.det()?.assumptions;
+    if (!a) return [];
+    const out: string[] = [];
+    if (a['factor_costo_sobre_mediana_precio'] !== undefined) out.push(`Costo unitario supuesto = ${fmtPct(a['factor_costo_sobre_mediana_precio'])} de la mediana de precio base.`);
+    if (a['holding_anual'] !== undefined) out.push(`Costo anual de mantener stock supuesto: ${fmtPct(a['holding_anual'])}.`);
+    if (a.R !== undefined) out.push(`Revisión de pedidos cada ${a.R} días.`);
+    if (typeof a.demanda === 'string') out.push(`Demanda: ${a.demanda}.`);
+    return [...out, ...(a.limites ?? [])];
+  });
+  selectionText = computed(() => {
+    const s = this.det()?.selection;
+    if (!s) return '';
+    const parts: string[] = [];
+    if (s.cumple_regla === false) parts.push('la regla provisional de selección no se cumplió');
+    if (typeof s.mejora_relativa === 'number') parts.push(`mejora relativa publicada: ${fmtPct(s.mejora_relativa, true)}`);
+    return parts.length ? parts.join('; ') + '.' : '';
+  });
+
+  // Predictivo
+  level = signal<'sku' | 'categoria'>('sku');
+  predCoh = signal<string>('primaria');
+  userVista = signal<string | null>(null);
+  vista = computed(() => this.userVista() ?? (this.det()?.selection?.vista as string | undefined) ?? 'acum14');
+  fold = signal<string>(AGREGADO);
+  folds = computed(() => foldsOf(this.det()));
+  pred = computed<PredRow[]>(() => predRows(this.det(), this.level(), this.predCoh(), this.vista(), this.fold()));
+
+  // Formato
+  int = (v: unknown) => fmtInt(v);
+  signedInt = (v: unknown) => fmtInt(v, true);
+  dec = (v: unknown, n = 3) => fmtDec(v, n);
+  pct = (v: unknown) => fmtPct(v);
+  pen = (v: unknown) => fmtPen(v);
+  hasBlock = (r: SimRow) => r.block !== null;
+  cohLabel = (id: string) => COHORTES.find((c) => c.id === id)?.label ?? id;
+  predCohLabel = () => this.cohLabel(this.predCoh());
+  vistaLabel = () => VISTAS.find((v) => v.id === this.vista())?.label ?? this.vista();
+  policyLabel = (id: string) => POLICIES.find((p) => p.id === id)?.label ?? id;
+  policyRole = (id: string) => POLICIES.find((p) => p.id === id)?.role ?? '';
+  methodLabel = (id: string) => METHOD_INFO[id]?.label ?? id;
+  methodRole = (id: string) => METHOD_INFO[id]?.role ?? '';
+  metricLabel = (k: string) => SIM_LABELS[k] ?? k;
+
+  metric(row: SimRow, k: string): string {
+    const v = row.block?.[k];
+    switch (kindOf(k)) {
+      case 'pct': return fmtPct(v);
+      case 'pen': return fmtPen(v);
+      default: return fmtInt(v);
+    }
+  }
+
+  /** Diferencia frente a promedio_28: valor absoluto con formato de la métrica y variación relativa entre paréntesis. */
+  diff(row: SimRow, k: string): string {
+    const m = row.diff?.metrics?.[k];
+    if (!m || m.abs === null || m.abs === undefined) return DASH;
+    const abs = kindOf(k) === 'pct' ? fmtPp(m.abs) : kindOf(k) === 'pen' ? fmtPen(m.abs, true) : fmtInt(m.abs, true);
+    return m.rel === null || m.rel === undefined ? abs : `${abs} (${fmtPct(m.rel, true)})`;
+  }
+
+  coverage(r: PredRow): string {
+    const c = coverageOf(this.det(), this.level(), this.predCoh(), this.fold(), r.metodo);
+    if (!c || c.universo === 0) return DASH;
+    return `${fmtInt(c.conPrediccion)} de ${fmtInt(c.universo)} (${fmtPct(c.conPrediccion / c.universo)})`;
+  }
 
   pick(id: string) { this.chosen.set(id); this.detail.reload(); }
-  setView(v: string) { this.view.set(v as BacktestView); this.detail.reload(); }
 }

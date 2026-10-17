@@ -17,12 +17,11 @@ import { StatePanel } from '../ui/state-panel';
           <li>Versión de la API: {{ h.version }}</li>
         </ul>
         @if (h.status === 'degraded') {
-          <p class="warn">El servicio funciona de forma parcial; algunas pantallas pueden fallar. Reintente más tarde.</p>
+          <p class="notice warn">El servicio funciona de forma parcial; algunas pantallas pueden fallar. Reintente más tarde.</p>
         }
       }
     </app-state-panel>
   `,
-  styles: `.warn { color: #664d03; background: #fff3cd; padding: 0.4rem 0.7rem; }`,
 })
 export class SystemPage {
   private api = inject(ApiService);

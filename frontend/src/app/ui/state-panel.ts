@@ -6,13 +6,13 @@ import { LoadState } from '../core/models';
   template: `
     @switch (state().kind) {
       @case ('loading') {
-        <p class="st" role="status" data-state="loading">Cargando…</p>
+        <p class="state" role="status" data-state="loading">Cargando…</p>
       }
       @case ('empty') {
-        <p class="st" data-state="empty">{{ emptyText() }}</p>
+        <p class="state" data-state="empty">{{ emptyText() }}</p>
       }
       @case ('error') {
-        <div class="st err" role="alert" data-state="error" [attr.data-code]="code()">
+        <div class="state err" role="alert" data-state="error" [attr.data-code]="code()">
           @if (code() === 'SESION_EXPIRADA') {
             <p>Su sesión venció. <a href="/acceso">Ingrese de nuevo</a>.</p>
           } @else {
@@ -25,10 +25,6 @@ import { LoadState } from '../core/models';
         <div data-state="data"><ng-content /></div>
       }
     }
-  `,
-  styles: `
-    .st { padding: 1rem; border: 1px dashed #999; border-radius: 4px; }
-    .err { border-color: #b02a37; color: #842029; }
   `,
 })
 export class StatePanel {

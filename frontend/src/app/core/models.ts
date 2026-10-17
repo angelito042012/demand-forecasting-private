@@ -33,20 +33,48 @@ export interface RunHeader {
   is_active: boolean;
 }
 
-export interface RunSummary extends RunHeader {
-  status?: string;
-  kind?: string;
+/** Motivo de sustitución de una corrida (la API lo publica cuando una corrección de precisión la reemplaza). */
+export interface QualityIssue {
+  superseded_by?: string;
+  reason?: string;
+  message?: string;
+  code?: string;
+  [k: string]: unknown;
 }
 
-export interface RunDetail extends RunHeader {
+/** Estado de calidad de una corrida; se repite en `run` de recomendaciones y backtests. */
+export interface RunQuality {
   status?: string;
+  validation_status?: string;
+  quality_issue?: QualityIssue | null;
+}
+
+export interface RunSummary extends RunHeader, RunQuality {
+  kind?: string;
+  origin?: string;
+  target_start?: string;
+  target_end?: string;
+  horizon_days?: number;
+  provenance?: string;
+  disclaimer?: string;
+  method?: RunDetail['method'];
+  counts?: Record<string, number>;
+  coverage?: RunDetail['coverage'];
+  evaluation_period?: RunDetail['evaluation_period'];
+}
+
+export interface RunDetail extends RunHeader, RunQuality {
+  kind?: string;
+  provenance?: string;
+  disclaimer?: string;
+  fingerprint_short?: string;
   method: { chosen: string; comparator: string; control: string; note?: string };
   config?: Record<string, unknown>;
   sources?: unknown;
-  artifacts?: { name: string; sha256: string; size: number }[];
+  artifacts?: { name: string; sha256: string; size?: number; size_bytes?: number }[];
   code?: { commit: string };
   counts?: Record<string, number>;
-  coverage?: { skus_pronosticados: number; skus_con_recomendacion: number; skus_sin_snapshot: number; categorias: number };
+  coverage?: { skus_pronosticados: number; skus_con_recomendacion: number; skus_sin_snapshot: number; categorias: number; skus_categoria_desconocida?: number };
   evaluation_period?: { start?: string; end?: string } | Record<string, unknown>;
   provenance_notes?: string[] | string;
 }
@@ -132,8 +160,23 @@ export interface Recommendation {
   forecast_from: string;
   forecast_to: string;
   model: string;
+  disclaimer?: string;
   explanation_steps?: string[];
   explanation?: string | string[];
+  /** Señales exactas (corridas corregidas): suma de unidades y días útiles de la ventana, y la media como fracción. */
+  sum_28?: number | null;
+  days_28?: number | null;
+  mean_28_exact?: string | null;
+  transit_breakdown?: { ordered_until_snapshot?: number; received_until_snapshot?: number } | null;
+  run?: (RunHeader & RunQuality) | null;
+}
+
+/** Página de recomendaciones: el servidor añade la corrida a la que pertenecen. */
+export interface RecoPage extends Page<Recommendation> {
+  provenance?: string;
+  disclaimer?: string;
+  nota?: string;
+  run?: (RunHeader & RunQuality) | null;
 }
 
 export interface BacktestItem {
@@ -142,14 +185,106 @@ export interface BacktestItem {
   label: string;
   folds: number | string[];
   created: string;
+  run_id?: string;
+  scenario_id?: string;
+  provenance?: string;
+  disclaimer?: string;
+  run?: (RunHeader & RunQuality) | null;
 }
 export type BacktestView = 'predictive' | 'simulation' | 'all';
-/** El contrato no fija el esquema interno de métricas: se muestra tal cual lo publica el servidor. */
+
+export type Cohorte = 'total' | 'primaria' | 'historia_corta';
+export type Vista = 'acum10' | 'acum14' | 'acum21' | 'diaria';
+
+/** Fila predictiva publicada (backtest T07). Las filas sin datos evaluables solo traen n = 0. */
+export interface PredRow {
+  fold: string;
+  cohorte: string;
+  metodo: string;
+  vista: string;
+  n: number;
+  unidades_observadas?: number;
+  unidades_predichas?: number;
+  MAE?: number;
+  RMSE?: number;
+  WAPE?: number;
+  sesgo_acumulado?: number;
+  prop_subpronostico?: number;
+  prop_sobrepronostico?: number;
+  prop_exacto?: number;
+  MAPE?: number | null;
+  MAPE_cobertura_reales_positivos?: number | null;
+  MAPE_ceros_excluidos?: number | null;
+  R2?: number | null;
+  R2_nota?: string | null;
+}
+
+export interface CoverageRow {
+  fold: string;
+  cohorte: string;
+  metodo: string;
+  entidades?: number;
+  entidades_con_prediccion?: number;
+  comunes?: number;
+  dias_evaluables_21?: number;
+}
+
+export type SimBlock = Record<string, number | null>;
+export interface SimScenario {
+  scenario_id: string;
+  L: number;
+  S: number;
+  R: number;
+  policy: string;
+  total: SimBlock;
+  primaria: SimBlock;
+  historia_corta: SimBlock;
+  [k: string]: unknown;
+}
+export interface SimDiff {
+  scenario: string;
+  policy: string;
+  vs: string;
+  cohorte: string;
+  metrics: Record<string, { abs: number | null; rel: number | null }>;
+}
+
+export interface BacktestAssumptions {
+  L?: number[];
+  S?: number[];
+  R?: number;
+  escenario_principal?: { L: number; S: number };
+  limites?: string[];
+  demanda?: string;
+  [k: string]: unknown;
+}
+
+export interface BacktestSelection {
+  vista?: string;
+  mejora_relativa?: number;
+  cumple_regla?: boolean;
+  nota?: string;
+  metodo_elegido?: string;
+  comparador?: string;
+  control?: string;
+  [k: string]: unknown;
+}
+
 export interface BacktestDetail {
+  run_id?: string;
   backtest_id?: string;
   scenario_id?: string;
   provenance?: string;
   disclaimer?: string;
+  run?: (RunHeader & RunQuality) | null;
+  label?: string;
+  folds?: string[] | number;
+  predictive?: { sku?: PredRow[]; categoria?: PredRow[]; nota?: string };
+  selection?: BacktestSelection;
+  coverage?: { sku?: CoverageRow[]; categoria?: CoverageRow[] };
+  simulation?: SimScenario[];
+  simulation_differences?: SimDiff[];
+  assumptions?: BacktestAssumptions;
   [seccion: string]: unknown;
 }
 

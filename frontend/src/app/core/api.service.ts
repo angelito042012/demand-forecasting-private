@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   BacktestDetail, BacktestItem, BacktestView, ForecastItem, GroupBy, Health, ImportDetail, ImportItem, Page,
-  Recommendation, RunDetail, RunSummary, SalesSummary,
+  Recommendation, RecoPage, RunDetail, RunSummary, SalesSummary,
 } from './models';
 
 const BASE = '/api/v1';
@@ -45,7 +45,7 @@ export class ApiService {
   runs(page: number, page_size: number) { return this.get<Page<RunSummary>>('/runs', { page, page_size }); }
   runDetail(id: string) { return this.get<RunDetail>(`/runs/${encodeURIComponent(id)}`); }
   forecasts(q: ForecastQuery) { return this.get<Page<ForecastItem>>('/forecasts', { ...q }); }
-  recommendations(q: RecoQuery) { return this.get<Page<Recommendation>>('/recommendations', { ...q }); }
+  recommendations(q: RecoQuery) { return this.get<RecoPage>('/recommendations', { ...q }); }
   recommendation(sku: string, run_id?: string, almacen = '1') {
     return this.get<Recommendation>(`/recommendations/${encodeURIComponent(sku)}`, { run_id, almacen });
   }

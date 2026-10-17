@@ -5,22 +5,24 @@ import { load } from '../core/load';
 import { ForecastItem, Page, RunSummary } from '../core/models';
 import { StatePanel } from '../ui/state-panel';
 import { Pager } from '../ui/pager';
-import { RunBanner } from '../ui/notices';
+import { fmtDec } from '../core/format';
+import { RunBanner, SupersededBanner } from '../ui/notices';
 
 @Component({
   selector: 'app-forecasts-page',
-  imports: [StatePanel, Pager, FormsModule, RunBanner],
+  imports: [StatePanel, Pager, FormsModule, RunBanner, SupersededBanner],
   template: `
     <h2>Pronósticos</h2>
     @if (activeRun(); as r) {
+      <app-superseded-banner [run]="r" />
       <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" />
     }
-    <p class="info">
+    <p class="notice info">
       Cantidades en unidad base. Los valores «observado» existen solo porque la corrida es un backtest histórico (ventas
       observadas en Excel; pueden estar limitadas por stock). Método elegido: promedio_28. «rf_categoria_distribuido» es un
       comparador experimental que no ganó; «cero» es solo una referencia de control. Los pronósticos no incluyen agosto.
     </p>
-    <form class="filters" (ngSubmit)="apply()">
+    <form class="filters" (ngSubmit)="apply()" aria-label="Filtros de pronósticos">
       <label>Nivel
         <select name="level" [(ngModel)]="f.level"><option value="sku">SKU</option><option value="categoria">Categoría</option></select>
       </label>
@@ -41,35 +43,33 @@ import { RunBanner } from '../ui/notices';
     <app-state-panel [state]="l.state()" emptyText="Sin pronósticos para estos filtros." (retry)="l.reload()">
       @if (data(); as d) {
         @if (insufficient()) {
-          <p class="warn" data-testid="insufficient">Datos insuficientes para evaluar algunas filas: se marcan «no evaluable» y no cuentan para la comparación.</p>
+          <p class="notice warn" data-testid="insufficient">Datos insuficientes para evaluar algunas filas: se marcan «no evaluable» y no cuentan para la comparación.</p>
         }
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla de pronósticos">
         <table data-testid="forecast-table">
           <thead>
-            <tr><th>Entidad</th><th>Categoría</th><th>Cohorte</th><th>Fecha objetivo</th><th>h</th>
-              <th>promedio_28 (elegido)</th><th>RF distribuido (comparador)</th><th>cero (control)</th><th>Observado</th><th>Evaluable</th></tr>
+            <tr><th scope="col">Entidad</th><th scope="col">Categoría</th><th scope="col">Cohorte</th><th scope="col">Fecha objetivo</th><th scope="col" class="num">h</th>
+              <th scope="col" class="num">promedio_28 (elegido)</th><th scope="col" class="num">RF distribuido (comparador)</th><th scope="col" class="num">cero (control)</th><th scope="col" class="num">Observado</th><th scope="col">Evaluable</th></tr>
           </thead>
           <tbody>
             @for (x of d.items; track x.entity_id + x.target_date) {
               <tr>
-                <td>{{ x.entity_id }}</td><td>{{ x.categoria ?? '—' }}</td><td>{{ x.cohorte ?? '—' }}</td><td>{{ x.target_date }}</td><td>{{ x.h }}</td>
-                <td>{{ x.pred.promedio_28 }}</td><td>{{ x.pred.rf_categoria_distribuido }}</td><td>{{ x.pred.cero }}</td>
-                <td>{{ x.observed ?? '—' }}</td><td>{{ x.evaluable ? 'Sí' : 'No' }}</td>
+                <td>{{ x.entity_id }}</td><td>{{ x.categoria ?? '—' }}</td><td>{{ x.cohorte ?? '—' }}</td><td>{{ x.target_date }}</td><td class="num">{{ x.h }}</td>
+                <td class="num">{{ dec(x.pred.promedio_28) }}</td><td class="num">{{ dec(x.pred.rf_categoria_distribuido) }}</td><td class="num">{{ dec(x.pred.cero) }}</td>
+                <td class="num">{{ dec(x.observed) }}</td><td>{{ x.evaluable ? 'Sí' : 'No' }}</td>
               </tr>
             }
           </tbody>
         </table>
+        </div>
         <app-pager [page]="d.page" [pageSize]="d.page_size" [total]="d.total" [hasMore]="d.has_more" (go)="go($event)" />
       }
     </app-state-panel>
   `,
-  styles: `
-    .info { background: #e2e3e5; padding: 0.4rem 0.7rem; border-radius: 4px; }
-    .filters { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: end; margin: 0.6rem 0; } label { display: grid; gap: 0.2rem; }
-    .warn { color: #664d03; } table { display: block; overflow-x: auto; }
-  `,
 })
 export class ForecastsPage {
   private api = inject(ApiService);
+  dec = (v: unknown) => fmtDec(v);
   f = { level: 'sku' as 'sku' | 'categoria', sku: '', categoria: '', cohorte: '', from: '', to: '', sort: 'target_date' };
   private page = signal(1);
   private pageSize = 50;

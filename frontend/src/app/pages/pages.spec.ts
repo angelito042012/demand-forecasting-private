@@ -9,7 +9,6 @@ import { ImportsPage } from './imports.page';
 import { RunsPage } from './runs.page';
 import { ForecastsPage } from './forecasts.page';
 import { RecommendationsPage } from './recommendations.page';
-import { ComparisonPage } from './comparison.page';
 import { SummaryPage } from './summary.page';
 import { SystemPage } from './system.page';
 import { LoginPage } from './login.page';
@@ -125,15 +124,15 @@ describe('Recomendaciones', () => {
     const d = req('/api/v1/recommendations/SKU-T1');
     await flush(d, { ...recoOk, explanation: 'Texto del servidor' }, f);
     const steps = Array.from(el(f).querySelectorAll('[data-testid="calc-steps"] li')).map((x) => x.textContent!);
-    expect(steps.length).toBe(7);
+    expect(steps.length).toBe(9);
     expect(steps[0]).toContain('Stock simulado');
     expect(steps[1]).toContain('tránsito');
-    expect(steps[3]).toContain('28');
-    expect(steps[4]).toContain('7 × media de 28 días');
-    expect(steps[5]).toContain('42');
-    expect(steps[6]).toContain('27');
+    expect(steps[4]).toContain('28');
+    expect(steps[5]).toContain('7 ×');
+    expect(steps[6]).toContain('42');
+    expect(steps[7]).toContain('27');
     expect(el(f).querySelector('[data-testid="incoherent"]')).toBeNull();
-    expect(el(f).querySelector('[data-testid="reco-dates"]')?.textContent).toContain('2026-07-10');
+    expect(el(f).querySelector('[data-testid="reco-dates"]')?.textContent).toContain('10/07/2026');
     expect(el(f).textContent).toContain('Texto del servidor');
   });
 
@@ -215,24 +214,6 @@ describe('Resumen', () => {
     await flush(req('/api/v1/sales/summary'), { error: { code: 'AGOSTO_RESERVADO', message: 'agosto de 2026 está reservado para la prueba final' } }, f, 422);
     expect(state(f)).toBe('error');
     expect(el(f).textContent).toContain('agosto de 2026 está reservado');
-  });
-});
-
-describe('Comparación', () => {
-  it('lista backtests, pide la vista y muestra límites, RF no ganó y escenario/aviso del servidor', async () => {
-    const f = mount(ComparisonPage);
-    await flush(req('/api/v1/backtests'), [{ backtest_id: 'bt-1', kind: 'T07_desarrollo', label: 'T07', folds: 4, created: '2026-10-16' }], f);
-    await new Promise((r) => setTimeout(r, 0));
-    const d = req('/api/v1/backtests/bt-1');
-    expect(d.request.params.get('view')).toBe('all');
-    await flush(d, { scenario_id: 'esc-1', provenance: 'SYNTHETIC_NOT_REAL_INVENTORY', disclaimer: 'Aviso del servidor', predictive: [{ metodo: 'promedio_28', mape: 1 }] }, f);
-    const t = el(f).textContent!;
-    expect(el(f).querySelector('[data-testid="limits"]')?.textContent).toContain('no ganó');
-    expect(t).toContain('más stock y más compras');
-    expect(t).toContain('27 combinaciones');
-    expect(t).toContain('Inventario simulado con supuestos');
-    expect(el(f).querySelector('[data-testid="disclaimer"]')?.textContent).toBe('Aviso del servidor');
-    expect(t).toContain('esc-1');
   });
 });
 

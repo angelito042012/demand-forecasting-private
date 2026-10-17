@@ -218,7 +218,7 @@ describe('parámetros de consulta', () => {
 describe('cálculo de recomendación (fixture del contrato)', () => {
   it('muestra pasos coherentes: posición, objetivo y pedido', () => {
     const c = calcSteps(recoOk)!;
-    expect(c.steps.map((s) => s.value)).toEqual([10, 5, 15, 28, 14, 42, 27]);
+    expect(c.steps.map((s) => s.value)).toEqual([10, 5, 15, 2, 28, 14, 42, 27, 94.5]);
     expect(c.check).toEqual({ position: true, target: true, order: true });
   });
   it('detecta valores publicados incoherentes', () => {

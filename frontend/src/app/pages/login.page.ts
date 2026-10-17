@@ -10,7 +10,7 @@ import { AppError } from '../core/models';
   template: `
     <h2>Acceso</h2>
     @if (auth.notice(); as n) {
-      <p class="warn" role="alert" data-testid="notice">{{ n }}</p>
+      <p class="notice warn" role="alert" data-testid="notice">{{ n }}</p>
     }
     <form (ngSubmit)="submit()" autocomplete="on">
       <label>Usuario <input name="username" [(ngModel)]="username" autocomplete="username" required /></label>
@@ -25,8 +25,8 @@ import { AppError } from '../core/models';
   styles: `
     form { display: grid; gap: 0.6rem; max-width: 22rem; }
     label { display: grid; gap: 0.2rem; }
-    .err { color: #842029; } .warn { color: #664d03; background: #fff3cd; padding: 0.4rem 0.7rem; }
-    .hint { font-size: 0.85rem; color: #555; }
+    .err { color: #842029; }
+    .hint { font-size: 0.85rem; color: var(--muted); }
   `,
 })
 export class LoginPage {
