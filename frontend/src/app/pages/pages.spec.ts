@@ -116,7 +116,7 @@ describe('Recomendaciones', () => {
     const ns = el(f).querySelector('[data-testid="sin-snapshot"]')!;
     expect(ns.textContent).toContain('Sin inventario simulado al 10/07');
     expect(ns.textContent).toContain('SIN_INVENTARIO_SIMULADO_AL_10_07');
-    expect(ns.textContent).toContain('No se supone stock cero');
+    expect(ns.textContent?.toLowerCase()).toContain('no se supone stock cero');
     expect(ns.textContent).not.toMatch(/\b0\b/);
     expect(t).toContain('Valor del pedido (PEN, supuesto)');
 
@@ -203,7 +203,7 @@ describe('Resumen', () => {
     await flush(req('/api/v1/sales/summary'), {
       provenance: 'OBSERVED_EXCEL', unit: 'unidad base', currency: 'PEN', from: '2026-06-01', to: '2026-07-31',
       items: [{ key: '2026-06', lineas_venta: 1, unidades: 2, importe_pen: 3 }],
-      notas_credito: { lineas: 4, importe_pen: 5 }, excluded_days: ['2026-06-07'],
+      notas_credito: { lineas: 4, importe_pen: 5 }, excluded_days: [{ fecha: '2026-06-07', motivo: 'excluido del entrenamiento y métricas; no se informa como venta cero' }],
     }, f);
     expect(el(f).querySelector('[data-testid="credit-notes"]')?.textContent).toContain('4 línea(s)');
     expect(el(f).textContent).toContain('no netas');

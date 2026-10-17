@@ -50,7 +50,7 @@ import { SimNotice } from '../ui/notices';
               } @else {
                 <tr class="nosnap" data-testid="sin-snapshot">
                   <td>{{ r.sku }}</td><td>{{ r.categoria ?? '—' }}</td>
-                  <td colspan="5">Sin inventario simulado al 10/07. {{ r.reason }}. No se supone stock cero.</td>
+                  <td colspan="5">Sin inventario simulado al 10/07. {{ r.reason }}.</td>
                   <td><button type="button" (click)="open(r)">Ver motivo</button></td>
                 </tr>
               }

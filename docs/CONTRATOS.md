@@ -1,5 +1,7 @@
 # Contratos propuestos y aceptación
 
+> **Actualización T08 (17/10/2026):** las secciones «API propuesta» y «Persistencia» de este documento quedan sustituidas por `docs/T08_CONTRATO.md` (rutas, sesión por cookie HttpOnly, errores, paginación, colecciones de corridas y publicación versionada). La clave de venta vigente es la del importador v2 (`docs/ESTRATEGIA_CLAVES.md`); las claves históricas de esta tabla no deben seguirse. Se conservan aquí las pruebas de aceptación A01–A14.
+
 Estas decisiones son una base para implementación; el formato real de ventas ya fue verificado y la semántica debe validarse con el negocio. No constituyen una API ya implementada.
 
 ## Datos

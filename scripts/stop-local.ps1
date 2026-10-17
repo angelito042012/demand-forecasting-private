@@ -5,7 +5,7 @@ $pidFile = Join-Path $root 'artifacts/private/t08/pids.json'
 if (-not (Test-Path -LiteralPath $pidFile)) { Write-Output 'No hay procesos registrados.'; exit 0 }
 $p = Get-Content -LiteralPath $pidFile -Raw | ConvertFrom-Json
 foreach ($id in @($p.api, $p.web)) {
-    if ($id) { & taskkill.exe /PID $id /T /F 2>$null | Out-Null }
+    if ($id) { try { & cmd.exe /c "taskkill /PID $id /T /F >nul 2>&1" } catch { } }  # un PID ya terminado no es un error
 }
 Remove-Item -LiteralPath $pidFile -Force
 Write-Output 'Procesos propios detenidos.'

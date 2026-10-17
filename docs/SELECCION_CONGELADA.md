@@ -34,7 +34,7 @@ Fecha de congelación: 17/10/2026, America/Lima. Configuración versionada: `con
 ## 4. Protocolo de ejecución futura (no ejecutado)
 
 1. Encargo explícito posterior de Codex tras revisar la integración y esta congelación.
-2. Verificar hashes de este documento (registrado al comprometerlo), de `config/seleccion_congelada.json` y de los archivos del módulo experimental.
+2. Verificar hashes de este documento (registrado al comprometerlo), de `config/seleccion_congelada.json` y de los archivos del módulo experimental. Al comparar, normalizar saltos de línea CRLF→LF (Git en Windows puede convertirlos).
 3. Cargar agosto únicamente con `load_final_test_sales(..., frozen_selection_confirmed=True)` en un script dedicado (`scripts/run_final.py`, **no implementado en T08**), con fuentes aprobadas y la barrera de corte.
 4. Ejecutar el procedimiento una vez; guardar manifiesto con hashes de datos, fuentes, código, configuración y predicciones; publicar los resultados como corrida de prueba final, claramente distinta de la corrida histórica de desarrollo.
 5. Sin re-selección posterior.

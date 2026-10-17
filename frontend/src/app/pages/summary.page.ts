@@ -38,13 +38,17 @@ import { ObservedNotice } from '../ui/notices';
         <h3>Notas de crédito (informadas aparte, no netas)</h3>
         <p data-testid="credit-notes">{{ d.notas_credito.lineas }} línea(s) · importe {{ d.notas_credito.importe_pen }} PEN. No se infiere devolución física.</p>
         <h3>Días excluidos del análisis</h3>
-        <p data-testid="excluded">{{ d.excluded_days.length ? d.excluded_days.join(', ') : 'Ninguno en el rango.' }}</p>
+        <p data-testid="excluded">{{ d.excluded_days.length ? excludedText(d.excluded_days) : 'Ninguno en el rango.' }}</p>
       }
     </app-state-panel>
   `,
   styles: `.filters { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: end; margin: 0.6rem 0; } label { display: grid; gap: 0.2rem; } .hint { font-size: 0.85rem; color: #555; }`,
 })
 export class SummaryPage {
+  excludedText(days: { fecha: string; motivo: string }[]) {
+    return days.map((d) => d.fecha + ' (' + d.motivo + ')').join('; ');
+  }
+
   private api = inject(ApiService);
   from = '2026-06-01';
   to = '2026-07-31';

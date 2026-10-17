@@ -142,11 +142,13 @@ describe('guard de rutas', () => {
 });
 
 describe('mapeo de errores', () => {
-  const cases: [number, object, string][] = [
+  const cases: [number, object | string, string][] = [
     [403, { error: { code: 'PROHIBIDO', message: 'x' } }, 'PROHIBIDO'],
     [422, { error: { code: 'AGOSTO_RESERVADO', message: 'agosto de 2026 está reservado para la prueba final' } }, 'AGOSTO_RESERVADO'],
     [503, { error: { code: 'SERVICIO_NO_DISPONIBLE', message: 'interno' } }, 'SERVICIO_NO_DISPONIBLE'],
     [404, { error: { code: 'NO_ENCONTRADO', message: 'no' } }, 'NO_ENCONTRADO'],
+    [500, 'proxy sin cuerpo JSON', 'SERVICIO_NO_DISPONIBLE'],
+    [500, { error: { code: 'ERROR_INTERNO', message: 'Error interno.' } }, 'DESCONOCIDO'],
   ];
   it.each(cases)('status %i -> %s', (status, body, code) => {
     const { http, api } = setup();
@@ -154,7 +156,7 @@ describe('mapeo de errores', () => {
     api.health().subscribe({ error: (x) => (e = x) });
     http.expectOne('/api/v1/health').flush(body, { status, statusText: 'x' });
     expect(e?.code).toBe(code);
-    if (status === 503) expect(e?.message).toContain('Servicio no disponible');
+    if (status === 503 || typeof body === 'string') expect(e?.message).toContain('Servicio no disponible');
     if (status === 403) expect(e?.message).toContain('permiso');
   });
 

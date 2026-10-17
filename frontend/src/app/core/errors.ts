@@ -16,7 +16,8 @@ export function toAppError(e: HttpErrorResponse): AppError {
   const retry = Number(e.headers?.get?.('Retry-After'));
   const retryAfter = Number.isFinite(retry) && retry > 0 ? retry : undefined;
 
-  if (e.status === 0 || e.status === 502 || e.status === 503 || e.status === 504 || code === 'SERVICIO_NO_DISPONIBLE') {
+  if (e.status === 0 || e.status === 502 || e.status === 503 || e.status === 504 || (e.status >= 500 && !raw?.code) || code === 'SERVICIO_NO_DISPONIBLE') {
+    // 5xx sin cuerpo de error de la API (p. ej. el proxy no alcanza al servidor) = servicio no disponible
     return { status: e.status, code: e.status === 0 ? 'RED' : 'SERVICIO_NO_DISPONIBLE', message: UNAVAILABLE_MSG };
   }
   if (code === 'SESION_EXPIRADA') return { status: e.status, code, message: 'Su sesión venció. Ingrese de nuevo.' };

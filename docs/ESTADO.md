@@ -4,7 +4,7 @@ Actualizado el 17/10/2026, America/Lima. Entrega final: 23/10/2026. Claude Code 
 
 ## Punto de entrada y siguiente encargo
 
-**Encargo vigente: ETAPA_06_CLAUDE.md (T08 + lectura integrada T09)**, tras aceptar T07 al commit 5790103 en REVISION_CODEX_06.md. Próximo ejecutor Claude: ajustes pequeños del motor, contrato API/auth, congelación documentada, publicación no destructiva de corrida histórica al 10/07 y pantallas con datos persistidos. No repetir entrenamientos T06/T07 ni abrir agosto. El test final se ejecutará en un encargo posterior.
+**T08 + lectura integrada T09 entregados a revisión de Codex (17/10/2026, Claude).** Siguiente: revisión de Codex; después integración restante (T10 carga/batch), ejecución final bajo la congelación revisada (T12), despliegue y respaldo (T11), aceptación humana e informe. Agosto sigue sin consultarse. Reporte de pruebas y límites: `docs/T08_REPORTE.md`; guía de uso local: `docs/GUIA_LOCAL.md`.
 
 ## Hitos aceptados
 
@@ -31,6 +31,16 @@ Actualizado el 17/10/2026, America/Lima. Entrega final: 23/10/2026. Claude Code 
 - **Parte B (simulación 01/06–31/07, 3347 SKU, 27 combinaciones política×escenario)**: conservación por SKU/día y de sistema e identidad de valor verificadas (error máx. 1,2e-10). Escenario principal L=7, S=7: fill rate referencia fija 0,741, promedio_28 0,797, RF distribuido 0,809, con stock medio y compras crecientes en el mismo orden (RF +7,5 % stock y +4,0 % compras frente a promedio_28); la ventaja de servicio del RF es compatible con pedir más (sobrepronostica) y no es concluyente. Los nueve escenarios, cohortes y diferencias están en T07_RESULTADOS.md.
 - **Pruebas**: suite completa `RUN_REALDATA=1` 117 aprobadas, 0 omitidas, 346 s (log `artifacts/private/t07/pytest_full.log`), ejecutada antes de ajustes solo de reporte; tras ellos se repitieron `tests/sim` y `test_t07_functions` (16 aprobadas) y la ejecución completa de `scripts.run_t07` (162 s, repetición idéntica). `ruff` limpio. Revisión independiente (agente quality-reviewer, solo lectura): sin fugas; sus hallazgos de reporte (cobertura, cohortes, rótulos, lectura servicio-inventario) se corrigieron; quedan como límites los menores del reporte.
 - **Límites**: desarrollo con meses ya conocidos; demanda proxy; costos/holding/lead time supuestos; universo fijo al 31/05 (411 SKU posteriores excluidos, 3783 unidades); sin precio como feature; RF con 36 series; no demuestra impacto en la MYPE.
+
+## Entrega T08 (17/10/2026): aplicación local autenticada con resultados persistidos
+
+- **Ajustes del motor**: validación estricta de entradas y conservación diaria (`pipeline/sim/engine.py`); ecuaciones y resultados T07 sin cambio.
+- **Contrato**: `docs/T08_CONTRATO.md` (sustituye API/persistencia históricas de `CONTRATOS.md`). **Congelación**: `docs/SELECCION_CONGELADA.md` + `config/seleccion_congelada.json` (método operativo `promedio_28`; RF comparador experimental; diseño de agosto fijado; **no ejecutada**, sin `run_final`, sin paquetes finales, sin leer agosto ni `reference_v1`).
+- **Backend**: autenticación por cookie HttpOnly con CSRF, rate limit, roles admin/lector, CLI de alta de usuarios; rutas de lectura bajo `/api/v1` (importaciones, resumen de ventas ≤ 31/07, corridas, pronósticos, recomendaciones, backtests); agosto → 422. **Persistencia**: publicador versionado e idempotente (`scripts/publish_run.py`) con verificación de checksums y del código por commit. Corrida publicada en `demand_forecasting_v2`: `hist-20260710-52b01cd999dd` (76 587 pronósticos SKU, 756 de categoría, 3 647 recomendaciones de las cuales 300 sin inventario simulado, 1 backtest).
+- **Frontend** conectado a la API (acceso, resumen, importaciones, corridas, pronósticos, recomendaciones con cálculo paso a paso, comparación, sistema); modo demostración solo con `?demo=1`, nunca como respaldo silencioso.
+- **Pruebas**: suite integral 226 aprobadas, 0 omitidas (509 s); frontend 42 aprobadas y build correcto; **E2E en navegador real (Chrome + Playwright-core) 24/24** contra API y Mongo reales, incluidos sesión expirada, logout, 403/CSRF, agosto, inyección y API caída. Evidencia privada en `artifacts/private/t08/` (capturas, resultados, logs).
+- **Defectos hallados en E2E y corregidos**: `[object Object]` en días excluidos, texto duplicado, mensaje de API caída.
+- **Límites**: demostración local en HTTP; sin carga web ni ejecución de corridas desde la app; la recomendación es una sugerencia hipotética sobre una corrida histórica (99 días de antigüedad al consultarla) con inventario simulado; sin pruebas de carga/concurrencia/accesibilidad; despliegue, HTTPS y restauración pendientes.
 
 ## Límites y trabajo activo siguiente
 

@@ -82,7 +82,7 @@ export interface SalesSummary {
   to: string;
   items: { key: string; lineas_venta: number; unidades: number; importe_pen: number }[];
   notas_credito: { lineas: number; importe_pen: number };
-  excluded_days: string[];
+  excluded_days: { fecha: string; motivo: string }[];
 }
 
 export interface ForecastItem {

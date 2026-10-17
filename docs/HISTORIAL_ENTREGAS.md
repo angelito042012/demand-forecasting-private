@@ -232,3 +232,7 @@ T06 aceptado como experimento de desarrollo al commit 3b11fbd. Once pruebas sele
 ## Revisión Codex 06 (17/10/2026)
 
 T07 aceptado al commit 5790103. Codex ejecutó 22 pruebas selectivas, comprobó hashes (13 modelos y dos archivos), recalculó 160 grupos SKU y saldos diarios/métricas totales en las 27 combinaciones. Sin reentrenar ni consultar base real. Ver REVISION_CODEX_06.md. Siguiente: ETAPA_06_CLAUDE.md, API/autenticación/persistencia y lectura web con corrida histórica al 10/07; congelación documentada sin abrir agosto.
+
+## Entrega 17/10/2026 (Claude): T08 + lectura integrada T09 (pendiente de revision de Codex)
+
+- Contrato T08, seleccion congelada (sin ejecutar), auth por cookie HttpOnly, publicador versionado, rutas de lectura, frontend conectado. Suite 226, frontend 42, E2E navegador 24/24. Detalle: docs/T08_REPORTE.md.

@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al 17/10: T07 aceptado en REVISION_CODEX_06.md. Encargo ETAPA_06_CLAUDE.md (T08 + lectura integrada T09): API/auth/persistencia, pantallas y congelación escrita. Agosto sigue reservado; prueba final en encargo posterior. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
+Estado al 17/10 (noche): T08 + lectura integrada T09 entregados a revisión de Codex (aplicación local autenticada con corrida histórica persistida; congelación preparada sin ejecutar). Siguiente: T10 carga/batch, T11 despliegue/respaldo, T12 ejecución final bajo congelación. Las fechas de la tabla son objetivos, no evidencia de terminación. Consultar ESTADO.md y TRASPASO.md.
 
 T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04–T07 aceptados como desarrollo. T08 y posteriores pendientes. Método operativo v1 promedio_28; RF comparador, no ganador. Congelación final documentada en T08 antes de abrir agosto. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 

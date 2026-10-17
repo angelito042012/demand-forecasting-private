@@ -5,7 +5,16 @@ from pymongo.errors import PyMongoError
 
 from backend.app.config import get_settings
 from backend.app.errors import install_error_handlers
-from backend.app.routers import admin, auth, backtests, forecasts, imports, recommendations, runs, sales
+from backend.app.routers import (
+    admin,
+    auth,
+    backtests,
+    forecasts,
+    imports,
+    recommendations,
+    runs,
+    sales,
+)
 
 API_VERSION = "0.1.0"
 
