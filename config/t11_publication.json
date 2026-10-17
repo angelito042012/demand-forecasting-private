@@ -1,0 +1,15 @@
+{
+  "version": "t11a-1",
+  "base_publicacion": "demand_forecasting_pub",
+  "base_origen_solo_lectura": "demand_forecasting_v2",
+  "copiar_colecciones": ["sales", "credit_notes", "imports", "import_conflicts", "import_rejects", "month_reservations"],
+  "corridas_historicas": ["hist-20260710-4ea348836e35", "hist-20260710-52b01cd999dd"],
+  "puntero_activo": "hist-20260710-4ea348836e35",
+  "corrida_final": {"kind": "final_evaluation", "fuente": "artifacts/private/final", "activar_puntero": false},
+  "no_copiar": ["sessions", "users", "login_attempts", "login_budget", "jobs", "scheduler_ticks", "run_pointer(origen)",
+                "corridas generadas de prueba", "corrida gen-20260620 fallida"],
+  "archivar_fuera_de_mongo": ["modelos .joblib", "NPZ de simulacion", "CSV minimos de agosto", "logs", "Excel originales", "corridas generadas de prueba"],
+  "cuota_atlas_free_mb": 512,
+  "objetivo_uso_maximo_fraccion": 0.6,
+  "etiqueta": "Inventario simulado con supuestos; no corresponde al inventario real de la empresa"
+}
