@@ -22,7 +22,7 @@ from pymongo.errors import (
     WTimeoutError,
 )
 
-from pipeline.data import importer
+from pipeline.data import importer, month_lock
 from pipeline.data.importer import import_workbook, read_rows, sha256_file
 from pipeline.data.sources import approved_sources
 from pipeline.generate.baseline import generate_and_publish
@@ -127,6 +127,32 @@ def _resolve_upload(ctx: JobContext, job_input: dict) -> tuple[Path, str]:
     return path, sha
 
 
+def _month_taken(month: str, state: str = "approved") -> str:
+    why = {"approved": "ya tiene una fuente aprobada distinta",
+           "importing": "está siendo importado desde otra fuente",
+           "partial": "tiene una importación parcial de otra fuente que no se libera automáticamente"}.get(
+        state, "ya está reservado por otra fuente")
+    return (f"El mes {month} {why}. No se importó ni se aprobó el archivo (queda en cuarentena en el almacén "
+            f"privado). Siga {REMEDIATION_DOC}.")
+
+
+def _close_reservation(db, resv, fence, *, approved: bool = False, failed: bool = False) -> None:
+    """Cierra la reserva del mes segun el resultado. Aprobada => `approved`; con conflictos => se libera (la fuente
+    no queda aprobada); fallo sin escrituras => se libera; fallo con escrituras => `partial` (no se libera)."""
+    try:
+        if failed:
+            if fence.wrote:
+                month_lock.finish(db, resv, "partial")
+            else:
+                month_lock.release(db, resv)
+        elif approved:
+            month_lock.finish(db, resv, "approved")
+        else:
+            month_lock.release(db, resv)
+    except (month_lock.LostReservation, PyMongoError):
+        pass            # otro intento ya la retomo (o la base cayo): el lease vence y se recupera
+
+
 def import_excel(ctx: JobContext) -> dict:
     inp, cfg = ctx.claim.input, ctx.cfg
     pol, up = cfg["politica_desarrollo"], cfg["subidas"]
@@ -181,15 +207,31 @@ def import_excel(ctx: JobContext) -> dict:
         raise JobFailure("MES_NO_COINCIDE", f"Ninguna fila tiene fecha del mes declarado ({month}). No se importó nada.")
     ctx.progress("verificando fuentes", {"filas_leidas": len(rows)})
 
-    for other_sha, imp in approved_sources(ctx.db).items():
+    for other_sha, imp in approved_sources(ctx.db).items():       # fuente aprobada ANTES de la reserva (historial)
         if imp.get("mes") == month and other_sha != sha:
-            raise JobFailure("MES_CON_FUENTE_APROBADA",
-                             f"El mes {month} ya tiene una fuente aprobada distinta. No se importó ni se aprobó el "
-                             f"archivo (queda en cuarentena en el almacén privado). Siga {REMEDIATION_DOC}.")
+            raise JobFailure("MES_CON_FUENTE_APROBADA", _month_taken(month))
     ctx.check()
 
-    ctx.progress("importando", {"filas_leidas": len(rows)})
-    rep = import_workbook(path, ctx.db, expected_month=month)
+    # T10R R09: exclusion durable por mes ANTES de escribir; el chequeo anterior solo es una salida temprana.
+    try:
+        resv = month_lock.reserve(ctx.db, month, sha, lease_seconds=max(2 * ctx.lease_seconds, month_lock.LEASE_SECONDS))
+    except month_lock.MonthReserved as exc:
+        raise JobFailure("MES_CON_FUENTE_APROBADA", _month_taken(month, exc.holder_state)) from None
+    except month_lock.ImportInProgress:
+        raise JobFailure("IMPORTACION_EN_CURSO", "La misma fuente ya se está importando; se reintentará.",
+                         retryable=True) from None
+    fence = month_lock.Fence(ctx.db, resv, lease_seconds=max(2 * ctx.lease_seconds, month_lock.LEASE_SECONDS),
+                             extra=ctx.check)
+    try:
+        ctx.progress("importando", {"filas_leidas": len(rows)})
+        rep = import_workbook(path, ctx.db, expected_month=month, fence=fence)
+        _close_reservation(ctx.db, resv, fence, approved=rep.estado == "completed")
+    except month_lock.LostReservation:
+        raise JobFailure("IMPORTACION_CONCURRENTE", "Otro intento retomó la importación de este mes; se reintentará.",
+                         retryable=True) from None
+    except BaseException:
+        _close_reservation(ctx.db, resv, fence, failed=True)
+        raise
     result = {"outcome": "importado", "import_id": rep.import_id, "estado": rep.estado, "mes": rep.mes,
               "filas_leidas": rep.filas_leidas, "ventas": rep.ventas_aceptadas, "notas_credito": rep.notas_credito,
               "rechazadas": rep.rechazadas, "rechazos_por_motivo": dict(rep.rechazos_por_motivo),

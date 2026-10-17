@@ -35,6 +35,7 @@ filas_leidas = filas no vacias de datos (debajo del encabezado).
 from __future__ import annotations
 
 import argparse
+import contextvars
 import hashlib
 import json
 import os
@@ -339,11 +340,23 @@ def _run_bulk(coll, ops) -> int:
         return inserted
 
 
+_FENCE: contextvars.ContextVar = contextvars.ContextVar("import_fence", default=None)
+
+
+def _fence_check(write: bool = True) -> None:
+    """T10R R09: si la importacion corre bajo una valla (reserva del mes), se renueva/verifica antes de escribir.
+    Un dueno desplazado recibe LostReservation y no escribe mas."""
+    fence = _FENCE.get()
+    if fence is not None:
+        fence.check(write=write)
+
+
 def _upsert_all(coll, docs, batch_size, *, filt, verify):
     """Upsert $setOnInsert (+ $addToSet de procedencia). Verifica que cada lote quedo
     persistido. Retorna (insertadas, ya_existentes)."""
     ins = 0
     for i in range(0, len(docs), batch_size):
+        _fence_check()
         chunk = docs[i:i + batch_size]
         ops = []
         for d in chunk:
@@ -405,6 +418,7 @@ def _screen_conflicts(db, coll_name, docs, meta):
 
 def _write_conflicts(db, conflicts):
     for c in conflicts:
+        _fence_check()
         db.import_conflicts.update_one({"conflict_id": c["conflict_id"]}, {"$setOnInsert": c}, upsert=True)
         if db.import_conflicts.count_documents({"conflict_id": c["conflict_id"]}) != 1:
             raise ImportWriteError("conflicto no persistido")
@@ -423,7 +437,18 @@ def _now():
 
 
 def import_workbook(path, db, *, expected_month=None, dry_run: bool = False,
-                    batch_size: int = 2000) -> ImportReport:
+                    batch_size: int = 2000, fence=None) -> ImportReport:
+    """`fence` (T10R R09, opcional): valla de la reserva del mes (`month_lock.Fence`). Se consulta antes de cada lote
+    de escritura y antes de finalizar; si otro intento retomo el mes, lanza LostReservation y no escribe ni aprueba."""
+    token = _FENCE.set(None if dry_run else fence)
+    try:
+        return _import_workbook(path, db, expected_month=expected_month, dry_run=dry_run, batch_size=batch_size,
+                                fence=None if dry_run else fence)
+    finally:
+        _FENCE.reset(token)
+
+
+def _import_workbook(path, db, *, expected_month, dry_run, batch_size, fence) -> ImportReport:
     path = Path(path)
     t0 = time.perf_counter()
     month = _norm_month(expected_month) or infer_month(path)
@@ -490,6 +515,7 @@ def import_workbook(path, db, *, expected_month=None, dry_run: bool = False,
             _write_conflicts(db, conflicts)
             rep.insertadas, rep.ya_existentes = _write_batches(db, sales, notes, rejects, batch_size)
             rep.check_persistence()
+            _fence_check(write=False)                    # sigue siendo el dueno del mes antes de dar por completada
         rep.estado = "completed_with_conflicts" if rep.en_conflicto else "completed"
     except BaseException as exc:
         rep.estado = "failed"
@@ -501,6 +527,8 @@ def import_workbook(path, db, *, expected_month=None, dry_run: bool = False,
         raise
     rep.segundos = round(time.perf_counter() - t0, 3)
     if not dry_run:
+        if fence is not None:
+            fence.check()                                # ultima comprobacion: un dueno obsoleto no finaliza/aprueba
         db.imports.update_one({"import_id": rep.import_id},
                               {"$set": {**rep.to_dict(), "finalizado_utc": _now()}})
     return rep
