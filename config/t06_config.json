@@ -1,0 +1,38 @@
+{
+  "version": "t06-1",
+  "congelado_antes_de_evaluar": true,
+  "base": {"config_t05": "config/t05_config.json", "folds_cohortes_y_universo": "identicos a T05", "agosto_usado": false},
+  "origenes_entrenamiento": {
+    "paso_dias": 3,
+    "alineacion": "hacia atras desde corte-7 (o+7 <= corte)",
+    "origen_minimo_indice": 27,
+    "nota": "submuestreo determinista de origenes por calendario; nunca por resultados ni solo ventas positivas"
+  },
+  "etiquetas": "valor diario en o+h (h=1..7) con o+h <= corte; se excluyen ausentes/enmascarados; los ceros validos se conservan",
+  "ausentes": "NaN nativo (Random Forest y XGBoost); sin imputacion; usables28 y dias_desde_ultima_venta como indicadores",
+  "modelos": {
+    "random_forest": {
+      "clase": "sklearn.ensemble.RandomForestRegressor",
+      "parametros": {"n_estimators": 100, "max_depth": 12, "min_samples_leaf": 20, "max_features": 0.5,
+                     "bootstrap": true, "random_state": 20261017, "n_jobs": 4}
+    },
+    "xgboost": {
+      "clase": "xgboost.XGBRegressor",
+      "parametros": {"n_estimators": 150, "max_depth": 4, "learning_rate": 0.1, "subsample": 0.8,
+                     "colsample_bytree": 0.8, "min_child_weight": 5, "reg_lambda": 1.0,
+                     "objective": "reg:squarederror", "tree_method": "hist", "random_state": 20261017, "n_jobs": 4}
+    }
+  },
+  "prediccion_negativa": "recorte a 0 en todos los modelos y folds; se cuenta cuantos valores se recortan",
+  "computo": {"max_hilos": 4, "presupuesto_minutos_por_fold": 15, "repeticion_determinista_en_fold": "F1"},
+  "seleccion": {
+    "sku": {"vista": "bloque7", "descripcion": "WAPE de cantidad acumulada en 7 dias, cohorte primaria, universo comun"},
+    "categoria": {"vista": "diaria", "descripcion": "WAPE diario, cohorte primaria, universo comun; el bloque semanal se reporta igualmente"},
+    "mejor_referencia": "menor criterio primario agregado entre cero, ultimo_dia, naive_semanal y promedio_28",
+    "mejora_relativa_minima": 0.02,
+    "folds_favorables_minimos": 3,
+    "sesgo_relativo_maximo_abs": 0.25,
+    "sin_ventaja": "se propone el baseline no nulo con menor criterio primario del nivel; el control cero solo es referencia"
+  },
+  "precio": "no incorporado en esta iteracion (limitacion registrada)"
+}
