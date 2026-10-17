@@ -15,7 +15,13 @@ from backend.app.db import get_db
 from backend.app.errors import ApiError
 from backend.app.main import create_app
 from pipeline.publish.publisher import publish
-from tests.publish.helpers import make_catalog, needs_artifacts, real_source, temp_db
+from tests.publish.helpers import (
+    make_catalog,
+    make_signals,
+    needs_artifacts,
+    real_source,
+    temp_db,
+)
 
 pytestmark = [pytest.mark.mongo, pytest.mark.realdata, needs_artifacts]
 
@@ -56,7 +62,7 @@ def env():
     src = real_source()
     cat, fp = make_catalog(src)
     with temp_db() as db:
-        res = publish(db, src, cat, fp)
+        res = publish(db, src, cat, fp, make_signals(src))
         _seed_observed(db)
         app = create_app()
         app.dependency_overrides[get_db] = lambda: db
@@ -163,7 +169,7 @@ def test_recommendations_list_detail_and_filters(env):
     q = [i["order_qty"] for i in r["items"]]
     assert q == sorted(q, reverse=True) and q[0] > 0
     ok_orders = _get(env, "/recommendations?only_orders=true&status=ok").json()
-    assert ok_orders["total"] == 640 and all(i["order_qty"] > 0 for i in ok_orders["items"])
+    assert ok_orders["total"] == 582 and all(i["order_qty"] > 0 for i in ok_orders["items"])
     ss = _get(env, "/recommendations?status=sin_snapshot&page_size=1").json()
     assert ss["total"] == 300 and ss["items"][0]["order_qty"] is None
     one = _get(env, "/recommendations/1010004").json()

@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-PUBLISHER_VERSION = "t08-publish-1"
+PUBLISHER_VERSION = "t08r-1"   # t08r-1: senales exactas (R05), anclaje de referencia y reemplazo de corridas
 CSV_COLUMNS = ["fold", "entidad", "cohorte", "fecha", "h", "evaluable", "real", "pred_promedio_28",
                "pred_referencia_fija_0531", "pred_rf_distribuido"]
 NPZ_ROLES = ("on_hand", "ordered", "received")
@@ -92,6 +92,41 @@ def verify_code(manifest: dict, files: list[str], repo: Path) -> dict:
     if h.hexdigest() != manifest.get("codigo_sha256"):
         raise SourceVerificationError("codigo_sha256 no coincide con el commit registrado")
     return {"commit": commit, "codigo_sha256": h.hexdigest(), "files": list(files)}
+
+
+def _norm_sha(data: bytes) -> str:
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
+
+
+def verify_reference(entry: dict, root: Path, repo: Path) -> dict:
+    """Ancla el manifiesto y las metricas a la referencia versionada aprobada (commit + contenido normalizado).
+    Un hash recalculado sobre el archivo actual NO verifica nada: se compara con el blob del commit aprobado
+    y con el valor fijado en la configuracion de publicacion."""
+    ref = entry.get("approved_reference")
+    if not ref or not _COMMIT.match(str(ref.get("commit", ""))):
+        raise SourceVerificationError("falta la referencia aprobada (approved_reference.commit) en la configuracion")
+    out = {}
+    for rel in (entry["manifest"], entry["metrics"]):
+        want_cfg = ref.get("files", {}).get(rel, "")
+        if not _SHA.match(want_cfg):
+            raise SourceVerificationError(f"referencia aprobada sin hash para {rel}")
+        at_commit = _norm_sha(_git_show(repo, ref["commit"], rel))
+        current = _norm_sha(_inside(root, rel).read_bytes())
+        if not (at_commit == want_cfg == current):
+            raise SourceVerificationError(f"{rel} no coincide con la referencia aprobada {ref['commit'][:8]}")
+        out[rel] = current
+    return {"commit": ref["commit"], "files": out}
+
+
+def verify_training_match(src: VerifiedSource, training_fingerprint: str, sources: list) -> None:
+    """Antes de combinar catalogo/senales con G4: fingerprint y fuentes deben ser los del manifiesto aceptado.
+    Falla ANTES de escribir si cambiaron las fuentes o el catalogo."""
+    fold = src.manifest["folds_predictivos"][src.entry["fold"]]
+    if training_fingerprint != fold["fingerprint"]:
+        raise SourceVerificationError("el fingerprint de entrenamiento actual no coincide con el del fold aceptado")
+    key = lambda s: (s["mes"], s["archivo"], s["sha256"])
+    if sorted(map(key, sources)) != sorted(map(key, fold["fuentes"])):
+        raise SourceVerificationError("las fuentes aprobadas actuales no coinciden con las del manifiesto aceptado")
 
 
 def verify_config(manifest: dict, entry: dict, repo: Path) -> bytes:
@@ -201,6 +236,7 @@ def verify_and_load(entry: dict, root: Path | None = None, *, code_repo: Path | 
             raise SourceVerificationError(f"sha256 de {name} no coincide con el manifiesto")
         artifacts.append({"name": name, "sha256": got, "size_bytes": p.stat().st_size})
         paths[name] = p
+    reference = verify_reference(entry, root, repo)
     metrics_path = _inside(root, entry["metrics"])
     artifacts.append({"name": Path(entry["metrics"]).name, "sha256": sha256_file(metrics_path),
                       "size_bytes": metrics_path.stat().st_size})
@@ -215,5 +251,5 @@ def verify_and_load(entry: dict, root: Path | None = None, *, code_repo: Path | 
     fp = hashlib.sha256(json.dumps({
         "v": PUBLISHER_VERSION, "arts": artifacts, "cfg": manifest["config_sha256"],
         "code": code["codigo_sha256"], "commit": code["commit"], "scenario": entry["scenario_id"],
-        "fold": entry["fold"], "cutoff": entry["cutoff"]}, sort_keys=True).encode()).hexdigest()
+        "fold": entry["fold"], "cutoff": entry["cutoff"], "ref": reference}, sort_keys=True).encode()).hexdigest()
     return VerifiedSource(entry, manifest, metrics, cfg_t07, forecasts, sim, artifacts, code, fp)

@@ -21,6 +21,8 @@ from pipeline.publish.publisher import (
     PublishValidationError,
     publish,
 )
+from pipeline.publish.schema import QUALITY_ISSUES
+from pipeline.publish.signals import compute_signals
 from pipeline.publish.source import (
     SourceVerificationError,
     load_publish_config,
@@ -37,6 +39,9 @@ def main(argv=None) -> int:
     ap.add_argument("--manifest", required=True, choices=sorted(cfg["manifests"]))
     ap.add_argument("--db", default=os.environ.get("MONGODB_DATABASE", "demand_forecasting_v2"))
     ap.add_argument("--no-activate", action="store_true", help="no mover el puntero activo")
+    ap.add_argument("--supersede", action="append", default=[], metavar="RUN_ID",
+                    help="marca esa corrida anterior como sustituida (no se borra) tras completar la nueva")
+    ap.add_argument("--quality-issue", default="R05_PRECISION_RECOMENDACIONES", choices=sorted(QUALITY_ISSUES))
     args = ap.parse_args(argv)
     if not _DB.match(args.db):
         print("Nombre de base invalido.", file=sys.stderr)
@@ -45,8 +50,11 @@ def main(argv=None) -> int:
         entry = resolve_entry(args.manifest, cfg)
         src = verify_and_load(entry)
         db = get_client()[args.db]
-        td = load_training_data(db, date.fromisoformat(entry["cutoff"]))
-        res = publish(db, src, dict(td.catalog), td.fingerprint, activate_run=not args.no_activate)
+        cutoff = date.fromisoformat(entry["cutoff"])
+        td = load_training_data(db, cutoff, start=date(2026, 3, 1))
+        signals = compute_signals(td, cutoff)      # suma y dias utiles exactos de la ventana de 28 dias
+        res = publish(db, src, dict(td.catalog), td.fingerprint, signals, sources=list(td.sources.manifest),
+                      activate_run=not args.no_activate, supersede_runs=args.supersede, issue_code=args.quality_issue)
     except (SourceVerificationError, PublishValidationError, PublishInProgressError) as exc:
         print(f"Publicacion rechazada: {exc}", file=sys.stderr)
         return 1

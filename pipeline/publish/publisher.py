@@ -16,8 +16,14 @@ from zoneinfo import ZoneInfo
 from pymongo.errors import DuplicateKeyError
 
 from . import builders as b
-from .schema import SCHEMA_VERSION, ensure_schema, validate_doc
-from .source import VerifiedSource
+from .schema import QUALITY_ISSUES, SCHEMA_VERSION, ensure_schema, validate_doc
+from .signals import Signals, parse_fraction
+from .source import (
+    PUBLISHER_VERSION,
+    SourceVerificationError,
+    VerifiedSource,
+    verify_training_match,
+)
 
 LEASE_MINUTES = 15
 BATCH = 5000
@@ -50,9 +56,12 @@ def _generated_at(src: VerifiedSource) -> datetime:
     return lima.astimezone(UTC)
 
 
-def run_identity(src: VerifiedSource, catalog_fingerprint: str) -> tuple[str, str, str]:
+def run_identity(src: VerifiedSource, catalog_fingerprint: str, signals_fingerprint: str) -> tuple[str, str, str]:
+    """Identidad estable: mismos datos + codigo/config + version del publicador + senales exactas => misma corrida.
+    Cambiar el algoritmo (PUBLISHER_VERSION) o las senales cambia la identidad; un reintento no."""
     import hashlib
-    fp = hashlib.sha256(f"{src.source_fingerprint}|{catalog_fingerprint}".encode()).hexdigest()
+    fp = hashlib.sha256(
+        f"{PUBLISHER_VERSION}|{src.source_fingerprint}|{catalog_fingerprint}|{signals_fingerprint}".encode()).hexdigest()
     e = src.entry
     key = f"hist-dev:{e['fold']}:{e['cutoff']}:{fp[:24]}"
     run_id = f"hist-{e['cutoff'].replace('-', '')}-{fp[:12]}"
@@ -156,11 +165,12 @@ def validate_published(db, run_id: str, expected: dict) -> dict:
     if seen != len(sums):
         raise PublishValidationError("categorias incompletas")
     for d in r.find({"run_id": run_id, "status": "ok"}):
-        calc = b.recompute_recommendation(d["on_hand"], d["in_transit"], d["mean_28"], d["forecast_14d"],
+        calc = b.recompute_recommendation(d["on_hand"], d["in_transit"], parse_fraction(d["sum_28"]), d["days_28"],
                                           d["unit_cost_assumed"])
         if (calc["target"] != d["target"] or calc["position"] != d["position"]
                 or calc["order_qty"] != d["order_qty"] or d["in_transit"] < 0 or d["on_hand"] < 0
-                or not _close(calc["safety"], d["safety"])):
+                or calc["target_raw_exact"] != d["target_raw_exact"]
+                or not _close(calc["safety"], d["safety"]) or not _close(calc["mean_28"], d["mean_28"])):
             raise PublishValidationError(f"recomendacion no recalculable: {d['sku']}")
     if r.count_documents({"run_id": run_id, "status": "sin_snapshot",
                           "$or": [{f: {"$ne": None}} for f in b.NUM_FIELDS]}):
@@ -168,18 +178,45 @@ def validate_published(db, run_id: str, expected: dict) -> dict:
     return got
 
 
-def publish(db, src: VerifiedSource, catalog: dict, catalog_fingerprint: str, *,
-            now: datetime | None = None, activate_run: bool = True,
+def supersede(db, old_run_id: str, new_run_id: str, issue_code: str, now: datetime | None = None) -> bool:
+    """Marca una corrida anterior como SUSTITUIDA por un defecto de calidad. No borra ni altera sus hijos:
+    los lectores derivan `validation_status` del estado de la corrida. Idempotente."""
+    if issue_code not in QUALITY_ISSUES:
+        raise PublishValidationError("codigo de incidencia de calidad desconocido")
+    if old_run_id == new_run_id:
+        raise PublishValidationError("una corrida no puede sustituirse a si misma")
+    if db.runs.find_one({"run_id": new_run_id, "status": "completed"}, {"_id": 1}) is None:
+        raise PublishValidationError("la corrida sustituta debe estar completed")
+    res = db.runs.update_one({"run_id": old_run_id, "status": {"$in": ["completed", "superseded"]}}, {"$set": {
+        "status": "superseded", "superseded_by": new_run_id, "superseded_at": now or _utcnow(),
+        "quality_issue": {"code": issue_code, "message": QUALITY_ISSUES[issue_code],
+                          "superseded_by": new_run_id}}})
+    return res.matched_count == 1
+
+
+def publish(db, src: VerifiedSource, catalog: dict, catalog_fingerprint: str, signals: Signals, *,
+            sources: list | None = None, now: datetime | None = None, activate_run: bool = True,
+            supersede_runs: list[str] | None = None, issue_code: str = "R05_PRECISION_RECOMENDACIONES",
             stage_hook: Callable[[str], None] | None = None) -> PublishResult:
-    """Publica la corrida. `stage_hook(etapa)` solo se usa en pruebas para simular fallos."""
+    """Publica la corrida. `stage_hook(etapa)` solo se usa en pruebas para simular fallos.
+
+    Antes de escribir se exige que fingerprint de entrenamiento, fuentes (si se pasan) y senales
+    correspondan al fold aceptado del manifiesto; si cambian, falla sin tocar la base."""
     hook = stage_hook or (lambda _stage: None)
     now = now or _utcnow()
+    fold = src.manifest["folds_predictivos"][src.entry["fold"]]
+    if catalog_fingerprint != fold["fingerprint"] or signals.training_fingerprint != fold["fingerprint"]:
+        raise SourceVerificationError("catalogo/senales no corresponden al fingerprint del fold aceptado")
+    if sources is not None:
+        verify_training_match(src, catalog_fingerprint, sources)
+    if signals.origin != src.entry["cutoff"]:
+        raise SourceVerificationError("el origen de las senales no es el corte de la corrida")
     ensure_schema(db)
-    run_id, key, fp = run_identity(src, catalog_fingerprint)
+    run_id, key, fp = run_identity(src, catalog_fingerprint, signals.fingerprint)
     stage = "preparar"
     try:
         sku_docs, cat_docs, info = b.build_forecasts(src, catalog, run_id)
-        recs = b.build_recommendations(src, catalog, run_id)
+        recs = b.build_recommendations(src, catalog, run_id, signals)
         backtest = b.build_backtest(src, run_id, now)
     except Exception as exc:
         raise PublishValidationError("no se pudieron construir los documentos") from exc
@@ -192,7 +229,7 @@ def publish(db, src: VerifiedSource, catalog: dict, catalog_fingerprint: str, *,
     coverage = {"skus_pronosticados": info["skus"], "skus_con_recomendacion": n_ok,
                 "skus_sin_snapshot": len(recs) - n_ok, "categorias": info["categorias"],
                 "skus_categoria_desconocida": info["skus_categoria_desconocida"]}
-    run_doc = b.build_run_doc(src, run_id, key, fp, _generated_at(src), coverage, counts)
+    run_doc = b.build_run_doc(src, run_id, key, fp, _generated_at(src), coverage, counts, signals)
     validate_doc("runs", run_doc)
     validate_doc("backtests", backtest)
 
@@ -200,6 +237,8 @@ def publish(db, src: VerifiedSource, catalog: dict, catalog_fingerprint: str, *,
     if state == "existing":
         if activate_run:
             activate(db, existing["run_id"], now)
+        for old in supersede_runs or []:
+            supersede(db, old, existing["run_id"], issue_code, now)
         return PublishResult(existing["run_id"], "already_published", activate_run, existing.get("counts", {}))
     try:
         stage = "forecasts"
@@ -224,6 +263,8 @@ def publish(db, src: VerifiedSource, catalog: dict, catalog_fingerprint: str, *,
         hook("antes_puntero")
         if activate_run:
             activate(db, run_id, now)
+        for old in supersede_runs or []:
+            supersede(db, old, run_id, issue_code, now)
     except Exception as exc:
         done = db.runs.find_one({"run_id": run_id, "status": "completed"}, {"_id": 1})
         if done is None:

@@ -4,12 +4,14 @@ from __future__ import annotations
 import contextlib
 import os
 import uuid
+from fractions import Fraction
 from functools import lru_cache
 
 import pytest
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
+from pipeline.publish.signals import Signals, fingerprint_signals
 from pipeline.publish.source import (
     PROJECT_ROOT,
     load_publish_config,
@@ -31,7 +33,23 @@ def make_catalog(src) -> tuple[dict, str]:
     """Catalogo de prueba derivado de los SKU del fold: 1 de cada 100 queda sin categoria."""
     skus = sorted(set(src.forecasts["entidad"].str.split("|").str[0]))
     cat = {s: f"CAT{int(s) % 7}" for i, s in enumerate(skus) if i % 100 != 99}
-    return cat, "catalogo-prueba-v1"
+    return cat, src.manifest["folds_predictivos"][src.entry["fold"]]["fingerprint"]
+
+
+def make_signals(src, variant: str = "") -> Signals:
+    """Senales de PRUEBA coherentes con el CSV (suma = media*28, 28 dias utiles). En produccion las calcula
+    compute_signals desde la historia aprobada; este helper solo evita depender de Mongo con ventas reales."""
+    fold = src.manifest["folds_predictivos"][src.entry["fold"]]
+    per = {}
+    g = src.forecasts.groupby("entidad")["pred_promedio_28"].first()
+    for ent, mean in g.items():
+        sku, alm = ent.split("|")
+        per[(sku, alm)] = (Fraction(round(float(mean) * 28)), 28)
+    start = f"2026-06-13{variant}"
+    return Signals(origin=src.entry["cutoff"], window_start=start, window_end=src.entry["cutoff"], per_sku=per,
+                   training_fingerprint=fold["fingerprint"],
+                   fingerprint=fingerprint_signals(src.entry["cutoff"], start, src.entry["cutoff"], per,
+                                                   fold["fingerprint"]))
 
 
 @contextlib.contextmanager

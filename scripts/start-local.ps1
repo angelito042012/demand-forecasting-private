@@ -11,7 +11,7 @@ if (Test-Path -LiteralPath $pidFile) { throw "Ya hay un registro de procesos ($p
 $env:APP_ENV = 'development'
 if (-not $env:COOKIE_SECURE) { $env:COOKIE_SECURE = 'false' }   # excepcion local explicita (HTTP); en despliegue HTTPS debe ser true
 $py = Join-Path $root '.venv/Scripts/python.exe'
-$api = Start-Process -FilePath $py -ArgumentList '-m', 'uvicorn', 'backend.app.main:app', '--host', '127.0.0.1', '--port', '8000' `
+$api = Start-Process -FilePath $py -ArgumentList '-m', 'uvicorn', 'backend.app.main:app', '--host', '127.0.0.1', '--port', '8000', '--no-proxy-headers' `
     -WorkingDirectory $root -PassThru -WindowStyle Hidden `
     -RedirectStandardOutput (Join-Path $logs 'api.out.log') -RedirectStandardError (Join-Path $logs 'api.err.log')
 $web = Start-Process -FilePath 'npm.cmd' -ArgumentList 'start', '--', '--host', '127.0.0.1', '--port', '4200' `

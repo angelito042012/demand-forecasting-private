@@ -15,7 +15,14 @@ RUN_LABEL = "Corrida histórica de desarrollo al 10/07/2026"
 PROVENANCE_SIM = "SYNTHETIC_NOT_REAL_INVENTORY"
 PROVENANCE_OBS = "OBSERVED_EXCEL"
 SIM_LABEL = "Inventario simulado con supuestos; no corresponde al inventario real de la empresa"
-RUN_STATUSES = ("staging", "completed", "failed")
+RUN_STATUSES = ("staging", "completed", "failed", "superseded")
+READABLE_STATUSES = ("completed", "superseded")
+QUALITY_ISSUES = {
+    "R05_PRECISION_RECOMENDACIONES": (
+        "Las recomendaciones de esta corrida se calcularon con una media redondeada del CSV histórico "
+        "(error de precisión): algunos objetivos y pedidos quedaron inflados en una unidad. Fue sustituida "
+        "por una corrida corregida con señales exactas; no use sus pedidos."),
+}
 
 _ASC = ASCENDING
 INDEXES: dict[str, list[tuple[list[tuple[str, int]], dict]]] = {
@@ -74,6 +81,7 @@ _REQUIRED: dict[str, dict[str, type | tuple]] = {
 }
 _NUM_NULL_FIELDS = ("on_hand", "in_transit", "position", "mean_28", "forecast_14d", "safety",
                     "target", "order_qty", "unit_cost_assumed", "order_value_assumed")
+_EXACT_FIELDS = ("sum_28", "days_28", "mean_28_exact", "target_raw_exact", "signals")
 
 
 def validate_doc(coll: str, doc: dict) -> None:
@@ -98,11 +106,15 @@ def validate_doc(coll: str, doc: dict) -> None:
         if doc["provenance"] != PROVENANCE_SIM:
             raise SchemaError("recommendations: provenance debe ser SYNTHETIC_NOT_REAL_INVENTORY")
         if doc["status"] == "sin_snapshot":
-            if any(doc.get(f) is not None for f in _NUM_NULL_FIELDS):
+            if any(doc.get(f) is not None for f in _NUM_NULL_FIELDS + _EXACT_FIELDS):
                 raise SchemaError("recommendations: sin_snapshot no admite campos numericos")
         elif doc["status"] == "ok":
             if any(not isinstance(doc.get(f), (int, float)) for f in _NUM_NULL_FIELDS):
                 raise SchemaError("recommendations: ok requiere campos numericos")
+            if (not isinstance(doc.get("sum_28"), str) or not isinstance(doc.get("days_28"), int)
+                    or doc["days_28"] <= 0 or not isinstance(doc.get("mean_28_exact"), str)
+                    or not isinstance(doc.get("target_raw_exact"), str) or not isinstance(doc.get("signals"), dict)):
+                raise SchemaError("recommendations: ok requiere senales exactas (sum_28, days_28, mean_28_exact)")
         else:
             raise SchemaError("recommendations: status invalido")
     if coll == "backtests" and doc["provenance"] != PROVENANCE_SIM:

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "nota": "Lista cerrada de manifiestos publicables. La CLI solo acepta estos nombres; nunca rutas ni modelos enviados por usuarios.",
   "manifests": {
     "t07": {
@@ -7,7 +7,10 @@
       "metrics": "docs/T07_METRICAS.json",
       "config": "config/t07_config.json",
       "artifacts_dir": "artifacts/private/t07",
-      "artifacts": ["predicciones_folds.csv.gz", "simulacion_series.npz"],
+      "artifacts": [
+        "predicciones_folds.csv.gz",
+        "simulacion_series.npz"
+      ],
       "fold": "G4",
       "cutoff": "2026-07-10",
       "target_start": "2026-07-11",
@@ -17,12 +20,37 @@
       "scenario_key": "L7_S7_promedio_28",
       "scenario_id": "T07_L7_S7_promedio_28_2026-07-10",
       "code_files": [
-        "pipeline/forecast/t05.py", "pipeline/data/importer.py", "pipeline/forecast/features.py",
-        "pipeline/forecast/models.py", "pipeline/forecast/metrics.py", "pipeline/forecast/baselines.py",
-        "pipeline/forecast/t07.py", "pipeline/sim/engine.py", "pipeline/data/training_access.py",
-        "pipeline/data/sources.py", "pipeline/data/catalog.py", "pipeline/data/daily_series.py",
-        "pipeline/data/calendar.py", "scripts/run_t07.py"
-      ]
+        "pipeline/forecast/t05.py",
+        "pipeline/data/importer.py",
+        "pipeline/forecast/features.py",
+        "pipeline/forecast/models.py",
+        "pipeline/forecast/metrics.py",
+        "pipeline/forecast/baselines.py",
+        "pipeline/forecast/t07.py",
+        "pipeline/sim/engine.py",
+        "pipeline/data/training_access.py",
+        "pipeline/data/sources.py",
+        "pipeline/data/catalog.py",
+        "pipeline/data/daily_series.py",
+        "pipeline/data/calendar.py",
+        "scripts/run_t07.py"
+      ],
+      "approved_reference": {
+        "commit": "5790103849c229a7337540e793c8508bfe23d668",
+        "descripcion": "T07 aceptado por Codex (commit 5790103); contenido normalizado LF",
+        "files": {
+          "docs/T07_MANIFIESTO.json": "903e79c1fa9d7ff8fc679b555f8cfb766e43421796ef61fb54ea3c5d157f11aa",
+          "docs/T07_METRICAS.json": "5a41aa987d0fc35e7f097e2928df00d1ea351c3bea7fe6362aa496f1bc4f3685"
+        }
+      }
     }
+  },
+  "adaptador": {
+    "publisher_version": "t08r-1",
+    "signals_version": "exact-fraction-1",
+    "cambios": "R05: senales exactas (suma y dias utiles); identidad incluye version y senales; referencia aprobada anclada"
+  },
+  "quality_issues": {
+    "R05_PRECISION_RECOMENDACIONES": "recomendaciones con media redondeada del CSV (objetivos inflados en una unidad)"
   }
 }

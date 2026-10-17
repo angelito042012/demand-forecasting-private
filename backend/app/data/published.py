@@ -17,6 +17,7 @@ from .common import (
     iso_utc,
     run_header,
     sim_labels,
+    validation_status,
 )
 
 _INTERNAL_RUN_FIELDS = {"_id": 0, "idempotency_key": 0, "lease_expires_at": 0, "attempts": 0}
@@ -40,7 +41,7 @@ def _page(coll, query: dict, sort: list, page: int, page_size: int, projection: 
 
 
 def public_run(db, run: dict, *, detail: bool) -> dict:
-    out = {**run_header(db, run), "kind": run.get("kind"), "status": run["status"],
+    out = {**run_header(db, run), "kind": run.get("kind"),
            "origin": run.get("origin"), "target_start": run.get("target_start"),
            "target_end": run.get("target_end"), "horizon_days": run.get("horizon_days"),
            "evaluation_period": run.get("evaluation_period"), "method": run.get("method"),
@@ -51,12 +52,14 @@ def public_run(db, run: dict, *, detail: bool) -> dict:
             "artifacts": [{"name": a["name"], "sha256": a["sha256"], "size_bytes": a["size_bytes"]}
                           for a in run.get("artifacts", [])],
             "code": run.get("code"), "provenance_notes": run.get("provenance_notes"),
+            "publisher": run.get("publisher"),
             "fingerprint_short": str(run.get("fingerprint", ""))[:12]})
     return out
 
 
-def list_runs(db, page: int, page_size: int) -> dict:
-    items, total = _page(db.runs, {"status": "completed"}, [("published_at", -1), ("run_id", 1)],
+def list_runs(db, page: int, page_size: int, status: str | None = None) -> dict:
+    flt = {"status": status} if status else {"status": {"$in": ["completed", "superseded"]}}
+    items, total = _page(db.runs, flt, [("published_at", -1), ("run_id", 1)],
                          page, page_size, _INTERNAL_RUN_FIELDS)
     return page_response([public_run(db, r, detail=False) for r in items], total, page, page_size)
 
@@ -104,8 +107,11 @@ def list_recommendations(db, *, run_id, categoria, sku, status, only_orders: boo
     if only_orders:
         q["order_qty"] = {"$gt": 0}
     docs, total = _page(db.recommendations, q, order, page, page_size, {"_id": 0, "schema_version": 0})
+    vs = validation_status(run)
+    for d in docs:
+        d["validation_status"] = vs
     resp = page_response(docs, total, page, page_size)
-    resp.update({"run": run_header(db, run), **sim_labels(),
+    resp.update({"run": run_header(db, run), "validation_status": vs, **sim_labels(),
                  "nota": "Sugerencia hipotética de vista previa; no es un pedido ejecutado."})
     return resp
 
@@ -117,7 +123,7 @@ def get_recommendation(db, sku: str, run_id, almacen: str) -> dict:
     if doc is None:
         raise ApiError(404, "NO_ENCONTRADO", "Recomendación no encontrada.")
     doc["explanation"] = "\n".join(doc.get("explanation_steps", []))
-    return {**doc, "run": run_header(db, run), "disclaimer": SIM_LABEL}
+    return {**doc, "validation_status": validation_status(run), "run": run_header(db, run), "disclaimer": SIM_LABEL}
 
 
 def _bt_meta(db, bt: dict, run: dict) -> dict:
@@ -131,7 +137,7 @@ def list_backtests(db, run_id: str | None, page: int, page_size: int) -> dict:
     if run_id:
         runs = {completed_run(db, run_id)["run_id"]: completed_run(db, run_id)}
     else:
-        runs = {r["run_id"]: r for r in db.runs.find({"status": "completed"}, {"_id": 0})}
+        runs = {r["run_id"]: r for r in db.runs.find({"status": {"$in": ["completed", "superseded"]}}, {"_id": 0})}
     if not runs:
         return page_response([], 0, page, page_size)
     docs, total = _page(db.backtests, {"run_id": {"$in": list(runs)}}, [("created", -1), ("backtest_id", 1)],
@@ -143,7 +149,7 @@ def list_backtests(db, run_id: str | None, page: int, page_size: int) -> dict:
 
 def get_backtest(db, backtest_id: str, view: str) -> dict:
     bt = db.backtests.find_one({"backtest_id": backtest_id}, {"_id": 0})
-    run = db.runs.find_one({"run_id": bt["run_id"], "status": "completed"}, {"_id": 0}) if bt else None
+    run = db.runs.find_one({"run_id": bt["run_id"], "status": {"$in": ["completed", "superseded"]}}, {"_id": 0}) if bt else None
     if bt is None or run is None:
         raise ApiError(404, "NO_ENCONTRADO", "Backtest no encontrado.")
     out = _bt_meta(db, bt, run)

@@ -104,10 +104,14 @@ def active_run_id(db) -> str | None:
     return last["run_id"] if last else None
 
 
+READABLE = ["completed", "superseded"]
+
+
 def completed_run(db, run_id: str | None) -> dict:
-    """Corrida completed (la activa por defecto). Incompletas o inexistentes -> 404."""
+    """Corrida legible (la activa por defecto, que siempre es completed). Una corrida `superseded` se puede
+    consultar por id explicito (historial) pero se rotula como sustituida; staging/failed -> 404."""
     rid = run_id or active_run_id(db)
-    run = db.runs.find_one({"run_id": rid, "status": "completed"}, {"_id": 0}) if rid else None
+    run = db.runs.find_one({"run_id": rid, "status": {"$in": READABLE}}, {"_id": 0}) if rid else None
     if run is None:
         raise ApiError(404, "NO_ENCONTRADO", "Corrida no encontrada.")
     return run
@@ -116,9 +120,16 @@ def completed_run(db, run_id: str | None) -> dict:
 def run_header(db, run: dict) -> dict:
     cutoff = date.fromisoformat(run["cutoff"])
     return {"run_id": run["run_id"], "run_label": run.get("run_label", RUN_LABEL), "cutoff": run["cutoff"],
+            "status": run.get("status", "completed"),
             "generated_at": iso_utc(run.get("generated_at")), "published_at": iso_utc(run.get("published_at")),
             "age_days_at_view": (today_lima() - cutoff).days,
-            "is_active": run["run_id"] == active_run_id(db)}
+            "is_active": run["run_id"] == active_run_id(db),
+            "superseded_by": run.get("superseded_by"), "quality_issue": run.get("quality_issue")}
+
+
+def validation_status(run: dict) -> str:
+    """Estado de validez de los resultados derivados de la corrida (no se escribe en los hijos)."""
+    return "valid" if run.get("status") == "completed" else "superseded_precision_error"
 
 
 def sim_labels() -> dict:

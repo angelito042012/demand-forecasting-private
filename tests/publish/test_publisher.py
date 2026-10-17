@@ -27,6 +27,7 @@ from pipeline.publish.source import (
 from tests.publish.helpers import (
     ENTRY,
     make_catalog,
+    make_signals,
     needs_artifacts,
     real_source,
     temp_db,
@@ -40,7 +41,7 @@ def published():
     src = real_source()
     cat, fp = make_catalog(src)
     with temp_db() as db:
-        res = publish(db, src, cat, fp)
+        res = publish(db, src, cat, fp, make_signals(src))
         yield db, res, src, cat, fp
 
 
@@ -108,14 +109,16 @@ def test_manual_recommendation_matches_npz(published):
     assert [h for h, _ in vals] == list(range(1, 22))
     mean28 = vals[0][1]
     f14 = sum(v for _, v in vals[:14])
+    sum28 = round(mean28 * 28)          # la media historica es suma/28 con 28 dias utiles
     on = int(on_hand[39, i])
     cost = float(z["costo"][i])
-    target = int(np.ceil(np.round(f14 + 7 * mean28, 9)))
+    target = -((-21 * sum28) // 28)        # techo exacto con enteros: ceil(21*suma/28)
     qty = max(0, target - (on + transit39))
     assert transit39 != transit_final
     assert doc["in_transit"] == transit39 and doc["in_transit"] != transit_final
     assert (doc["on_hand"], doc["position"], doc["target"], doc["order_qty"]) == (on, on + transit39, target, qty)
     assert doc["mean_28"] == pytest.approx(mean28) and doc["forecast_14d"] == pytest.approx(f14)
+    assert doc["sum_28"] == str(sum28) and doc["days_28"] == 28
     assert doc["unit_cost_assumed"] == cost and doc["order_value_assumed"] == pytest.approx(qty * cost)
     assert doc["provenance"] == "SYNTHETIC_NOT_REAL_INVENTORY" and doc["currency"] == "PEN"
     assert doc["scenario_id"] == "T07_L7_S7_promedio_28_2026-07-10" and doc["forecast_to"] == "2026-07-24"
@@ -141,7 +144,7 @@ def test_sku_without_snapshot_has_no_numbers(published):
 
 def test_republish_is_idempotent(published):
     db, res, src, cat, fp = published
-    again = publish(db, src, cat, fp)
+    again = publish(db, src, cat, fp, make_signals(src))
     assert again.status == "already_published" and again.run_id == res.run_id
     assert db.runs.count_documents({}) == 1
     assert db.forecasts.count_documents({}) == 76587 + 168
@@ -171,13 +174,13 @@ def test_mid_failure_then_retry_does_not_duplicate(stage):
 
     with temp_db() as db:
         with pytest.raises(RuntimeError):
-            publish(db, src, cat, fp, stage_hook=boom)
+            publish(db, src, cat, fp, make_signals(src), stage_hook=boom)
         run = db.runs.find_one({})
         assert run["status"] == "failed" and run["error"]["code"] == "PUBLICACION_FALLIDA"
         assert "fallo simulado" not in str(run["error"])
         assert db.run_pointer.count_documents({}) == 0
         assert db.forecasts.count_documents({}) == 0 and db.recommendations.count_documents({}) == 0
-        res = publish(db, src, cat, fp)
+        res = publish(db, src, cat, fp, make_signals(src))
         assert res.status == "published" and res.run_id == run["run_id"]
         assert db.runs.count_documents({}) == 1
         assert db.forecasts.count_documents({}) == 76587 + 168
@@ -190,14 +193,14 @@ def test_failed_second_run_keeps_last_complete_active():
     src = real_source()
     cat, fp = make_catalog(src)
     with temp_db() as db:
-        a = publish(db, src, cat, fp)
+        a = publish(db, src, cat, fp, make_signals(src))
 
         def boom(s):
             if s == "recommendations":
                 raise RuntimeError("x")
 
         with pytest.raises(RuntimeError):
-            publish(db, src, cat, fp + "-otro", stage_hook=boom)
+            publish(db, src, cat, fp, make_signals(src, "-otra-version"), stage_hook=boom)
         assert db.runs.count_documents({}) == 2
         assert db.runs.count_documents({"status": "failed"}) == 1
         assert db.run_pointer.find_one({"_id": "active"})["run_id"] == a.run_id
@@ -249,7 +252,7 @@ def test_altered_manifest_code_hash_is_rejected(copy_root):
     m = json.loads(mp.read_text(encoding="utf-8"))
     m["codigo_sha256"] = "0" * 64
     mp.write_text(json.dumps(m), encoding="utf-8")
-    with pytest.raises(SourceVerificationError, match="codigo_sha256"):
+    with pytest.raises(SourceVerificationError, match="codigo_sha256|referencia aprobada"):
         verify_and_load(ENTRY, copy_root)
 
 

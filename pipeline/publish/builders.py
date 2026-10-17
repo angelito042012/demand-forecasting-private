@@ -5,6 +5,7 @@ Funciones puras (sin I/O): reciben VerifiedSource y el catalogo <= corte.
 from __future__ import annotations
 
 import math
+from fractions import Fraction
 
 import numpy as np
 
@@ -15,7 +16,8 @@ from .schema import (
     SCHEMA_VERSION,
     SIM_LABEL,
 )
-from .source import VerifiedSource
+from .signals import Signals, exact_target, fraction_text
+from .source import PUBLISHER_VERSION, VerifiedSource
 
 UNKNOWN = "DESCONOCIDA"
 CHOSEN = "promedio_28"
@@ -24,10 +26,12 @@ SIN_SNAPSHOT_REASON = ("SIN_INVENTARIO_SIMULADO_AL_10_07: producto conocido desp
                        "no se supone stock cero")
 NUM_FIELDS = ("on_hand", "in_transit", "position", "mean_28", "forecast_14d", "safety", "target",
               "order_qty", "unit_cost_assumed", "order_value_assumed")
+NULL_EXTRA = ("sum_28", "days_28", "mean_28_exact", "target_raw_exact", "signals")
 
 
 def ceil_stable(x: float, decimals: int = 9) -> int:
-    """Techo tras redondear a 9 decimales (idem pipeline.sim.engine.ceil_stable)."""
+    """Techo tras redondear a 9 decimales (idem pipeline.sim.engine.ceil_stable). Solo para valores en coma
+    flotante del motor T07; las recomendaciones usan aritmetica racional exacta (ver signals.py)."""
     return int(np.ceil(np.round(np.asarray(x, dtype=float), decimals)))
 
 
@@ -82,15 +86,17 @@ def build_forecasts(src: VerifiedSource, catalog: dict, run_id: str) -> tuple[li
     return sku_docs, cat_docs, info
 
 
-def recompute_recommendation(on_hand: int, in_transit: int, mean_28: float, forecast_14d: float,
+def recompute_recommendation(on_hand: int, in_transit: int, sum_28: Fraction, days_28: int,
                              unit_cost: float) -> dict:
-    """Calculo EXACTO del contrato §5 (reutilizado por la validacion post-insercion)."""
-    safety = SAFETY_DAYS * mean_28
-    target = ceil_stable(forecast_14d + safety)
+    """Calculo EXACTO del contrato §5 con aritmetica racional: media = suma_28/dias_28; pronostico a
+    14 dias = 14*media; seguridad = 7*media; objetivo = techo(pronostico + seguridad) sin epsilon."""
+    mean = Fraction(sum_28) / days_28
+    raw, target = exact_target(Fraction(sum_28), days_28, HORIZON_REC, SAFETY_DAYS)
     position = on_hand + in_transit
     order_qty = max(0, target - position)
-    return {"safety": safety, "target": target, "position": position, "order_qty": order_qty,
-            "order_value_assumed": order_qty * unit_cost}
+    return {"mean_28": float(mean), "forecast_14d": float(HORIZON_REC * mean), "safety": float(SAFETY_DAYS * mean),
+            "target_raw_exact": fraction_text(raw), "target": target, "position": position,
+            "order_qty": order_qty, "order_value_assumed": order_qty * unit_cost}
 
 
 def _steps_ok(d: dict, ordered: int, received: int) -> list[str]:
@@ -102,11 +108,12 @@ def _steps_ok(d: dict, ordered: int, received: int) -> list[str]:
         (f"3. En tránsito al 10/07 = pedidos emitidos hasta esa fecha ({ordered}) menos recepciones hasta "
          f"esa fecha ({received}) = {d['in_transit']} {n}."),
         f"4. Posición = {d['on_hand']} + {d['in_transit']} = {d['position']} {n}.",
-        f"5. Promedio diario de 28 días conocido al 10/07 = {d['mean_28']:.6f} {n}/día.",
-        f"6. Pronóstico de 14 días (11/07 a 24/07) = {d['forecast_14d']:.6f} {n}.",
-        f"7. Seguridad = 7 × {d['mean_28']:.6f} = {d['safety']:.6f} {n}.",
-        (f"8. Objetivo = techo(redondeo a 9 decimales de {d['forecast_14d'] + d['safety']:.9f}) "
-         f"= {d['target']} {n}."),
+        (f"5. Promedio diario de 28 días conocido al 10/07 = {d['sum_28']} {n} en {d['days_28']} días útiles "
+         f"= {d['mean_28_exact']} por día (≈ {d['mean_28']:.4f})."),
+        f"6. Pronóstico de 14 días (11/07 a 24/07) = 14 × {d['mean_28_exact']} ≈ {d['forecast_14d']:.3f} {n}.",
+        f"7. Seguridad = 7 × {d['mean_28_exact']} ≈ {d['safety']:.3f} {n}.",
+        (f"8. Objetivo = techo(21 × {d['mean_28_exact']}) = techo({d['target_raw_exact']}) = {d['target']} {n} "
+         "(aritmética racional exacta, sin redondeo previo)."),
         f"9. Pedido sugerido = máx(0, {d['target']} - {d['position']}) = {d['order_qty']} {n}.",
         (f"10. Costo unitario supuesto (65 % de la mediana de precio base hasta el 31/05) = PEN "
          f"{d['unit_cost_assumed']:.4f}; valor supuesto del pedido = PEN {d['order_value_assumed']:.2f}."),
@@ -115,7 +122,7 @@ def _steps_ok(d: dict, ordered: int, received: int) -> list[str]:
     ]
 
 
-def build_recommendations(src: VerifiedSource, catalog: dict, run_id: str) -> list:
+def build_recommendations(src: VerifiedSource, catalog: dict, run_id: str, signals: Signals) -> list:
     entry, sim = src.entry, src.sim
     index = {s: i for i, s in enumerate(sim["skus"].tolist())}
     df = src.forecasts
@@ -134,7 +141,7 @@ def build_recommendations(src: VerifiedSource, catalog: dict, run_id: str) -> li
             "schema_version": SCHEMA_VERSION}
         if sku not in index:
             doc = {**base, "status": "sin_snapshot", "reason": SIN_SNAPSHOT_REASON,
-                   **{f: None for f in NUM_FIELDS}, "transit_breakdown": None,
+                   **{f: None for f in NUM_FIELDS}, **dict.fromkeys(NULL_EXTRA), "transit_breakdown": None,
                    "explanation_steps": [
                        "No hay inventario simulado al 10/07 para este producto: " + SIN_SNAPSHOT_REASON + ".",
                        "No se calcula posición ni pedido; el pronóstico sigue disponible en /forecasts.",
@@ -145,12 +152,23 @@ def build_recommendations(src: VerifiedSource, catalog: dict, run_id: str) -> li
         on_hand = int(sim["on_hand"][i])
         ordered, received = int(sim["ordered_cum"][i]), int(sim["received_cum"][i])
         in_transit = ordered - received
-        mean_28 = float(pred[0])
-        forecast_14d = float(pred[:14].sum())
+        sig = signals.per_sku.get((sku, almacen))
+        if sig is None or sig[1] <= 0:
+            raise ValueError(f"sin señal exacta de 28 dias para {sku}|{almacen}")
+        total, days = sig
         cost = float(sim["costo"][i])
-        calc = recompute_recommendation(on_hand, in_transit, mean_28, forecast_14d, cost)
+        calc = recompute_recommendation(on_hand, in_transit, total, days, cost)
+        csv_mean = float(pred[0])
+        # coherencia con el CSV historico (10 cifras significativas): sirve de control, NUNCA de entrada
+        if abs(calc["mean_28"] - csv_mean) > 1e-9 * max(1.0, abs(csv_mean)):
+            raise ValueError(f"senal exacta incoherente con el pronostico historico de {sku}|{almacen}")
         doc = {**base, "status": "ok", "reason": None, "on_hand": on_hand, "in_transit": in_transit,
-               "mean_28": mean_28, "forecast_14d": forecast_14d, "unit_cost_assumed": cost, **calc,
+               "sum_28": fraction_text(total), "days_28": int(days),
+               "mean_28_exact": fraction_text(Fraction(total) / days), "unit_cost_assumed": cost, **calc,
+               "signals": {"version": signals.version, "window": [signals.window_start, signals.window_end],
+                           "training_fingerprint": signals.training_fingerprint, "csv_mean_28": csv_mean,
+                           "nota": "media exacta recalculada desde historia aprobada <= origen; el CSV T07 "
+                                   "(10 cifras) solo se usa como control de coherencia"},
                "transit_breakdown": {"ordered_until_snapshot": ordered, "received_until_snapshot": received}}
         doc["explanation_steps"] = _steps_ok(doc, ordered, received)
         docs.append(doc)
@@ -201,7 +219,7 @@ def build_backtest(src: VerifiedSource, run_id: str, created) -> dict:
 
 
 def build_run_doc(src: VerifiedSource, run_id: str, key: str, fingerprint: str, generated_at,
-                  coverage: dict, counts: dict) -> dict:
+                  coverage: dict, counts: dict, signals: Signals | None = None) -> dict:
     e, man, cfg = src.entry, src.manifest, src.config_t07
     fold = man["folds_predictivos"][e["fold"]]
     return clean_json({
@@ -225,6 +243,11 @@ def build_run_doc(src: VerifiedSource, run_id: str, key: str, fingerprint: str, 
         "code": {"commit": src.code["commit"], "codigo_sha256": src.code["codigo_sha256"],
                  "commit_protocolo": man.get("commit_protocolo")},
         "counts": counts, "coverage": coverage,
+        "publisher": {"version": PUBLISHER_VERSION, "signals_version": signals.version if signals else None,
+                      "signals_fingerprint": signals.fingerprint if signals else None,
+                      "signals_window": [signals.window_start, signals.window_end] if signals else None,
+                      "signals_skus": len(signals.per_sku) if signals else None,
+                      "reference": src.entry.get("approved_reference", {}).get("commit")},
         "provenance_notes": [
             "Ventas observadas: OBSERVED_EXCEL (Excel de la empresa, marzo a julio de 2026).",
             "Stock, tránsito, costos y pedidos: SYNTHETIC_NOT_REAL_INVENTORY. " + SIM_LABEL + ".",

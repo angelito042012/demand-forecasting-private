@@ -10,8 +10,8 @@ router = APIRouter(tags=["runs"])
 
 @router.get("/runs", dependencies=[Depends(strict_params("status"))])
 def list_runs(_: User, db: Db, page: Page = 1, page_size: PageSize = 50,
-              status: Literal["completed"] = "completed"):
-    return published.list_runs(db, page, page_size)
+              status: Literal["completed", "superseded"] | None = None):
+    return published.list_runs(db, page, page_size, status)
 
 
 @router.get("/runs/{run_id}", dependencies=[Depends(strict_params())])
