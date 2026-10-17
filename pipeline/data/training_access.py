@@ -37,7 +37,7 @@ from .catalog import build_category_catalog
 from .sources import SourceReport, approved_filter, require_approved_sources
 
 _FIELDS = {"_id": 0, "linea_id": 1, "fecha": 1, "sku": 1, "cantidad_base": 1, "importe": 1,
-           "categoria_original": 1, "almacen": 1}
+           "categoria_original": 1, "almacen": 1, "unidad_base": 1}
 
 
 class TrainingCutoffError(ValueError):

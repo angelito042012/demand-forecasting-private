@@ -1,0 +1,229 @@
+{
+  "fuentes": {
+    "manifiesto": [
+      {
+        "mes": "2026-03",
+        "archivo": "marzo.xlsx",
+        "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+      },
+      {
+        "mes": "2026-04",
+        "archivo": "abril.xlsx",
+        "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+      },
+      {
+        "mes": "2026-05",
+        "archivo": "mayo.xlsx",
+        "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+      },
+      {
+        "mes": "2026-06",
+        "archivo": "junio.xlsx",
+        "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+      },
+      {
+        "mes": "2026-07",
+        "archivo": "julio.xlsx",
+        "sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae"
+      }
+    ],
+    "meses_requeridos": [
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+      "2026-07"
+    ],
+    "problemas": []
+  },
+  "totales": {
+    "lineas_venta": 71931,
+    "filas_omitidas_por_mascara": 0,
+    "sku": 3758,
+    "pares_sku_almacen": 3758,
+    "almacenes": [
+      "1"
+    ],
+    "categorias_catalogo": 37,
+    "dias_calendario": 153,
+    "dias_enmascarados": 3,
+    "dias_sin_registro_no_mascara": [],
+    "dias_enmascarados_con_filas_en_base": []
+  },
+  "meses": {
+    "2026-03": {
+      "lineas": 14456,
+      "sku": 2510,
+      "unidades": 24316.0,
+      "importe": 426456.21,
+      "dias_calendario": 31,
+      "dias_con_venta": 31,
+      "dias_sin_registro_no_mascara": [],
+      "dias_enmascarados": []
+    },
+    "2026-04": {
+      "lineas": 13907,
+      "sku": 2524,
+      "unidades": 25481.0,
+      "importe": 429609.99,
+      "dias_calendario": 30,
+      "dias_con_venta": 28,
+      "dias_sin_registro_no_mascara": [],
+      "dias_enmascarados": [
+        "2026-04-03",
+        "2026-04-12"
+      ]
+    },
+    "2026-05": {
+      "lineas": 15380,
+      "sku": 2476,
+      "unidades": 29228.0,
+      "importe": 500621.72,
+      "dias_calendario": 31,
+      "dias_con_venta": 31,
+      "dias_sin_registro_no_mascara": [],
+      "dias_enmascarados": []
+    },
+    "2026-06": {
+      "lineas": 12510,
+      "sku": 2401,
+      "unidades": 21020.0,
+      "importe": 390855.08,
+      "dias_calendario": 30,
+      "dias_con_venta": 29,
+      "dias_sin_registro_no_mascara": [],
+      "dias_enmascarados": [
+        "2026-06-07"
+      ]
+    },
+    "2026-07": {
+      "lineas": 15678,
+      "sku": 2434,
+      "unidades": 25442.0,
+      "importe": 453143.28,
+      "dias_calendario": 31,
+      "dias_con_venta": 31,
+      "dias_sin_registro_no_mascara": [],
+      "dias_enmascarados": []
+    }
+  },
+  "unidades": {
+    "unidad_base": {
+      "UND": 71931
+    },
+    "cantidades_no_enteras": 0,
+    "cantidad_por_linea": {
+      "p0": 1.0,
+      "p10": 1.0,
+      "p25": 1.0,
+      "p50": 1.0,
+      "p75": 1.0,
+      "p90": 3.0,
+      "p100": 264.0
+    },
+    "sku_con_varias_unidades": 0
+  },
+  "primera_observacion": {
+    "pares_por_mes": {
+      "2026-03": 2510,
+      "2026-04": 532,
+      "2026-05": 305,
+      "2026-06": 214,
+      "2026-07": 197
+    },
+    "primera_venta_posterior_al_29_marzo": 1307,
+    "historia_dias": {
+      "p0": 1.0,
+      "p10": 57.0,
+      "p25": 108.0,
+      "p50": 140.0,
+      "p75": 150.0,
+      "p90": 152.0,
+      "p100": 153.0
+    },
+    "historia_menor_28": 159,
+    "historia_menor_56": 357,
+    "historia_al_menos_90": 3101
+  },
+  "series_densas": {
+    "filas_par_dia": 459375,
+    "venta_observada": 54266,
+    "cero_observado": 396339,
+    "excluido_mascara": 8770,
+    "proporcion_cero_observado_dias_usables": 0.8796,
+    "proporcion_cero_en_pares_con_historia_al_menos_56": 0.8794,
+    "filas_categoria_dia": 5441
+  },
+  "intermitencia": {
+    "pares_por_clase": {
+      "INTERMITENTE": 2568,
+      "IRREGULAR_LUMPY": 729,
+      "UNA_SOLA_VENTA": 445,
+      "ERRATICA": 9,
+      "SUAVE": 7
+    },
+    "participacion_unidades_por_clase": {
+      "ERRATICA": 0.0775,
+      "INTERMITENTE": 0.4099,
+      "IRREGULAR_LUMPY": 0.4773,
+      "SUAVE": 0.0296,
+      "UNA_SOLA_VENTA": 0.0058
+    },
+    "adi": {
+      "p0": 1.0,
+      "p10": 3.89,
+      "p25": 6.73,
+      "p50": 13.55,
+      "p75": 29.5,
+      "p90": 61.65,
+      "p100": 150.0
+    },
+    "proporcion_ceros": {
+      "p0": 0.0,
+      "p10": 0.74,
+      "p25": 0.85,
+      "p50": 0.93,
+      "p75": 0.97,
+      "p90": 0.98,
+      "p100": 0.99
+    },
+    "dias_con_venta": {
+      "p0": 1.0,
+      "p10": 1.0,
+      "p25": 3.0,
+      "p50": 8.0,
+      "p75": 19.0,
+      "p90": 35.0,
+      "p100": 138.0
+    }
+  },
+  "categorias": {
+    "sku_con_mas_de_una_categoria_original": 0,
+    "lineas_con_categoria_original_distinta_a_catalogo_corte": 0,
+    "sku_desconocida": 0,
+    "lineas_sin_categoria": 0,
+    "sku_16140041": "MAQUILLAJE PARA ROSTRO"
+  },
+  "notas_credito_informativas_hasta_corte": {
+    "2026-06": {
+      "lineas": 81,
+      "importe": -9680.6
+    },
+    "2026-04": {
+      "lineas": 72,
+      "importe": -2927.5
+    },
+    "2026-03": {
+      "lineas": 89,
+      "importe": -3128.0
+    },
+    "2026-05": {
+      "lineas": 78,
+      "importe": -2769.38
+    },
+    "2026-07": {
+      "lineas": 112,
+      "importe": -4548.76
+    }
+  }
+}

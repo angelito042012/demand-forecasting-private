@@ -16,7 +16,7 @@ la ausencia de importaciones NUNCA cuenta como aprobacion.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .calendar import to_date
 

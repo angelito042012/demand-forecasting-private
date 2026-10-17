@@ -1,0 +1,78 @@
+{
+  "dataset": "T04_series_diarias_marzo_julio_2026",
+  "generado_lima": "2026-10-17 07:58",
+  "base_de_datos": "demand_forecasting_v2",
+  "corte": "2026-07-31",
+  "fingerprint_entrenamiento": "a07df648eeb546fd5940d245cd9a736388fd3a89c45865dc9738ce65a3b0aaa4",
+  "parametros": {
+    "mascara": [
+      "2026-04-03",
+      "2026-04-12",
+      "2026-06-07"
+    ],
+    "meses_requeridos": [
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+      "2026-07"
+    ],
+    "inicio_serie": "primera venta observada por (sku, almacen)",
+    "cero": "observado tras primera venta",
+    "sbc_adi": 1.32,
+    "sbc_cv2": 0.49,
+    "umbral_probable_alta": "2026-03-29",
+    "unidad": "cantidad_base",
+    "agosto_usado": false
+  },
+  "fuentes": [
+    {
+      "mes": "2026-03",
+      "archivo": "marzo.xlsx",
+      "sha256": "1e0c4b1d0410643ec68e38953f5267a2aff655d54e7ae622f224131eac814140"
+    },
+    {
+      "mes": "2026-04",
+      "archivo": "abril.xlsx",
+      "sha256": "b5f776971d78c576028d741257ddd5c36ea00c357cdab144b714f3b6de3cc0f5"
+    },
+    {
+      "mes": "2026-05",
+      "archivo": "mayo.xlsx",
+      "sha256": "5a1677ae8339a1e0e80a90f74b5ed21107a0fe50e392ac2c265576445e2df280"
+    },
+    {
+      "mes": "2026-06",
+      "archivo": "junio.xlsx",
+      "sha256": "a9baab8d5ecda9185b4d0414a110240d596ff17b5ba84e3d27ffebc85bdaaa0e"
+    },
+    {
+      "mes": "2026-07",
+      "archivo": "julio.xlsx",
+      "sha256": "8344b704f72e639683771029dbc3d0542bde81e720dfb72f76dd6a4f2cf5a1ae"
+    }
+  ],
+  "archivos": {
+    "series_sku_almacen_diaria.csv.gz": {
+      "filas": 459375,
+      "sha256_archivo": "d721f9db323fca75d3762c082768f1b3fe0dfc229acae4e41c14599b775bb813",
+      "sha256_contenido": "f45d5ae9db0cef2dd8d751b954262016ce17d1d91a0b7225b2f51cc9be57817c"
+    },
+    "series_categoria_diaria.csv.gz": {
+      "filas": 5441,
+      "sha256_archivo": "22ead6dacad53ce77fc730aa7f7508dcddde0a0fefcfddabcd2b048071850c00",
+      "sha256_contenido": "c21cc06f91e9afb8b022077f1edd1db9ade8cd099750364824dc6a190f831b5e"
+    },
+    "intermitencia_sku_almacen.csv": {
+      "filas": 3758,
+      "sha256_archivo": "7868fbb488d04c6f4cd663484378e2d9b1adc38eb5592b91f4cc652a2e78bb90"
+    }
+  },
+  "codigo": {
+    "git_commit": "425d663018fad7664206ca7e635ccc8aaf758dc1",
+    "git_sucio": true,
+    "python": "3.12.14",
+    "pandas": "2.3.3",
+    "numpy": "2.5.4"
+  }
+}
