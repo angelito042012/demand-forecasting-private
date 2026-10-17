@@ -67,3 +67,9 @@ def temp_db():
     finally:
         client.drop_database(name)
         client.close()
+
+
+def kids(db, run_id: str) -> str:
+    """run_id bajo el que estan los hijos visibles de una corrida (children_ref, o el propio run_id)."""
+    run = db.runs.find_one({"run_id": run_id}, {"children_ref": 1})
+    return (run or {}).get("children_ref") or run_id

@@ -26,6 +26,7 @@ from pipeline.publish.source import (
 )
 from tests.publish.helpers import (
     ENTRY,
+    kids,
     make_catalog,
     make_signals,
     needs_artifacts,
@@ -153,12 +154,12 @@ def test_republish_is_idempotent(published):
 
 def test_validation_detects_tampered_category(published):
     db, res, *_ = published
-    one = db.forecasts.find_one({"run_id": res.run_id, "level": "categoria"})
+    one = db.forecasts.find_one({"run_id": kids(db, res.run_id), "level": "categoria"})
     orig = one["pred"]["promedio_28"]
     db.forecasts.update_one({"_id": one["_id"]}, {"$set": {"pred.promedio_28": orig + 5}})
     try:
         with pytest.raises(PublishValidationError):
-            validate_published(db, res.run_id, db.runs.find_one({"run_id": res.run_id})["counts"])
+            validate_published(db, kids(db, res.run_id), db.runs.find_one({"run_id": res.run_id})["counts"])
     finally:
         db.forecasts.update_one({"_id": one["_id"]}, {"$set": {"pred.promedio_28": orig}})
 
@@ -204,9 +205,9 @@ def test_failed_second_run_keeps_last_complete_active():
         assert db.runs.count_documents({}) == 2
         assert db.runs.count_documents({"status": "failed"}) == 1
         assert db.run_pointer.find_one({"_id": "active"})["run_id"] == a.run_id
-        assert db.forecasts.count_documents({"run_id": a.run_id}) == 76587 + 168   # intactos
+        assert db.forecasts.count_documents({"run_id": kids(db, a.run_id)}) == 76587 + 168   # intactos
         failed = db.runs.find_one({"status": "failed"})
-        assert db.forecasts.count_documents({"run_id": failed["run_id"]}) == 0
+        assert db.forecasts.count_documents({"run_id": {"$regex": "^" + failed["run_id"]}}) == 0
 
 
 def test_schema_is_idempotent_and_validates():

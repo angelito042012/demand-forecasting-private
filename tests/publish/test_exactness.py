@@ -41,6 +41,7 @@ from pipeline.publish.source import (
 
 from .helpers import (
     ENTRY,
+    kids,
     make_catalog,
     make_signals,
     needs_artifacts,
@@ -210,12 +211,12 @@ def test_corrected_run_supersedes_previous_keeps_history_and_readers_flag_it(src
         o = db.runs.find_one({"run_id": old.run_id})
         assert o["status"] == "superseded" and o["superseded_by"] == new.run_id
         assert o["quality_issue"]["code"] == "R05_PRECISION_RECOMENDACIONES"
-        assert db.recommendations.count_documents({"run_id": old.run_id}) == 3647      # historial intacto
+        assert db.recommendations.count_documents({"run_id": kids(db, old.run_id)}) == 3647      # historial intacto
         assert db.run_pointer.find_one({"_id": "active"})["run_id"] == new.run_id
         # reintento idempotente de la version nueva: mismo run_id, sin duplicar, sustitucion idempotente
         again = publish(db, src, cat, fp, sig2, supersede_runs=[old.run_id])
         assert again.status == "already_published" and again.run_id == new.run_id
-        assert db.runs.count_documents({}) == 2 and db.recommendations.count_documents({"run_id": new.run_id}) == 3647
+        assert db.runs.count_documents({}) == 2 and db.recommendations.count_documents({"run_id": kids(db, new.run_id)}) == 3647
         # API: la corrida antigua se puede ver, pero marcada como sustituida
         app = FastAPI()
         install_error_handlers(app)

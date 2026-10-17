@@ -127,6 +127,20 @@ def run_header(db, run: dict) -> dict:
             "superseded_by": run.get("superseded_by"), "quality_issue": run.get("quality_issue")}
 
 
+def child_key(run: dict) -> str:
+    """run_id bajo el que estan los hijos visibles: `children_ref` (corridas publicadas con propiedad por
+    intento) o el propio run_id (corridas historicas T08)."""
+    return run.get("children_ref") or run["run_id"]
+
+
+def relabel(docs: list, run: dict) -> list:
+    """Los hijos guardan el id de su intento; la API siempre expone el run_id publico de la corrida."""
+    for d in docs:
+        if "run_id" in d:
+            d["run_id"] = run["run_id"]
+    return docs
+
+
 def validation_status(run: dict) -> str:
     """Estado de validez de los resultados derivados de la corrida (no se escribe en los hijos)."""
     return "valid" if run.get("status") == "completed" else "superseded_precision_error"

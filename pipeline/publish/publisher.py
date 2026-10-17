@@ -1,22 +1,36 @@
-"""Publicador con staging -> completed -> puntero activo (T08 §4).
+"""Publicador (T08 §4, reforzado en T10 §1): staging -> completed -> puntero activo con PROPIEDAD POR INTENTO.
 
-Sin transacciones multidocumento: los hijos se insertan con un run_id propio, se validan
-conteos y coherencia y solo entonces la corrida pasa a `completed` y se mueve el puntero.
-Ante cualquier fallo la corrida queda `failed` (error generico), el puntero no cambia y los
-lectores ignoran todo lo que no sea `completed`.
+La logica de concurrencia (claim con CAS, generation/fencing, lease renovable, hijos aislados por intento,
+promocion atomica por CAS y puntero monotono) vive en `protocol.py`; aqui se arman los documentos de la
+corrida historica T07 y se validan conteos/coherencia. Ante cualquier fallo la corrida del intento queda
+`failed`, el puntero no cambia y los lectores solo ven corridas completed/superseded.
 """
 from __future__ import annotations
 
 import math
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from pymongo.errors import DuplicateKeyError
-
 from . import builders as b
-from .schema import QUALITY_ISSUES, SCHEMA_VERSION, ensure_schema, validate_doc
+from .protocol import (
+    BATCH,  # noqa: F401  (reexportado)
+    Attempt,
+    LostOwnership,
+    PublishInProgressError,
+    PublishValidationError,
+    activate_monotonic,
+    claim_run,
+    complete_run,
+    delete_own_children,
+    fail_attempt,
+    guard,
+    insert_children,
+    purge_orphans,  # noqa: F401  (reexportado)
+    stamp,
+)
+from .schema import QUALITY_ISSUES, ensure_schema, validate_doc
 from .signals import Signals, parse_fraction
 from .source import (
     PUBLISHER_VERSION,
@@ -25,17 +39,18 @@ from .source import (
     verify_training_match,
 )
 
-LEASE_MINUTES = 15
-BATCH = 5000
-CHILD_COLLECTIONS = ("forecasts", "recommendations", "backtests")
-
-
-class PublishInProgressError(RuntimeError):
-    """Otra publicacion con la misma clave sigue en staging con lease vigente."""
-
-
-class PublishValidationError(RuntimeError):
-    """La validacion de conteos/coherencia fallo antes de completar."""
+__all__ = [
+    "Attempt",
+    "LostOwnership",
+    "PublishInProgressError",
+    "PublishResult",
+    "PublishValidationError",
+    "publish",
+    "publish_prepared",
+    "run_identity",
+    "supersede",
+    "validate_published",
+]
 
 
 @dataclass
@@ -66,66 +81,6 @@ def run_identity(src: VerifiedSource, catalog_fingerprint: str, signals_fingerpr
     key = f"hist-dev:{e['fold']}:{e['cutoff']}:{fp[:24]}"
     run_id = f"hist-{e['cutoff'].replace('-', '')}-{fp[:12]}"
     return run_id, key, fp
-
-
-def _insert_many(coll, docs: list, kind: str) -> None:
-    for i in range(0, len(docs), BATCH):
-        chunk = docs[i:i + BATCH]
-        for d in chunk[:1] + chunk[-1:]:
-            validate_doc(kind, d)
-        coll.insert_many(chunk, ordered=False)
-
-
-def delete_children(db, run_id: str) -> None:
-    """Borra SOLO los hijos de este run_id."""
-    for name in CHILD_COLLECTIONS:
-        db[name].delete_many({"run_id": run_id})
-
-
-def activate(db, run_id: str, now: datetime | None = None) -> None:
-    run = db.runs.find_one({"run_id": run_id, "status": "completed"}, {"_id": 1})
-    if run is None:
-        raise PublishValidationError("solo una corrida completed puede ser activa")
-    db.run_pointer.update_one({"_id": "active"}, {"$set": {"run_id": run_id, "updated_at": now or _utcnow()}},
-                              upsert=True)
-
-
-def _claim(db, doc: dict, now: datetime):
-    """Reserva el idempotency_key. Devuelve ('existing', run) si ya esta completed, o ('claimed', None)."""
-    key = doc["idempotency_key"]
-    lease = now + timedelta(minutes=LEASE_MINUTES)
-    for _ in range(3):
-        cur = db.runs.find_one({"idempotency_key": key})
-        if cur is None:
-            try:
-                db.runs.insert_one({**doc, "lease_expires_at": lease, "attempts": 1})
-                return "claimed", None
-            except DuplicateKeyError:
-                continue
-        if cur["status"] == "completed":
-            return "existing", cur
-        reusable = cur["status"] == "failed" or (cur["status"] == "staging"
-                                                  and cur.get("lease_expires_at", now) <= now)
-        if not reusable:
-            raise PublishInProgressError("hay una publicacion en curso con la misma clave")
-        got = db.runs.find_one_and_update(
-            {"_id": cur["_id"], "status": cur["status"], "attempts": cur.get("attempts", 1)},
-            {"$set": {**{k: v for k, v in doc.items() if k != "run_id"}, "lease_expires_at": lease},
-             "$inc": {"attempts": 1}})
-        if got is not None:
-            delete_children(db, cur["run_id"])   # solo hijos de esa corrida
-            return "claimed", None
-    raise PublishInProgressError("no se pudo reservar la corrida")
-
-
-def _fail(db, run_id: str, stage: str, exc: Exception, now: datetime) -> None:
-    try:
-        delete_children(db, run_id)
-    except Exception:  # noqa: BLE001, S110 - limpieza best-effort; el reintento vuelve a limpiar
-        pass
-    db.runs.update_one({"run_id": run_id, "status": "staging"}, {"$set": {
-        "status": "failed", "error": {"code": "PUBLICACION_FALLIDA", "stage": stage,
-                                      "type": type(exc).__name__, "at": now}}})
 
 
 def _close(a: float, b2: float) -> bool:
@@ -194,15 +149,71 @@ def supersede(db, old_run_id: str, new_run_id: str, issue_code: str, now: dateti
     return res.matched_count == 1
 
 
+def publish_prepared(db, run_doc: dict, prepared: dict, validate_fn: Callable, counts: dict, coverage: dict, *,
+                     extra_guard: Callable[[], None] | None = None, activate_run: bool = True,
+                     supersede_runs: list[str] | None = None, issue_code: str = "R05_PRECISION_RECOMENDACIONES",
+                     now: datetime | None = None, stage_hook: Callable[[str], None] | None = None) -> PublishResult:
+    """Publicacion generica con propiedad por intento (usada por la corrida historica y por las generadas).
+
+    `prepared` = {coleccion: [docs]} construido con un run_id provisional (se re-etiqueta con el espacio del
+    intento). `validate_fn(db, children_id)` valida conteos/coherencia sobre los hijos del intento."""
+    hook = stage_hook or (lambda _stage: None)
+    now = now or _utcnow()
+    state, got = claim_run(db, run_doc, now)
+    if state == "existing":
+        if activate_run:
+            activate_monotonic(db, got["run_id"], got.get("published_at") or now, now)
+        for old in supersede_runs or []:
+            supersede(db, old, got["run_id"], issue_code, now)
+        return PublishResult(got["run_id"], "already_published", activate_run, got.get("counts", {}))
+    attempt: Attempt = got
+    stage = "preparar"
+
+    def g() -> None:
+        guard(db, attempt, extra=extra_guard)
+
+    names = {"forecasts": "forecasts_sku"}
+    try:
+        g()
+        stamp(attempt, prepared)
+        stage = "hijos"
+        insert_children(db, attempt, prepared, g, hook=lambda n: hook(names.get(n, n)))
+        stage = "validacion"
+        g()
+        validate_fn(db, attempt.children_id)
+        hook("validacion")
+        stage = "completar"
+        g()
+        published_at = complete_run(db, attempt, {"counts": counts, "coverage": coverage}, now)
+        hook("antes_puntero")
+        if activate_run:
+            activate_monotonic(db, attempt.run_id, published_at, now)
+        for old in supersede_runs or []:
+            supersede(db, old, attempt.run_id, issue_code, now)
+    except LostOwnership:
+        try:
+            delete_own_children(db, attempt)       # solo su propio espacio
+        except Exception:  # noqa: BLE001, S110
+            pass
+        raise
+    except Exception as exc:
+        done = db.runs.find_one({"run_id": attempt.run_id, "status": "completed", "children_ref": attempt.children_id},
+                                {"_id": 1})
+        if done is None:
+            fail_attempt(db, attempt, stage, exc, now)
+        raise
+    return PublishResult(attempt.run_id, "published", activate_run, counts)
+
+
 def publish(db, src: VerifiedSource, catalog: dict, catalog_fingerprint: str, signals: Signals, *,
             sources: list | None = None, now: datetime | None = None, activate_run: bool = True,
             supersede_runs: list[str] | None = None, issue_code: str = "R05_PRECISION_RECOMENDACIONES",
+            extra_guard: Callable[[], None] | None = None,
             stage_hook: Callable[[str], None] | None = None) -> PublishResult:
-    """Publica la corrida. `stage_hook(etapa)` solo se usa en pruebas para simular fallos.
+    """Publica la corrida historica T07. `stage_hook(etapa)` solo se usa en pruebas para simular fallos.
 
     Antes de escribir se exige que fingerprint de entrenamiento, fuentes (si se pasan) y senales
     correspondan al fold aceptado del manifiesto; si cambian, falla sin tocar la base."""
-    hook = stage_hook or (lambda _stage: None)
     now = now or _utcnow()
     fold = src.manifest["folds_predictivos"][src.entry["fold"]]
     if catalog_fingerprint != fold["fingerprint"] or signals.training_fingerprint != fold["fingerprint"]:
@@ -213,11 +224,10 @@ def publish(db, src: VerifiedSource, catalog: dict, catalog_fingerprint: str, si
         raise SourceVerificationError("el origen de las senales no es el corte de la corrida")
     ensure_schema(db)
     run_id, key, fp = run_identity(src, catalog_fingerprint, signals.fingerprint)
-    stage = "preparar"
     try:
-        sku_docs, cat_docs, info = b.build_forecasts(src, catalog, run_id)
-        recs = b.build_recommendations(src, catalog, run_id, signals)
-        backtest = b.build_backtest(src, run_id, now)
+        sku_docs, cat_docs, info = b.build_forecasts(src, catalog, "pendiente")
+        recs = b.build_recommendations(src, catalog, "pendiente", signals)
+        backtest = b.build_backtest(src, "pendiente", now)
     except Exception as exc:
         raise PublishValidationError("no se pudieron construir los documentos") from exc
     n_ok = sum(1 for d in recs if d["status"] == "ok")
@@ -232,42 +242,7 @@ def publish(db, src: VerifiedSource, catalog: dict, catalog_fingerprint: str, si
     run_doc = b.build_run_doc(src, run_id, key, fp, _generated_at(src), coverage, counts, signals)
     validate_doc("runs", run_doc)
     validate_doc("backtests", backtest)
-
-    state, existing = _claim(db, run_doc, now)
-    if state == "existing":
-        if activate_run:
-            activate(db, existing["run_id"], now)
-        for old in supersede_runs or []:
-            supersede(db, old, existing["run_id"], issue_code, now)
-        return PublishResult(existing["run_id"], "already_published", activate_run, existing.get("counts", {}))
-    try:
-        stage = "forecasts"
-        _insert_many(db.forecasts, sku_docs, "forecasts")
-        hook("forecasts_sku")
-        _insert_many(db.forecasts, cat_docs, "forecasts")
-        stage = "recomendaciones"
-        _insert_many(db.recommendations, recs, "recommendations")
-        hook("recommendations")
-        stage = "backtests"
-        db.backtests.insert_one(backtest)
-        hook("backtests")
-        stage = "validacion"
-        validate_published(db, run_id, counts)
-        hook("validacion")
-        stage = "completar"
-        db.runs.update_one({"run_id": run_id, "status": "staging"}, {"$set": {
-            "status": "completed", "published_at": _utcnow(), "counts": counts, "coverage": coverage,
-            "error": None, "schema_version": SCHEMA_VERSION}, "$unset": {"lease_expires_at": ""}})
-        if db.runs.count_documents({"run_id": run_id, "status": "completed"}) != 1:
-            raise PublishValidationError("no se pudo completar la corrida")
-        hook("antes_puntero")
-        if activate_run:
-            activate(db, run_id, now)
-        for old in supersede_runs or []:
-            supersede(db, old, run_id, issue_code, now)
-    except Exception as exc:
-        done = db.runs.find_one({"run_id": run_id, "status": "completed"}, {"_id": 1})
-        if done is None:
-            _fail(db, run_id, stage, exc, now)
-        raise
-    return PublishResult(run_id, "published", activate_run, counts)
+    prepared = {"forecasts": sku_docs + cat_docs, "recommendations": recs, "backtests": [backtest]}
+    return publish_prepared(db, run_doc, prepared, lambda d, cid: validate_published(d, cid, counts), counts,
+                            coverage, extra_guard=extra_guard, activate_run=activate_run,
+                            supersede_runs=supersede_runs, issue_code=issue_code, now=now, stage_hook=stage_hook)

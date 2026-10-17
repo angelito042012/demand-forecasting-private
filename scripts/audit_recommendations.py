@@ -47,9 +47,8 @@ def main(argv=None) -> int:
     skus = [str(s) for s in npz["skus"]]
     idx = {s: i for i, s in enumerate(skus)}
     on_hand, ordered, received = npz[KEY + "on_hand"], npz[KEY + "ordered"], npz[KEY + "received"]
-    diffs, n_ok, pos, units, checked = [], 0, 0, 0, 0
-    for d in db.recommendations.find({"run_id": run_id, "status": "ok"}):  # noqa: SIM113
-        n_ok += 1
+    diffs, pos, units, checked = [], 0, 0, 0
+    for d in db.recommendations.find({"run_id": run_id, "status": "ok"}):
         sku, alm = d["sku"], d["almacen"]
         first, wsum = agg[(sku, alm)]
         useful = [x for x in window if x >= first and x not in masked and x in covered]
