@@ -277,3 +277,8 @@ T07 aceptado al commit 5790103. Codex ejecutó 22 pruebas selectivas, comprobó 
 ## Revisión Codex08 y encargo T10
 
 T08R aceptado al commit 80117c0 para alcance local. R05/R06 cerrados: 31 pruebas selectivas aprobadas y auditoría de 3347 recomendaciones sin diferencias (582 positivas/2655 unidades); anterior sustituida conservada. Dos diagnósticos de estilo menores en script de auditoría pasan a limpieza T10. Sin repetir entrenamiento o navegador. Siguiente ETAPA_08_CLAUDE.md: concurrencia, carga web, cola/worker, generación baseline y timer local. Agosto reservado y nube sin gasto autorizado.
+
+
+## T10 (17/10/2026): carga web, cola durable, generación y temporizador
+
+Entregado para revisión: garantías de concurrencia, API de carga/corridas/trabajos, worker, generación `promedio_28`, temporizador y frontend admin. Pruebas: pytest 376 aprobadas/6 omitidas, vitest 106, E2E Chrome 16/16, realdata 3/3. Detalle y límites en `docs/T10_REPORTE.md`. Sin agosto, sin cambio de selección congelada, sin despliegue.

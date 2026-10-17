@@ -63,7 +63,7 @@ def ensure_indexes(db) -> None:
     c.create_index([("type", 1), ("created_at", -1)], name="ix_job_type_created")
 
 
-def enqueue(db, job_type: str, job_input: dict, idempotency_key: str, created_by: str, *, max_attempts: int = 3,
+def enqueue(db, job_type: str, job_input: dict, idempotency_key: str, created_by: str, *, max_attempts: int = 5,
             public: dict | None = None, now: datetime | None = None) -> tuple[dict, bool]:
     """Encola (o devuelve el existente). `job_input` es interno; `public` es lo que la API puede mostrar."""
     if job_type not in JOB_TYPES:

@@ -1,7 +1,8 @@
 # Traspaso vigente
 
-- Ejecutor: Claude Code, 17/10/2026. Tarea en curso: T10 (ETAPA_08_CLAUDE.md): carga web, cola durable, generación promedio_28 y temporizador. T08R aceptado (80117c0).
-- Hecho y comprometido: (1) garantías de concurrencia: login con reserva atómica (`backend/app/auth/budget.py`), cola durable (`pipeline/jobs/queue.py`), publicación con propiedad por intento/fencing (`pipeline/publish/protocol.py`, lectores por `children_ref`), pruebas deterministas de dos workers; (2) contrato `docs/T10_CONTRATO.md` y `config/t10_config.json`; (3) registro de procesos con hora de inicio/ejecutable en start/stop-local.
-- En curso: tres agentes con ámbitos disjuntos (API/subidas; worker/generador/temporizador; frontend). Después: integrar, E2E en navegador con worker real, auditoría, reporte T10, docs.
-- Base real demand_forecasting_v2: corrida activa hist-20260710-4ea348836e35 (publicada con el código anterior; sigue válida y auditada). Agosto no consultado. Procesos propios: ninguno en ejecución.
-- Si la sesión se interrumpe: `git status` (archivos de los agentes sin commit), ejecutar pruebas por ámbito y continuar la integración.
+- Ejecutor: Claude Code, 17/10/2026. **T10 entregado para revisión de Codex** (ETAPA_08_CLAUDE.md); T08R aceptado (80117c0). Reporte: `docs/T10_REPORTE.md`; contrato: `docs/T10_CONTRATO.md`.
+- Hecho: concurrencia (login atómico, cola con fencing, publicación por intento), API de carga/corridas/trabajos, validación de Excel, generación `promedio_28` exacta, worker, temporizador, frontend admin, registro de procesos. 376 pytest + 106 vitest + E2E Chrome 16/16; evidencias en `artifacts/private/t10/`.
+- Decisiones abiertas para Codex: (1) ¿la corrida generada debe activar el puntero? (hoy no); (2) unificar validadores de publicación; (3) T11 requiere accesos de nube (ver GUIA_LOCAL) y presupuesto; (4) autorizar T12 (abre agosto).
+- Base `demand_forecasting_v2`: corrida activa `hist-20260710-4ea348836e35`; hay corridas generadas de prueba y una en `staging` (`gen-20260620-…`). Agosto no consultado; selección congelada intacta.
+- Procesos: `scripts/start-local.ps1` (API + web + worker, registro en `artifacts/private/t08/procesos.json`); `scripts/stop-local.ps1`. Credenciales demo solo en `artifacts/private/t08/e2e_credentials.json` (no versionado).
+- Si se interrumpe: `git status`, `pytest tests -q`, revisar `docs/T10_REPORTE.md` §3.

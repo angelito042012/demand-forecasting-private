@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al 17/10: T08R aceptado en REVISION_CODEX_08.md; R05/R06 cerrados en alcance local. Encargo ETAPA_08_CLAUDE.md (T10): concurrencia, carga web, cola/worker, generación baseline y timer. Agosto reservado; fechas de tabla son objetivos, no evidencia. Ver ESTADO/TRASPASO.
+Estado al 17/10: T08R aceptado en REVISION_CODEX_08.md; R05/R06 cerrados en alcance local. T10 entregado para revisión de Codex (ver docs/T10_REPORTE.md): concurrencia, carga web, cola/worker, generación baseline y timer. Agosto reservado; fechas de tabla son objetivos, no evidencia. Ver ESTADO/TRASPASO.
 
 T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregir R01–R03. T02A tiene archivos y controles de importación, pero no conciliación con un reporte externo de la MYPE. Las reglas de datos están definidas en DECISIONES_DATOS.md. T04–T07 aceptados como desarrollo. T08 y lectura T09 aceptados tras T08R; T10 y posteriores pendientes. Método operativo v1 promedio_28; RF comparador, no ganador. Congelación final documentada en T08 antes de abrir agosto. Las horas son estimaciones, no resultados ni compromisos de los integrantes. Ver estimación global en ANALISIS_Y_PLAN.md.
 
@@ -16,7 +16,7 @@ T01 está parcial; T03 fue aceptado para las seis fuentes auditadas tras corregi
 | T07 | Simulación de referencia sintética y política con ML | T02B, T05 | Rogelio / backend-inventory | 19 | A06–A08 |
 | T08 | API autenticada y persistencia versionada | T01, contratos | Rogelio / backend-inventory | 20 | A09 |
 | T09 | Pantallas conectadas, filtros y estados | T08; mocks antes | Fabricio / frontend | 20 | A10 |
-| T10 | Timer y publicación de corrida atómica lógica | T06–T08 | Fabricio y Rogelio | 20 | A11 |
+| T10 | Timer y publicación de corrida atómica lógica (entregado local, en revisión Codex) | T06–T08 | Fabricio y Rogelio | 20 | A11 |
 | T11 | Despliegue de prueba, backups y restauración | Accesos, T08–T10 | Fabricio | 21 | A12–A13 |
 | T12 | Evaluación final reservada e impacto | T06–T07 congelados | Blanca y Mauro | 21 | Informe reproducible sin cambiar selección |
 | T13 | Revisión independiente y aceptación | T09–T12 | Fabricio / quality-reviewer | 22 | A14, sin críticos |

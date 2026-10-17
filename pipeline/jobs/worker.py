@@ -109,7 +109,10 @@ def process_next(db, worker_id: str, cfg: dict, *, uploads_dir: Path, lease_seco
             code, message, retryable = classify(exc)
             log.warning("trabajo %s fallo: %s (reintentable=%s)", claim.job_id, code, retryable)
             try:
-                state = queue.fail(db, claim, code, message, retryable=retryable, backoff_seconds=backoff)
+                # esperar a que venza el lease del intento de publicacion anterior antes de reintentar
+                wait = (int(cfg["cola"].get("backoff_publicacion_en_curso_segundos", backoff))
+                        if code == "PUBLICACION_EN_CURSO" else backoff)
+                state = queue.fail(db, claim, code, message, retryable=retryable, backoff_seconds=wait)
                 log.info("trabajo %s -> %s", claim.job_id, state)
             except queue.LostOwnership:
                 log.warning("trabajo %s: propiedad perdida al registrar el fallo", claim.job_id)

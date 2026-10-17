@@ -4,7 +4,7 @@ Actualizado el 17/10/2026, Lima. Entrega final 23/10/2026. Claude ejecuta; Codex
 
 ## Siguiente encargo
 
-**Encargo vigente ETAPA_08_CLAUDE.md (T10)**, tras aceptar T08R al commit 80117c0 en REVISION_CODEX_08.md. R05/R06 cerrados para demostración local; T08 y lectura integrada T09 aceptados con límites. Próximo ejecutor Claude: contrato/concurrencia antes de carga web, cola durable, worker, generación promedio_28 y timer local. Agosto sigue reservado; no repetir entrenamientos ni cambiar selección congelada.
+**T10 entregado para revisión de Codex** (`docs/T10_REPORTE.md`): carga web, cola durable, worker, generación `promedio_28` y temporizador local, con garantías de concurrencia. Pendiente: revisión Codex; después, a decisión suya, T11 (nube; sin accesos ni gasto autorizados) y T12 (evaluación final en agosto bajo `SELECCION_CONGELADA`, no ejecutada). Agosto sigue sin abrirse.
 
 ## Hitos aceptados
 
@@ -49,3 +49,10 @@ Ahora T10 carga web/batch/timer, con concurrencia como prerrequisito. Después T
 Auditoría propia desde agregación directa de fuentes G4 y NPZ verificado: 3347 recomendaciones, cero diferencias de señal/stock/tránsito/objetivo/posición/pedido, 582 positivas y 2655 unidades; 300 sin snapshot nulos. Corrida nueva activa/completed, antigua superseded con hijos conservados. Congelación con hash correcto. Consulta real solo lectura; tests escribieron bases temporales. Evidencia artifacts/private/codex_review08_audit.json y codex_review08_tests.xml; revisión REVISION_CODEX_08.md.
 
 T10 no abre test: generación operativa de desarrollo con cortes habilitados 01/06–10/07 y H<=21 hasta revisión posterior; carga web rechaza agosto y no sustituye fuentes canónicas silenciosamente. Baseline operativo, recomendaciones hipotéticas sobre snapshots simulados compatibles. Solicitud de cuentas/presupuesto pendiente de respuesta; desarrollar local sin asumir autorización de gasto.
+
+## T10 construido (17/10/2026, verificado)
+
+- Archivos: `backend/app/auth/budget.py`, `backend/app/{uploads.py,routers/{imports,runs,jobs}.py,data/jobs.py}`, `pipeline/jobs/*`, `pipeline/generate/*`, `pipeline/publish/{protocol,publisher,builders,schema,source}.py`, frontend (carga, trabajos, generación), `config/t10_config.json`, `docs/T10_CONTRATO.md`, `docs/T10_REPORTE.md`, `scripts/{start,stop}-local.ps1`.
+- Pruebas ejecutadas: pytest completo 376 aprobadas/6 omitidas; realdata generación 3/3 (agente, sin agosto); vitest 106 + build; E2E Chrome real 16/16 (incluye original → «Sin cambios» con hashes/conteos/fingerprint intactos, generación 10/07, lector denegado, worker detenido a mitad de trabajo y retomado sin duplicados); temporizador con reloj controlado.
+- Pendientes: decisión de Codex sobre `activate_run` (hoy la generada no mueve el puntero activo); validador de publicación único; diagnósticos de estilo preexistentes en `scripts/generate_synthetic_inventory.py`; temporizador `--loop` no probado como servicio continuo; T11/T12/aceptación humana.
+- Base de demostración: además de las históricas hay corridas generadas de prueba (orígenes 10/07, 22/06, 25/06, 28/06, 30/06, 03/07) y una `gen-20260620-…` en `staging` de un intento interrumpido. Etiquetadas; no son evidencia de mejora.

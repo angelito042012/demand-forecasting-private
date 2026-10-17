@@ -28,7 +28,7 @@ from pymongo.errors import DuplicateKeyError
 
 from .schema import SCHEMA_VERSION, validate_doc
 
-LEASE_SECONDS = 120
+LEASE_SECONDS = 60   # igual al lease del trabajo: un worker muerto libera ambos en ~1 minuto
 BATCH = 5000
 CHILD_COLLECTIONS = ("forecasts", "recommendations", "backtests")
 
