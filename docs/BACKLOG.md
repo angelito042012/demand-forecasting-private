@@ -1,5 +1,7 @@
 # Backlog de ejecución
 
+**Prioridad vigente: UX01, ETAPA_16_CLAUDE.md y docs/UX01_BRIEF.md.** Rogelio no comprende la interfaz al entrar por primera vez y pide rediseñarla antes de publicar. R12–R16 aceptados localmente (REVISION_CODEX_15); no repetir. T13 aceptación humana pendiente con esta observación; T14 debe reflejar las pantallas nuevas; T11 publicación sin autorización y T15 final pendientes. Los estados anteriores siguientes son antecedentes y no reabren tareas cerradas.
+
 Estado al 17/10: R12-R14 aceptados localmente; R15/R16 cerrados (T13B); demostración local activa en https://localhost:8443; publicación en nube pendiente de una única autorización (docs/T11_PLAN_DESPLIEGUE.md); aceptación humana (A14) y A13 pendientes; T14 final y T15 hasta el 23/10.
 
 T01 está parcial; T03 aceptado para seis fuentes auditadas tras R01–R04. T02A tiene controles de importación pero no conciliación con reporte externo de la MYPE. T04–T07 aceptados como desarrollo; T08/T09/T10 aceptados para alcance local. Resultados T12 validados, cierre administrativo R11 pendiente; T11A es el encargo vigente, T11real/T13–T15 pendientes. Método operativo promedio_28; RF comparador, no ganador. Congelación registrada antes del test; no modificarla para acomodar resultados. Ver ANALISIS_Y_PLAN.md y DECISIONES_DATOS.md.

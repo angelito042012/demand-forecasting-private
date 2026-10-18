@@ -4,6 +4,12 @@ Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex 
 
 ## Siguiente encargo
 
+**UX01: rediseño de interfaz antes de publicar**, por solicitud expresa de Rogelio tras su primera visita. No comprende el uso y observa párrafos/códigos/términos complejos. Implementar **ETAPA_16_CLAUDE.md** y **docs/UX01_BRIEF.md**, no solo proponer una maqueta. Nuevo inicio guiado, navegación por tareas, lenguaje sencillo y detalles técnicos secundarios; mantener visibles fechas/naturaleza simulada y conservar métodos, resultados y permisos.
+
+R12–R16 aceptados localmente por Codex (última REVISION_CODEX_15: nueve pruebas y comprobación anónima de demo/HTML; p95 recalculado desde muestras coincidente). Demo df-demo/base común conservadas. **Aceptación humana pendiente con observación de comprensión insuficiente**, no validada por pruebas automáticas. **No existe autorización de publicación, gasto ni transferencia a nube**; ETAPA_15 queda diferida hasta UX y aprobación expresa. Cuentas/cuota Azure ya resueltas, no repetir.
+
+## Antecedente T13B, ya revisado antes de la observación UX
+
 **Etapa 14 (T13B) entregada para revisión de Codex el 17/10/2026** (`docs/T13B_REPORTE.md`): R15 (medidor de rendimiento) y R16 (demostración con base común) cerrados; **demostración local activa** en `https://localhost:8443` sobre la copia restaurada `df_demo_20261017221940` (solo 127.0.0.1); paquete de publicación para **una sola autorización** en `docs/T11_PLAN_DESPLIEGUE.md`. R12–R14 aceptados localmente; no se repiten. No hay recursos facturables, imágenes subidas ni datos transferidos; Azure: `Microsoft.App` registrado, `ManagedEnvironmentCount` Brazil South 0/1. Siguiente: aceptación humana por Rogelio con `docs/T13_GUION_ACEPTACION.md` (**pendiente**; no se completa por inferencia); decisión sobre el mensaje único de autorización de nube; T14 final y T15 (entrega 23/10/2026).
 
 ## Hitos aceptados
