@@ -10,10 +10,10 @@ import { fmtInt } from '../core/format';
   imports: [RouterLink],
   template: `
     @if (listError(); as e) {
-      <p class="state err" role="alert" data-testid="jobs-error">No se pudo leer la lista de trabajos: {{ e.message }}</p>
+      <p class="state err" role="alert" data-testid="jobs-error">No se pudo leer la lista de trabajos: {{ e.message }} Recarga la página para intentarlo de nuevo.</p>
     }
     @if (pollError(); as e) {
-      <p class="notice warn" role="status" data-testid="poll-error">No se pudo actualizar el estado del trabajo: {{ e.message }}</p>
+      <p class="notice warn" role="status" data-testid="poll-error">No se pudo actualizar el estado del trabajo: {{ e.message }} Vuelve a abrir esta pantalla para seguirlo.</p>
     }
     @if (jobs().length === 0 && !listError()) {
       <p class="state" data-testid="jobs-empty">Todavía no hay trabajos registrados.</p>
@@ -24,8 +24,6 @@ import { fmtInt } from '../core/format';
         <header>
           <strong>{{ typeLabel(j) }}</strong>
           <span class="badge" [class.ok]="j.status === 'completed'" [class.bad]="j.status === 'failed'" data-testid="job-status">{{ statusLabel(j) }}</span>
-          <code>{{ j.job_id }}</code>
-          @if (j.created_at) { <span class="muted">creado {{ j.created_at }}</span> }
         </header>
         @if (j.status === 'queued' || j.status === 'running') {
           <p data-testid="job-stage">Etapa: <strong>{{ stage(j) }}</strong>
@@ -48,9 +46,18 @@ import { fmtInt } from '../core/format';
               @for (m of s.rejectMotives; track m[0]) { <li>Rechazo «{{ m[0] }}»: {{ int(m[1]) }}</li> }
             </ul>
           }
-          @if (s.importId) { <button type="button" data-testid="job-import-link" (click)="openImport.emit(s.importId!)">Ver detalle de la importación</button> }
-          @if (s.runId) { <a data-testid="job-run-link" [routerLink]="['/corridas']" [queryParams]="{ run: s.runId }">Ver la corrida generada</a> }
+          @if (s.importId) { <button type="button" class="secondary small" data-testid="job-import-link" (click)="openImport.emit(s.importId!)">Ver detalle del archivo cargado</button> }
+          @if (s.runId) {
+            <a class="btn secondary small" data-testid="job-run-link" [routerLink]="['/pronosticos']" [queryParams]="{ run: s.runId }">Ver previsión</a>
+            <a class="btn secondary small" data-testid="job-run-list" [routerLink]="['/corridas']" [queryParams]="{ run: s.runId }">Ver en Mis análisis</a>
+          }
         }
+        <details class="tech" [attr.data-testid]="'job-tech-' + j.job_id">
+          <summary>Detalles técnicos del trabajo</summary>
+          <p>Identificador: <code>{{ j.job_id }}</code> · tipo: <code>{{ j.type }}</code> · estado original: <code>{{ j.status }}</code></p>
+          @if (j.error; as er) { <p data-testid="job-error-original">Código: <code>{{ er.code }}</code>@if (er.message) { · mensaje del servidor: {{ er.message }} }</p> }
+          @if (j.created_at) { <p>Creado (UTC): {{ j.created_at }}</p> }
+        </details>
       </article>
     }
   `,

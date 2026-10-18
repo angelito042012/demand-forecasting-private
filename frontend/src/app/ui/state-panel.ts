@@ -14,9 +14,10 @@ import { LoadState } from '../core/models';
       @case ('error') {
         <div class="state err" role="alert" data-state="error" [attr.data-code]="code()">
           @if (code() === 'SESION_EXPIRADA') {
-            <p>Su sesión venció. <a href="/acceso">Ingrese de nuevo</a>.</p>
+            <p>Tu sesión venció. <a href="/acceso">Ingresa de nuevo</a> para seguir.</p>
           } @else {
             <p>{{ errorMessage() }}</p>
+            <p class="muted">Puedes reintentar; si el problema continúa, avisa al administrador.</p>
           }
           <button type="button" (click)="retry.emit()">Reintentar</button>
         </div>
@@ -29,7 +30,7 @@ import { LoadState } from '../core/models';
 })
 export class StatePanel {
   state = input.required<LoadState<unknown>>();
-  emptyText = input('Sin datos para mostrar.');
+  emptyText = input('No hay datos para mostrar con esta selección.');
   retry = output<void>();
   errorMessage() {
     const s = this.state();

@@ -7,8 +7,13 @@ import { mountPage, reqOf, respond, visibleText } from '../testing/mount';
 
 const SUPERSEDED = { status: 'superseded', validation_status: 'valid', quality_issue: { superseded_by: 'hist-20260710-NEW', reason: 'Error de redondeo en el objetivo' } };
 
+/** UX01: la barra de análisis pide la lista de análisis (una sola vez). */
+const flushRuns = (m: { http: { match: (f: (r: { url: string }) => boolean) => { flush: (b: object) => void }[] } }) =>
+  m.http.match((r) => r.url === '/api/v1/runs').forEach((r) => r.flush(page([realRunSummary])));
+
 async function openReco(list: RecoPage = realRecoPage, detail: Recommendation = realRecoDetail) {
   const m = mountPage(RecommendationsPage);
+  flushRuns(m);
   await respond(m.f, reqOf(m.http, '/api/v1/recommendations'), list);
   (m.el.querySelector('[data-testid="reco-table"] tbody button') as HTMLButtonElement).click();
   await respond(m.f, reqOf(m.http, `/api/v1/recommendations/${list.items[0].sku}`), detail);
@@ -18,23 +23,25 @@ async function openReco(list: RecoPage = realRecoPage, detail: Recommendation = 
 describe('Recomendaciones: una sola explicación, enteros y formato', () => {
   it('la lista muestra stock, tránsito y pedido enteros y el valor en PEN con 2 decimales', async () => {
     const m = mountPage(RecommendationsPage);
+    flushRuns(m);
     await respond(m.f, reqOf(m.http, '/api/v1/recommendations'), realRecoPage);
     const first = m.el.querySelector('[data-testid="reco-table"] tbody tr')!.textContent!.replace(/\s+/g, ' ');
     expect(first).toContain('26120367');
-    expect(first).toContain('386.75 PEN');
     const cells = Array.from(m.el.querySelector('[data-testid="reco-table"] tbody tr')!.querySelectorAll('td')).map((c) => c.textContent!.trim());
-    expect(cells.slice(3, 7)).toEqual(['0', '0', '70', '386.75 PEN']);
+    expect(cells.slice(1, 3)).toEqual(['0', '70']);   // disponible simulado y cantidad sugerida; por recibir y valor supuesto van en el detalle
     const t = m.el.querySelector('[data-testid="reco-table"]')!.textContent!;
     expect(t).not.toMatch(/\d\.\d{4,}/);
     m.http.verify();
   });
 
-  it('el detalle tiene UNA lista numerada visible; el texto técnico completo va plegado', async () => {
+  it('el detalle tiene UNA lista visible de tres pasos; los 9 pasos del cálculo y el texto técnico completo van plegados', async () => {
     const m = await openReco();
     const visibleLists = Array.from(m.el.querySelectorAll('ol')).filter((o) => !o.closest('details'));
     expect(visibleLists.length).toBe(1);
-    expect(visibleLists[0].getAttribute('data-testid')).toBe('calc-steps');
-    expect(visibleLists[0].querySelectorAll('li').length).toBe(9);
+    expect(visibleLists[0].getAttribute('data-testid')).toBe('simple-steps');
+    expect(visibleLists[0].querySelectorAll(':scope > li').length).toBe(3);
+    expect((m.el.querySelector('[data-testid="full-calc"]') as HTMLDetailsElement).open).toBe(false);
+    expect(m.el.querySelector('[data-testid="full-calc"] [data-testid="calc-steps"]')!.querySelectorAll('li').length).toBe(9);
     const tech = m.el.querySelector('[data-testid="tech-details"]') as HTMLDetailsElement;
     expect(tech.open).toBe(false);
     expect(tech.textContent).toContain('explanation_steps');
@@ -59,7 +66,7 @@ describe('Recomendaciones: una sola explicación, enteros y formato', () => {
     expect(steps[6]).toContain('= 8 unidades');
     expect(steps[7]).toContain('= 1 unidades');
     expect(steps[8]).toContain('42.25 PEN');
-    expect(m.el.querySelector('[data-testid="order-result"]')?.textContent).toBe('1 unidades base');
+    expect(m.el.querySelector('[data-testid="order-result"]')?.textContent).toBe('1 unidad');
     // el valor exacto publicado no se pierde: está en el detalle plegado
     expect((m.el.querySelector('[data-testid="tech-details"]') as HTMLElement).textContent).toContain('4.999999999400001');
     m.http.verify();
@@ -88,8 +95,9 @@ describe('Recomendaciones: corrida sustituida', () => {
     const banners = m.el.querySelectorAll('[data-testid="superseded-banner"]');
     expect(banners.length).toBe(2);
     const t = banners[0].textContent!;
-    expect(t).toContain('Esta corrida fue sustituida por una corrección de precisión (recomendaciones con error de redondeo); no use sus pedidos');
-    expect(t).toContain('Error de redondeo en el objetivo');
+    expect(t).toContain('Esta versión fue reemplazada. No uses sus sugerencias.');
+    expect(t).toContain('Error de redondeo en el objetivo');   // motivo plegado, localizable
+    expect(visibleText(banners[0] as HTMLElement)).not.toContain('Error de redondeo en el objetivo');
     const link = banners[0].querySelector('a[data-testid="superseded-link"]') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toContain('run=hist-20260710-NEW');
     m.http.verify();
@@ -98,6 +106,7 @@ describe('Recomendaciones: corrida sustituida', () => {
   it('validation_status distinto de valid también activa el banner; una corrida válida no lo muestra', async () => {
     const bad: RecoPage = { ...realRecoPage, run: { ...realRecoPage.run!, validation_status: 'invalid' } };
     const m = mountPage(RecommendationsPage);
+    flushRuns(m);
     await respond(m.f, reqOf(m.http, '/api/v1/recommendations'), bad);
     expect(m.el.querySelector('[data-testid="superseded-banner"]')).toBeTruthy();
     m.http.verify();
@@ -105,6 +114,7 @@ describe('Recomendaciones: corrida sustituida', () => {
 
   it('una corrida válida y completada no muestra el banner', async () => {
     const ok = mountPage(RecommendationsPage);
+    flushRuns(ok);
     await respond(ok.f, reqOf(ok.http, '/api/v1/recommendations'), { ...realRecoPage, run: { ...realRecoPage.run!, status: 'completed', validation_status: 'valid' } });
     expect(ok.el.querySelector('[data-testid="superseded-banner"]')).toBeNull();
     ok.http.verify();
@@ -112,26 +122,35 @@ describe('Recomendaciones: corrida sustituida', () => {
 });
 
 describe('Corridas: estado y motivo', () => {
-  it('lista completada y sustituida con su estado y motivo', async () => {
+  it('el análisis vigente se lista; la versión reemplazada solo aparece en «Ver versiones anteriores», rotulada y con su motivo plegado', async () => {
     const m = mountPage(RunsPage);
     const old = { ...realRunSummary, run_id: 'hist-old', is_active: false, ...SUPERSEDED };
     await respond(m.f, reqOf(m.http, '/api/v1/runs'), page([realRunSummary, old]));
-    const rows = m.el.querySelectorAll('[data-testid="runs-table"] tbody tr');
-    expect(rows.length).toBe(2);
-    expect(rows[0].querySelector('[data-testid="run-status"]')?.textContent).toBe('Completada');
-    expect(rows[1].querySelector('[data-testid="run-status"]')?.textContent).toBe('Sustituida');
-    expect(rows[1].querySelector('[data-testid="run-reason"]')?.textContent).toContain('Error de redondeo en el objetivo');
-    expect(rows[0].textContent).toContain('10/07/2026');
+    const main = m.el.querySelector('[data-testid="runs-list"]')!;
+    expect(main.querySelectorAll('[data-testid^="run-card-"]').length).toBe(1);
+    expect(main.querySelector('[data-testid="run-status"]')?.textContent).toBe('En uso por defecto');
+    expect(main.textContent).toContain('10 de julio de 2026');
+    const versions = m.el.querySelector('[data-testid="old-versions"]') as HTMLDetailsElement;
+    expect(versions.open).toBe(false);
+    expect(versions.querySelector('summary')?.textContent).toContain('Ver versiones anteriores');
+    expect(versions.querySelector('[data-testid="run-status"]')?.textContent).toBe('Versión reemplazada');
+    expect(versions.querySelector('[data-testid="replaced-notice"]')?.textContent).toContain('Esta versión fue reemplazada. No uses sus sugerencias');
+    expect(versions.querySelector('[data-testid="replaced-link"]')?.getAttribute('href')).toContain('run=hist-20260710-NEW');
+    expect(versions.querySelector('[data-testid="replaced-reason"]')?.textContent).toContain('Error de redondeo en el objetivo');
+    expect(visibleText(m.el)).not.toContain('Error de redondeo en el objetivo');
+    expect(visibleText(m.el)).not.toContain('Esta versión fue reemplazada');
     m.http.verify();
   });
 
-  it('detalle de corrida sustituida: banner; documento completo y checksums plegados', async () => {
+  it('detalle de versión reemplazada: estado; documento completo y checksums plegados', async () => {
     const m = mountPage(RunsPage);
-    await respond(m.f, reqOf(m.http, '/api/v1/runs'), page([realRunSummary]));
-    (m.el.querySelector('[data-testid="runs-table"] button') as HTMLButtonElement).click();
+    await respond(m.f, reqOf(m.http, '/api/v1/runs'), page([{ ...realRunSummary, ...SUPERSEDED }]));
+    const tech = m.el.querySelector(`[data-testid="tech-${realRunSummary.run_id}"]`) as HTMLDetailsElement;
+    tech.open = true;
+    tech.dispatchEvent(new Event('toggle'));
     await respond(m.f, reqOf(m.http, `/api/v1/runs/${realRunSummary.run_id}`), { ...realRunDetail, ...SUPERSEDED });
-    expect(m.el.querySelector('[data-testid="superseded-banner"]')).toBeTruthy();
-    expect(m.el.querySelector('[data-testid="detail-status"]')?.textContent).toContain('Sustituida');
+    expect(m.el.querySelector('[data-testid="replaced-notice"]')).toBeTruthy();
+    expect(m.el.querySelector('[data-testid="detail-status"]')?.textContent).toContain('Versión reemplazada');
     const doc = m.el.querySelector('[data-testid="run-doc"]') as HTMLDetailsElement;
     expect(doc.open).toBe(false);
     expect(doc.textContent).toContain(realRunDetail.artifacts![0].sha256);

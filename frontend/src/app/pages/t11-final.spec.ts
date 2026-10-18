@@ -49,23 +49,40 @@ async function choose(f: ComponentFixture<unknown>, el: HTMLElement, id: string,
 
 afterEach(() => { lastHttp?.verify(); lastHttp = undefined; });
 
+/** Abre «Detalles técnicos» del análisis (como lo haría el usuario) y responde al detalle completo. */
+async function openTech(m: M<RunsPage>, id: string, detail: RunDetail) {
+  const d = q(m.el, 'tech-' + id) as HTMLDetailsElement;
+  d.open = true;
+  d.dispatchEvent(new Event('toggle'));
+  await ok(m.f, one(m.http, `/api/v1/runs/${id}`), detail);
+}
+
 describe('T11A Corridas: tipos y paquete de la evaluación final', () => {
   it('rotula histórica, generada y evaluación final; la final no figura como activa', async () => {
     const m = await mountAs(RunsPage);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun, genRun]));
-    const kinds = Array.from(m.el.querySelectorAll('[data-testid="run-kind"]')).map((c) => c.textContent);
-    expect(kinds).toEqual(['Evaluación final (T12)', 'Histórica de desarrollo (T07)', 'Generada por la aplicación']);
-    const rows = Array.from(m.el.querySelectorAll('[data-testid="runs-table"] tbody tr')).map((r) => r.textContent!.replace(/\s+/g, ' '));
-    expect(rows[0]).toContain(FINAL_ID);
-    expect(rows[0]).toMatch(/No\s*Ver detalle/);          // no activa
-    expect(rows[1]).toMatch(/Sí\s*Ver detalle/);          // la activa sigue siendo la histórica
+    // el análisis en uso por defecto va primero; la evaluación final nunca figura como «en uso por defecto»
+    const cards = Array.from(m.el.querySelectorAll('[data-testid^="run-card-"]'));
+    expect(cards.map((c) => c.querySelector('[data-testid="run-name"]')!.textContent)).toEqual(['Ejemplo de julio', 'Evaluación de agosto', 'Análisis creado con ventas hasta el 10/06/2026']);
+    expect(cards.map((c) => c.querySelector('[data-testid="run-kind"]')!.textContent)).toEqual(['Ejemplo histórico', 'Evaluación', 'Creado en la aplicación']);
+    const status = (i: number) => cards[i].querySelector('[data-testid="run-status"]')!.textContent;
+    expect(status(0)).toBe('En uso por defecto');
+    expect(status(1)).toBe('Disponible');
+    const fin = cards[1];
+    expect(fin.textContent).toContain('Permite comparar estimaciones con ventas registradas; no genera pedidos');
+    expect(fin.querySelector('[data-testid="to-reco"]')).toBeNull();            // sin «Ver reposición» en la evaluación
+    expect(fin.querySelector('[data-testid="to-forecasts"]')!.getAttribute('href')).toContain('run=' + FINAL_ID);
+    expect(fin.querySelector('[data-testid="to-compare"]')).toBeTruthy();
+    expect(cards[0].querySelector('[data-testid="to-reco"]')!.getAttribute('href')).toContain('run=' + HIST_ID);
+    expect(cards[2].textContent).toContain('todavía no hay ventas registradas para comparar');   // sin backtest atribuido
+    expect(cards[2].textContent).not.toContain('Permite comparar');
+    expect(visibleText(m.el)).not.toContain(FINAL_ID);           // identificadores solo en detalles técnicos
   });
 
   it('el detalle de la final muestra sello corto, siete fases, auditoría aprobada, corrección R11 y advertencias', async () => {
     const m = await mountAs(RunsPage);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
-    (m.el.querySelector('[data-testid="runs-table"] tbody button') as HTMLButtonElement).click();
-    await ok(m.f, one(m.http, `/api/v1/runs/${FINAL_ID}`), { ...finalRun, fingerprint_short: 'f73f00a79ad0' } as RunDetail);
+    await openTech(m, FINAL_ID, { ...finalRun, fingerprint_short: 'f73f00a79ad0' } as RunDetail);
     expect(txt(m.el, 'detail-kind')).toBe('Evaluación final (T12)');
     expect(txt(m.el, 'pkg-seal')).toBe(SEAL.slice(0, 12));
     expect(txt(m.el, 'pkg-audit')).toContain('aprobada');
@@ -81,7 +98,7 @@ describe('T11A Corridas: tipos y paquete de la evaluación final', () => {
   it('la auditoría NO aprobada o ausente no se presenta como aprobada', async () => {
     const m = await mountAs(RunsPage, '/corridas?run=' + FINAL_ID);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun]));
-    await ok(m.f, one(m.http, `/api/v1/runs/${FINAL_ID}`), { ...finalRun, final_package: { ...finalRun.final_package, audit_ok: false, corrections: [] } } as RunDetail);
+    await openTech(m, FINAL_ID, { ...finalRun, final_package: { ...finalRun.final_package, audit_ok: false, corrections: [] } } as RunDetail);
     expect(txt(m.el, 'pkg-audit')).toContain('NO aprobada');
     expect(q(m.el, 'pkg-no-corrections')).toBeTruthy();
   });
@@ -89,7 +106,7 @@ describe('T11A Corridas: tipos y paquete de la evaluación final', () => {
   it('una corrida histórica no muestra paquete final ni advertencias de la final', async () => {
     const m = await mountAs(RunsPage, '/corridas?run=' + HIST_ID);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([histRun]));
-    await ok(m.f, one(m.http, `/api/v1/runs/${HIST_ID}`), { ...histRun, method: { chosen: 'promedio_28', comparator: 'rf_categoria_distribuido', control: 'cero' } } as RunDetail);
+    await openTech(m, HIST_ID, { ...histRun, method: { chosen: 'promedio_28', comparator: 'rf_categoria_distribuido', control: 'cero' } } as RunDetail);
     expect(q(m.el, 'final-package')).toBeNull();
     expect(q(m.el, 'final-warnings')).toBeNull();
   });
@@ -98,7 +115,7 @@ describe('T11A Corridas: tipos y paquete de la evaluación final', () => {
     const m = await mountAs(RunsPage);
     one(m.http, '/api/v1/runs').flush({ error: { code: 'SERVICIO_NO_DISPONIBLE', message: 'caído' } }, { status: 503, statusText: 'x' });
     await settle(m.f);
-    expect(q(m.el, 'runs-table')).toBeNull();
+    expect(q(m.el, 'runs-list')).toBeNull();
     expect(m.el.querySelector('[role="alert"]')).toBeTruthy();
   });
 });
@@ -111,7 +128,7 @@ describe('T11A Pronósticos: evaluación final', () => {
     expect(fr.request.params.get('run_id')).toBe(FINAL_ID);
     await ok(m.f, fr, finalForecasts());
     expect(txt(m.el, 'run-dates')).toContain('01/08/2026 al 21/08/2026');
-    expect(txt(m.el, 'run-kind-badge')).toBe('Evaluación final (T12)');
+    expect(txt(m.el, 'analysis-name')).toBe('Evaluación de agosto');
     const w = txt(m.el, 'final-warnings');
     expect(w).toContain('WAPE no es exactitud');
     expect(w).toContain('Categoría = suma de unidades base heterogéneas');
@@ -120,9 +137,11 @@ describe('T11A Pronósticos: evaluación final', () => {
     expect((q(m.el, 'f-from') as HTMLInputElement).getAttribute('min')).toBe('2026-08-01');
     const obs = Array.from(m.el.querySelectorAll('[data-testid="observed"]')).map((c) => c.textContent!.trim());
     expect(obs).toEqual(['2', 'no evaluable', '0']);        // el cero real se conserva; el día sin registros NO es cero
-    const cohortes = Array.from(m.el.querySelectorAll('[data-testid="forecast-table"] tbody tr')).map((r) => r.querySelectorAll('td')[2].textContent);
+    (q(m.el, 'toggle-details') as HTMLButtonElement).click();       // tipo de historial y modelo experimental: en «ver detalles»
+    await settle(m.f);
+    const cohortes = Array.from(m.el.querySelectorAll('[data-testid="forecast-table"] tbody tr')).map((r) => r.querySelectorAll('td')[5].textContent);
     expect(cohortes).toEqual(['primaria', 'historia_corta', 'primaria']);
-    expect(txt(m.el, 'forecast-table')).toContain('RF distribuido (comparador)');
+    expect(txt(m.el, 'forecast-table')).toContain('Modelo experimental');
     expect(txt(m.el, 'forecast-note')).not.toContain('no incluyen agosto');
     expect(q(m.el, 'insufficient')).toBeTruthy();
   });
@@ -133,7 +152,7 @@ describe('T11A Pronósticos: evaluación final', () => {
     await ok(m.f, one(m.http, '/api/v1/forecasts'), page([]));
     expect((q(m.el, 'f-to') as HTMLInputElement).getAttribute('max')).toBe('2026-07-31');
     expect(q(m.el, 'final-warnings')).toBeNull();
-    expect(txt(m.el, 'run-kind-badge')).toBe('Histórica de desarrollo (T07)');
+    expect(txt(m.el, 'analysis-name')).toBe('Ejemplo de julio');
   });
 
   it('el selector de corrida rotula el tipo de cada opción', async () => {
@@ -141,9 +160,8 @@ describe('T11A Pronósticos: evaluación final', () => {
     await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun, genRun]));
     await ok(m.f, one(m.http, '/api/v1/forecasts'), page([]));
     const opts = Array.from(m.el.querySelectorAll('[data-testid="run-select"] option')).map((o) => o.textContent!);
-    expect(opts[0]).toContain('Evaluación final (T12)');
-    expect(opts[1]).toContain('Histórica de desarrollo (T07)');
-    expect(opts[1]).toContain('activa');
+    expect(opts[0]).toBe('Evaluación de agosto');
+    expect(opts[1]).toBe('Ejemplo de julio · en uso por defecto');
     expect((q(m.el, 'run-select') as HTMLSelectElement).value).toBe(HIST_ID);
   });
 
@@ -161,22 +179,24 @@ describe('T11A Pronósticos: evaluación final', () => {
 describe('T11A Recomendaciones: evaluación final', () => {
   it('muestra el motivo de no disponibilidad y enlaza a la demostración histórica; no inventa stock ni pedidos', async () => {
     const m = await mountAs(RecommendationsPage, '/recomendaciones?run=' + FINAL_ID);
+    await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
     const r = one(m.http, '/api/v1/recommendations');
     expect(r.request.params.get('run_id')).toBe(FINAL_ID);
     await ok(m.f, r, finalRecoPage());
     expect(txt(m.el, 'reco-reason-code')).toBe('RECOMENDACION_NO_VALIDADA_PARA_ESTE_ORIGEN');
-    expect(txt(m.el, 'reco-unavailable')).toContain('Evaluación final (T12)');
+    expect(txt(m.el, 'reco-unavailable')).toContain('La evaluación de agosto compara estimaciones con ventas registradas; no genera pedidos');
     const link = q(m.el, 'see-run') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toContain('run=' + HIST_ID);
     expect(q(m.el, 'reco-table')).toBeNull();
     expect(q(m.el, 'reco-detail')).toBeNull();
     expect(m.el.querySelector('form.filters')).toBeNull();
     expect(visibleText(m.el)).toContain('Inventario simulado con supuestos; no corresponde al inventario real de la empresa');
-    expect(txt(m.el, 'run-kind-badge')).toBe('Evaluación final (T12)');
+    expect(txt(m.el, 'analysis-name')).toBe('Evaluación de agosto');
   });
 
   it('sin see_run no inventa un enlace', async () => {
     const m = await mountAs(RecommendationsPage, '/recomendaciones?run=' + FINAL_ID);
+    await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
     await ok(m.f, one(m.http, '/api/v1/recommendations'), finalRecoPage(null));
     expect(q(m.el, 'see-run')).toBeNull();
     expect(q(m.el, 'no-see-run')).toBeTruthy();
@@ -184,15 +204,17 @@ describe('T11A Recomendaciones: evaluación final', () => {
 
   it('una página vacía SIN motivo sigue siendo «sin recomendaciones» (estado vacío)', async () => {
     const m = await mountAs(RecommendationsPage);
+    await ok(m.f, one(m.http, '/api/v1/runs'), page([histRun]));
     await ok(m.f, one(m.http, '/api/v1/recommendations'), page([]));
     expect(q(m.el, 'reco-unavailable')).toBeNull();
-    expect(m.el.textContent).toContain('Sin recomendaciones para estos filtros.');
+    expect(m.el.textContent).toContain('ningún producto tiene sugerencia de reposición');
   });
 });
 
 describe('T11A Comparación: evaluación final (T12) separada de T07', () => {
   async function openFinal() {
     const m = await mountAs(ComparisonPage, '/comparacion?run=' + FINAL_ID);
+    await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
     const list = one(m.http, '/api/v1/backtests');
     expect(list.request.params.get('run_id')).toBe(FINAL_ID);
     await ok(m.f, list, finalBacktestList);
@@ -213,8 +235,9 @@ describe('T11A Comparación: evaluación final (T12) separada de T07', () => {
     const t = visibleText(m.el);
     expect(t).not.toContain('agosto sigue reservado');
     expect(t).not.toContain('01/06/2026');
-    expect(t).toContain('Evaluación final (T12)');
-    expect(txt(m.el, 'bt-label')).toContain('Evaluación final (T12)');
+    expect(t).toContain('Evaluación de agosto');
+    expect(txt(m.el, 'bt-label')).toContain('Evaluación de agosto');
+    expect(t).toContain('Ya hay un resultado final disponible');
   });
 
   it('hallazgo primario: WAPE H14 de promedio_28, RF y cero con n, mejora relativa, sesgo y sin ganador declarado', async () => {
@@ -295,6 +318,7 @@ describe('T11A Comparación: evaluación final (T12) separada de T07', () => {
 
   it('con un detalle sin simulación publica «datos insuficientes» (no ceros)', async () => {
     const m = await mountAs(ComparisonPage, '/comparacion?run=' + FINAL_ID);
+    await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
     await ok(m.f, one(m.http, '/api/v1/backtests'), finalBacktestList);
     await new Promise((r) => setTimeout(r, 0));
     await ok(m.f, one(m.http, `/api/v1/backtests/${finalBacktest.backtest_id}`), { ...finalBacktest, simulation: [], simulation_differences: [] });
@@ -305,6 +329,7 @@ describe('T11A Comparación: evaluación final (T12) separada de T07', () => {
 
   it('sin corrida elegida abre el backtest T07 y deja la evaluación final como opción rotulada', async () => {
     const m = await mountAs(ComparisonPage);
+    await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
     const finalItem = { ...finalBacktestList.items[0], created: '2026-10-17T23:00:00Z' };
     await ok(m.f, one(m.http, '/api/v1/backtests'), page([finalItem, realBacktestList.items[0]]));
     await new Promise((r) => setTimeout(r, 0));
@@ -313,12 +338,13 @@ describe('T11A Comparación: evaluación final (T12) separada de T07', () => {
     expect(q(m.el, 'final-view')).toBeNull();
     expect(q(m.el, 'sim-table')).toBeTruthy();
     const opts = Array.from(m.el.querySelectorAll('[data-testid="bt-select"] option')).map((o) => o.textContent!);
-    expect(opts[0]).toContain('Backtest de desarrollo (T07)');
-    expect(opts[1]).toContain('Evaluación final (T12)');
+    expect(opts[0]).toContain('Ejemplo de julio');
+    expect(opts[1]).toContain('Evaluación de agosto');
   });
 
   it('error de API: se muestra el error, nunca resultados simulados', async () => {
     const m = await mountAs(ComparisonPage, '/comparacion?run=' + FINAL_ID);
+    await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
     one(m.http, '/api/v1/backtests').flush({ error: { code: 'SERVICIO_NO_DISPONIBLE', message: 'caído' } }, { status: 503, statusText: 'x' });
     await settle(m.f);
     expect(q(m.el, 'final-view')).toBeNull();

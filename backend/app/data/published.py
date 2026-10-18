@@ -17,6 +17,7 @@ from .common import (
     check_sort,
     child_key,
     completed_run,
+    invalid,
     is_final,
     iso_utc,
     relabel,
@@ -117,7 +118,8 @@ def _rec_public(d: dict) -> dict:
     return d
 
 
-def list_recommendations(db, *, run_id, categoria, sku, status, only_orders: bool, sort, page, page_size) -> dict:
+def list_recommendations(db, *, run_id, categoria, sku, status, only_orders: bool, sort, page, page_size,
+                         no_orders: bool = False) -> dict:
     order = check_sort(sort, REC_SORTS, "sku")
     run = completed_run(db, run_id)
     if is_final(run):
@@ -136,8 +138,13 @@ def list_recommendations(db, *, run_id, categoria, sku, status, only_orders: boo
         q["sku"] = sku
     if status:
         q["status"] = status
+    if only_orders and no_orders:
+        raise invalid("Elija solo una de las vistas con pedido o sin pedido.")
     if only_orders:
         q["order_qty"] = {"$gt": 0}
+    if no_orders:
+        # UX01: SKU con inventario simulado cuyo pedido sugerido es 0 (los sin snapshot tienen pedido null y no entran).
+        q["order_qty"] = 0
     docs, total = _page(db.recommendations, q, order, page, page_size, {"_id": 0, "schema_version": 0})
     vs = validation_status(run)
     for d in docs:

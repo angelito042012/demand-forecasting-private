@@ -2,20 +2,50 @@
 @if (demo.enabled) {
   <app-demo-banner />
 }
-<header>
-  <h1>Pronóstico de demanda y reposición</h1>
+<div class="shell" [class.with-nav]="auth.session()">
+  <header class="topbar">
+    @if (auth.session()) {
+      <button type="button" class="secondary menu-btn" data-testid="menu-toggle" aria-controls="menu-principal" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu()">
+        {{ menuOpen() ? 'Cerrar menú' : 'Menú' }}
+      </button>
+    }
+    <a class="brand" routerLink="/inicio" queryParamsHandling="preserve">Previsión de ventas y reposición</a>
+    @if (auth.session(); as s) {
+      <span class="user" data-testid="user">{{ s.username }} ({{ s.role }})</span>
+      <button type="button" class="secondary small" data-testid="logout" (click)="logout()">Salir</button>
+    }
+  </header>
   @if (auth.session(); as s) {
-    <nav aria-label="Principal">
-      <a routerLink="/resumen" routerLinkActive="active">Resumen</a>
-      <a routerLink="/cargas" routerLinkActive="active">Importaciones</a>
-      <a routerLink="/corridas" routerLinkActive="active">Corridas</a>
-      <a routerLink="/pronosticos" queryParamsHandling="preserve" routerLinkActive="active">Pronósticos</a>
-      <a routerLink="/recomendaciones" queryParamsHandling="preserve" routerLinkActive="active">Recomendaciones</a>
-      <a routerLink="/comparacion" queryParamsHandling="preserve" routerLinkActive="active">Comparación</a>
-      <a routerLink="/sistema" routerLinkActive="active">Sistema</a>
+    <nav id="menu-principal" class="side" aria-label="Principal" [class.open]="menuOpen()">
+      <ul class="primary">
+        <li><a routerLink="/inicio" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-inicio">Inicio</a></li>
+        <li><a routerLink="/pronosticos" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-ventas-previstas">Ventas previstas</a></li>
+        <li><a routerLink="/recomendaciones" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-reposicion">Reposición simulada</a></li>
+        <li><a routerLink="/corridas" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-analisis">Mis análisis</a></li>
+      </ul>
+      <p class="nav-title">Más</p>
+      <ul>
+        <li><a routerLink="/resumen" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-ventas-registradas">Ventas registradas</a></li>
+        <li><a routerLink="/comparacion" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-evaluacion">Evaluación de resultados</a></li>
+        @if (s.role !== 'admin') {
+          <li><a routerLink="/cargas" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-datos-cargados">Datos cargados</a></li>
+        }
+        <li><a routerLink="/ayuda" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-ayuda">Ayuda</a></li>
+      </ul>
+      @if (s.role === 'admin') {
+        <p class="nav-title">Administración</p>
+        <ul>
+          <li><a routerLink="/cargas" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-cargar">Cargar datos</a></li>
+          <li><a routerLink="/crear-analisis" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-crear">Crear análisis</a></li>
+          <li><a routerLink="/sistema" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-sistema">Estado del sistema</a></li>
+        </ul>
+      }
     </nav>
-    <span class="user" data-testid="user">{{ s.username }} ({{ s.role }})</span>
-    <button type="button" data-testid="logout" (click)="logout()">Salir</button>
   }
-</header>
-<main id="contenido" tabindex="-1"><router-outlet /></main>
+  <main id="contenido" tabindex="-1">
+    <p class="context-strip" data-testid="context-strip" role="note">
+      <strong>Ejemplo con datos históricos de 2026.</strong> El inventario es simulado; no representa las existencias actuales.
+    </p>
+    <router-outlet />
+  </main>
+</div>

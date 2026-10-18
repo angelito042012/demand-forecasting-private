@@ -26,6 +26,8 @@ export interface ForecastQuery {
 }
 export interface RecoQuery {
   run_id?: string; categoria?: string; sku?: string; status?: 'ok' | 'sin_snapshot' | ''; only_orders?: boolean;
+  /** UX01: solo SKU con inventario simulado y pedido sugerido 0 (filtro del servidor). */
+  no_orders?: boolean;
   page: number; page_size: number; sort?: string;
 }
 

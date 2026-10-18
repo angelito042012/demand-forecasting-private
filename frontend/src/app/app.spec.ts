@@ -16,16 +16,40 @@ describe('App shell', () => {
       providers: [provideRouter(routes), provideHttpClient(withInterceptors([apiInterceptor])), provideHttpClientTesting()],
     }).compileComponents();
   });
-  it('sin sesión no muestra menú; con sesión muestra 7 enlaces y usuario', async () => {
+  it('sin sesión no muestra menú; el lector ve 4 tareas + 4 enlaces secundarios, sin administración', async () => {
     const f = TestBed.createComponent(App);
     await f.whenStable();
     const el = f.nativeElement as HTMLElement;
-    expect(el.querySelector('h1')?.textContent).toContain('Pronóstico de demanda');
+    expect(el.querySelector('[data-testid="context-strip"]')?.textContent).toContain('El inventario es simulado');
     expect(el.querySelectorAll('nav a').length).toBe(0);
     TestBed.inject(AuthService).session.set(session);
     f.detectChanges();
-    expect(el.querySelectorAll('nav a').length).toBe(7);
+    const links = Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent?.trim());
+    expect(links).toEqual(['Inicio', 'Ventas previstas', 'Reposición simulada', 'Mis análisis', 'Ventas registradas', 'Evaluación de resultados', 'Datos cargados', 'Ayuda']);
+    expect(el.querySelector('[data-testid="nav-cargar"]')).toBeNull();
+    expect(el.querySelector('[data-testid="nav-crear"]')).toBeNull();
     expect(el.querySelector('[data-testid="user"]')?.textContent).toContain('ana');
+  });
+  it('el administrador ve además Cargar datos, Crear análisis y Estado del sistema', async () => {
+    const f = TestBed.createComponent(App);
+    await f.whenStable();
+    TestBed.inject(AuthService).session.set({ ...session, role: 'admin' });
+    f.detectChanges();
+    const links = Array.from((f.nativeElement as HTMLElement).querySelectorAll('nav a')).map((a) => a.textContent?.trim());
+    expect(links).toEqual(['Inicio', 'Ventas previstas', 'Reposición simulada', 'Mis análisis', 'Ventas registradas', 'Evaluación de resultados', 'Ayuda', 'Cargar datos', 'Crear análisis', 'Estado del sistema']);
+  });
+  it('el menú móvil se abre y se cierra con el botón (aria-expanded)', async () => {
+    const f = TestBed.createComponent(App);
+    await f.whenStable();
+    TestBed.inject(AuthService).session.set(session);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const btn = el.querySelector('[data-testid="menu-toggle"]') as HTMLButtonElement;
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+    btn.click();
+    f.detectChanges();
+    expect(btn.getAttribute('aria-expanded')).toBe('true');
+    expect(el.querySelector('nav')?.classList.contains('open')).toBe(true);
   });
   it('rótulo de demostración ausente por defecto (sin ?demo=1)', () => {
     expect(TestBed.inject(DemoMode).enabled).toBe(false);
@@ -35,7 +59,8 @@ describe('App shell', () => {
   });
   it('rutas protegidas por guard y perezosas', () => {
     const prot = routes.find((r) => r.canActivate)!;
-    expect(prot.children!.filter((r) => r.loadComponent).length).toBe(7);
+    expect(prot.children!.filter((r) => r.loadComponent).length).toBe(10);
+    expect(prot.children!.map((r) => r.path)).toEqual(expect.arrayContaining(['inicio', 'ayuda', 'crear-analisis', 'corridas', 'pronosticos', 'recomendaciones', 'comparacion', 'resumen', 'cargas', 'sistema']));
     expect(routes.find((r) => r.path === 'acceso')?.canActivate).toBeUndefined();
   });
 });

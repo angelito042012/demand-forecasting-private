@@ -11,13 +11,13 @@ export function isFinal(s: JobStatus | string | undefined): boolean {
 
 export const STAGE_LABELS: Record<string, string> = {
   queued: 'En cola', running: 'En ejecución', validating: 'Validando el archivo', scanning: 'Revisando fechas',
-  importing: 'Importando', reading: 'Leyendo el archivo', loading: 'Cargando historia', forecasting: 'Calculando pronósticos',
-  recommending: 'Calculando recomendaciones', publishing: 'Publicando', validating_publication: 'Validando la publicación',
+  importing: 'Importando', reading: 'Leyendo el archivo', loading: 'Cargando historia', forecasting: 'Calculando las ventas previstas',
+  recommending: 'Calculando la reposición simulada', publishing: 'Publicando', validating_publication: 'Validando la publicación',
 };
 export const PROGRESS_LABELS: Record<string, string> = {
   filas_leidas: 'Filas leídas', ventas: 'Ventas', notas_credito: 'Notas de crédito', rechazadas: 'Rechazadas', en_conflicto: 'En conflicto',
-  insertadas: 'Insertadas', ya_existentes: 'Ya existentes', skus: 'SKU', skus_procesados: 'SKU procesados', pronosticos: 'Pronósticos',
-  recomendaciones: 'Recomendaciones', categorias: 'Categorías',
+  insertadas: 'Insertadas', ya_existentes: 'Ya existentes', skus: 'Productos', skus_procesados: 'Productos procesados', pronosticos: 'Ventas previstas',
+  recomendaciones: 'Sugerencias de reposición', categorias: 'Categorías',
 };
 
 export function stageLabel(j: PublicJob): string {
@@ -34,19 +34,19 @@ export function progressEntries(j: PublicJob): [string, string][] {
     .map(([k, v]) => [PROGRESS_LABELS[k] ?? k, String(v)] as [string, string]);
 }
 
-export const STATUS_LABELS: Record<JobStatus, string> = { queued: 'En cola', running: 'En ejecución', completed: 'Completado', failed: 'Fallido' };
-export const TYPE_LABELS: Record<JobType, string> = { import_excel: 'Importación de Excel', generate_run: 'Generación de corrida' };
+export const STATUS_LABELS: Record<JobStatus, string> = { queued: 'Esperando turno', running: 'En curso', completed: 'Terminado', failed: 'No se pudo completar' };
+export const TYPE_LABELS: Record<JobType, string> = { import_excel: 'Carga de un archivo Excel', generate_run: 'Creación de un análisis' };
 
 export const REJECT_MOTIVES: Record<string, string> = {
-  FECHAS_FUERA_DE_ALCANCE: 'El archivo tiene fechas fuera del alcance del proyecto (marzo a julio de 2026). No se importó nada.',
+  FECHAS_FUERA_DE_ALCANCE: 'El archivo tiene fechas fuera del alcance del proyecto (marzo a julio de 2026). No se cargó nada: revisa el mes del archivo.',
   MES_CON_FUENTE_APROBADA:
-    'Ese mes ya tiene una fuente aprobada distinta. El archivo no se importó ni sustituyó la fuente vigente: la sustitución no está soportada desde esta pantalla y se remite al procedimiento de remediación documentado (docs/REMEDIACION_FUENTES.md).',
-  ARCHIVO_INVALIDO: 'El archivo no es un Excel (.xlsx) válido o no tiene la estructura esperada.',
+    'Ese mes ya tiene una fuente aprobada distinta. El archivo no se cargó ni sustituyó la fuente vigente: la sustitución no se hace desde esta pantalla y sigue el procedimiento de remediación documentado (docs/REMEDIACION_FUENTES.md).',
+  ARCHIVO_INVALIDO: 'El archivo no es un Excel (.xlsx) válido o no tiene la estructura esperada. Revisa que sea el archivo mensual de ventas.',
   ARCHIVO_INVALIDO_O_CORRUPTO: 'El archivo no es un Excel (.xlsx) válido o está dañado.',
   ENCABEZADOS_INVALIDOS: 'El archivo no tiene los encabezados esperados.',
-  WORKER_PERDIDO: 'El procesamiento se interrumpió y agotó sus reintentos. Puede volver a intentarlo.',
-  CORTE_FUERA_DE_RANGO: 'El origen elegido está fuera del rango permitido.',
-  ARTEFACTO_SIMULACION_NO_DISPONIBLE: 'Falta el artefacto verificado de la simulación; se publican los pronósticos sin recomendaciones.',
+  WORKER_PERDIDO: 'El procesamiento se interrumpió y agotó sus reintentos. Puedes volver a intentarlo.',
+  CORTE_FUERA_DE_RANGO: 'La fecha elegida está fuera del rango permitido. Elige otra fecha.',
+  ARTEFACTO_SIMULACION_NO_DISPONIBLE: 'Falta el artefacto verificado de la simulación; se publican las ventas previstas sin sugerencias de reposición.',
 };
 
 export interface JobSummary {
@@ -72,20 +72,21 @@ export function idFromLink(link: string | null | undefined): string | undefined 
 export function summarize(j: PublicJob): JobSummary {
   const base: JobSummary = { tone: 'neutral', title: '', counts: [], rejectMotives: [] };
   if (j.status === 'queued' || j.status === 'running') {
-    return { ...base, tone: 'run', title: j.status === 'queued' ? 'En cola' : 'En curso', counts: progressEntries(j) };
+    return { ...base, tone: 'run', title: j.status === 'queued' ? 'Esperando turno' : 'En curso', counts: progressEntries(j) };
   }
   const isImport = j.type === 'import_excel';
   if (j.status === 'failed') {
     const code = j.error?.code ?? '';
     const known = REJECT_MOTIVES[code];
-    const msg = j.error?.message ? ` ${j.error.message}` : '';
     const detail = known
-      ?? (isImport ? 'El archivo no pudo importarse' : 'La corrida no pudo generarse') + (code ? ` (${code}).` : '.') + msg;
-    return { ...base, tone: 'bad', title: isImport && known ? 'Rechazado' : 'Falló', detail, importId: idFromLink(j.links?.import) };
+      ?? (isImport
+        ? 'El archivo no pudo cargarse. Revisa que sea el Excel mensual (.xlsx) y vuelve a intentarlo; si se repite, avisa al administrador.'
+        : 'El análisis no pudo crearse. Vuelve a intentarlo; si se repite, avisa al administrador.');
+    return { ...base, tone: 'bad', title: isImport && known ? 'Rechazado' : 'No se pudo completar', detail, importId: idFromLink(j.links?.import) };
   }
   const r = j.result ?? {};
   if (!isImport) {
-    return { ...base, tone: 'ok', title: 'Corrida generada', runId: r.run_id ?? idFromLink(j.links?.run) };
+    return { ...base, tone: 'ok', title: 'Análisis creado', runId: r.run_id ?? idFromLink(j.links?.run) };
   }
   const importId = r.import_id ?? idFromLink(j.links?.import);
   if (r.outcome === 'sin_cambios') {

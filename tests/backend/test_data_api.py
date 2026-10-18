@@ -185,6 +185,18 @@ def test_recommendations_list_detail_and_filters(env):
     assert _get(env, "/recommendations?status=otro").status_code == 422
 
 
+def test_recommendations_no_orders_view(env):
+    """UX01: vista «sin necesidad de reponer» filtrada en el servidor (SKU con inventario simulado y pedido 0)."""
+    ok = _get(env, "/recommendations?status=ok&page_size=1").json()["total"]
+    con = _get(env, "/recommendations?only_orders=true&status=ok&page_size=1").json()["total"]
+    sin = _get(env, "/recommendations?no_orders=true&page_size=50").json()
+    assert sin["total"] == ok - con and sin["total"] > 0
+    assert all(i["status"] == "ok" and i["order_qty"] == 0 for i in sin["items"])  # ni pedidos positivos ni sin snapshot (null)
+    assert sin["provenance"] == "SYNTHETIC_NOT_REAL_INVENTORY" and sin["disclaimer"].startswith("Inventario simulado con supuestos")
+    assert _get(env, "/recommendations?no_orders=true&only_orders=true").status_code == 422
+    assert _get(env, "/recommendations?no_orders=true&status=sin_snapshot").json()["total"] == 0  # sin snapshot nunca es «sin necesidad»
+
+
 def test_backtests_views(env):
     lst = _get(env, "/backtests").json()
     assert lst["total"] == 1

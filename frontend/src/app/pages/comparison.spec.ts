@@ -1,11 +1,18 @@
 import { ComparisonPage } from './comparison.page';
 import { fmtInt, fmtPct, fmtPen, fmtPp } from '../core/format';
 import { BacktestDetail } from '../core/models';
-import { realBacktest, realBacktestList } from '../testing/real-shapes';
+import { realBacktest, realBacktestList, realRunSummary } from '../testing/real-shapes';
+import { page } from '../testing/fixtures';
 import { choose, mountPage, reqOf, respond, visibleText, settle } from '../testing/mount';
+
+/** La barra de análisis pide la lista de análisis (RunsStore); se responde para que no quede ninguna petición pendiente. */
+async function runs(m: ReturnType<typeof mountPage<ComparisonPage>>) {
+  await respond(m.f, reqOf(m.http, '/api/v1/runs'), page([realRunSummary]));
+}
 
 async function open(detail: BacktestDetail = realBacktest) {
   const m = mountPage(ComparisonPage);
+  await runs(m);
   await respond(m.f, reqOf(m.http, '/api/v1/backtests'), realBacktestList);
   await new Promise((r) => setTimeout(r, 0));
   const d = reqOf(m.http, `/api/v1/backtests/${realBacktest.backtest_id}`);
@@ -87,13 +94,19 @@ describe('Comparación: lenguaje sencillo y detalles técnicos', () => {
     const t = visibleText(m.el);
     expect(t).toContain('Inventario simulado con supuestos; no corresponde al inventario real de la empresa');
     expect(t).toContain('10/07/2026');
-    expect(t).toContain('Corrida histórica de desarrollo al 10/07/2026');
+    expect(t).toContain('Ejemplo de julio');
+    expect(t).toContain('Ventas utilizadas hasta');
     expect(t).toContain('no ganó');
     expect(t).toContain('más stock y más compras');
     expect(t).toContain('se solapan');
     expect(t).toContain('Resultados históricos de desarrollo');
     expect(t).toContain('27 combinaciones');
-    expect(t).toContain('WAPE = error absoluto total / unidades observadas');
+    // el detalle académico completo (leyenda de métricas) sigue en la página, plegado y fácil de encontrar
+    const detail = m.el.querySelector('[data-testid="detail-pred"]') as HTMLDetailsElement;
+    expect(detail.classList.contains('help')).toBe(true);
+    expect(detail.open).toBe(false);
+    expect(detail.querySelector('summary')?.textContent).toContain('Ver detalle completo');
+    expect(detail.querySelector('[data-testid="pred-legend"]')?.textContent).toContain('WAPE = error absoluto total / unidades observadas');
     m.http.verify();
   });
 
@@ -206,6 +219,7 @@ describe('Comparación: precisión predictiva', () => {
 describe('Comparación: estados', () => {
   it('error 503 en el detalle: mensaje y reintento, sin tablas ni datos de relleno', async () => {
     const m = mountPage(ComparisonPage);
+    await runs(m);
     await respond(m.f, reqOf(m.http, '/api/v1/backtests'), realBacktestList);
     await new Promise((r) => setTimeout(r, 0));
     const d = reqOf(m.http, `/api/v1/backtests/${realBacktest.backtest_id}`);
@@ -218,8 +232,11 @@ describe('Comparación: estados', () => {
   });
   it('sin backtests publicados: estado vacío', async () => {
     const m = mountPage(ComparisonPage);
+    await runs(m);
     await respond(m.f, reqOf(m.http, '/api/v1/backtests'), []);
-    expect(m.el.querySelector('[data-state="empty"]')?.textContent).toContain('No hay backtests publicados');
+    expect(m.el.querySelector('[data-state="empty"]')?.textContent).toContain('Todavía no hay comparaciones publicadas');
+    // el vacío ofrece una acción válida: ir a «Mis análisis»
+    expect(m.el.querySelector('[data-testid="to-analyses"]')?.getAttribute('href')).toContain('/corridas');
     m.http.verify();
   });
 });

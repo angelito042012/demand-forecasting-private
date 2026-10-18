@@ -3,30 +3,28 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { AppError } from '../core/models';
+import { PageHeader } from '../ui/page-header';
 
 @Component({
   selector: 'app-login-page',
-  imports: [FormsModule],
+  imports: [FormsModule, PageHeader],
   template: `
-    <h2>Acceso</h2>
+    <app-page-header title="Acceso" lead="Ingresa con el usuario que te dio el administrador." />
     @if (auth.notice(); as n) {
       <p class="notice warn" role="alert" data-testid="notice">{{ n }}</p>
     }
-    <form (ngSubmit)="submit()" autocomplete="on">
+    <form class="surface" (ngSubmit)="submit()" autocomplete="on" aria-label="Ingresar">
       <label>Usuario <input name="username" [(ngModel)]="username" autocomplete="username" required /></label>
       <label>Contraseña <input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required /></label>
-      <button type="submit" [disabled]="busy() || !username || !password">Ingresar</button>
+      <button type="submit" class="btn" [disabled]="busy() || !username || !password">Ingresar</button>
     </form>
     @if (error(); as e) {
-      <p class="err" role="alert" data-testid="login-error">{{ message(e) }}</p>
+      <p class="notice danger" role="alert" data-testid="login-error">{{ message(e) }}</p>
     }
-    <p class="hint">La cuenta la crea el administrador por línea de comandos; no hay registro público.</p>
+    <p class="muted">¿No tienes usuario? Pídeselo al administrador: no hay registro público.</p>
   `,
   styles: `
-    form { display: grid; gap: 0.6rem; max-width: 22rem; }
-    label { display: grid; gap: 0.2rem; }
-    .err { color: #842029; }
-    .hint { font-size: 0.85rem; color: var(--muted); }
+    form { display: grid; gap: 0.8rem; max-width: 24rem; }
   `,
 })
 export class LoginPage {
@@ -38,8 +36,8 @@ export class LoginPage {
   error = signal<AppError | null>(null);
 
   message(e: AppError) {
-    if (e.status === 401) return 'Usuario o contraseña incorrectos.';
-    return e.message;
+    if (e.status === 401) return 'Usuario o contraseña incorrectos. Revisa los datos e inténtalo de nuevo.';
+    return `${e.message} Si el problema continúa, avisa al administrador.`;
   }
 
   submit() {
@@ -49,7 +47,7 @@ export class LoginPage {
       next: () => {
         this.password = '';
         this.busy.set(false);
-        this.router.navigate(['/resumen']);
+        this.router.navigate(['/inicio']);
       },
       error: (e: AppError) => {
         this.password = '';

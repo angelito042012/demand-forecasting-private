@@ -75,12 +75,14 @@ describe('Pronósticos', () => {
     req('/api/v1/runs').flush(page([runSummary]));
     await flush(req('/api/v1/forecasts'), page([forecast, { ...forecast, entity_id: 'SKU-T2', evaluable: false, observed: null }], { total: 120, has_more: true }), f);
     const t = el(f).textContent!;
-    expect(t).toContain('Corrida histórica de desarrollo al 10/07/2026');
-    expect(el(f).querySelector('[data-testid="stale"]')).toBeTruthy();
-    expect(el(f).querySelector('[data-testid="age"]')?.textContent).toBe('99');
-    expect(t).toContain('promedio_28 (elegido)');
-    expect(t).toContain('comparador experimental que no ganó');
-    expect(t).toContain('cero (control)');
+    expect(el(f).querySelector('[data-testid="analysis-name"]')?.textContent).toBe('Ejemplo de julio');
+    expect(el(f).querySelector('[data-testid="analysis-used"]')?.textContent).toContain('hace 99 días');
+    expect(t).toContain('Cantidad estimada');
+    expect(t).toContain('modelo experimental que no resultó mejor');
+    expect(t).not.toContain('Control (siempre cero)');
+    (el(f).querySelector('[data-testid="toggle-details"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(el(f).textContent).toContain('Control (siempre cero)');
     expect(el(f).querySelector('[data-testid="insufficient"]')).toBeTruthy();
     expect(el(f).querySelectorAll('[data-testid="forecast-table"] tbody tr').length).toBe(2);
 
@@ -106,23 +108,27 @@ describe('Pronósticos', () => {
 });
 
 describe('Recomendaciones', () => {
-  it('etiqueta de inventario simulado, scenario_id, SKU sin inventario con motivo (nunca stock cero) y cálculo', async () => {
+  const runs = () => http.match((r) => r.url === '/api/v1/runs').forEach((r) => r.flush(page([runSummary])));
+  it('etiqueta de inventario simulado, scenario_id, SKU sin inventario con qué falta (nunca stock cero) y cálculo', async () => {
     const f = mount(RecommendationsPage);
+    runs();
     await flush(req('/api/v1/recommendations'), page([recoOk, recoNoSnap]), f);
     const t = el(f).textContent!;
     expect(el(f).querySelector('[data-testid="sim-notice"]')?.textContent).toContain('Inventario simulado con supuestos; no corresponde al inventario real de la empresa');
     expect(el(f).querySelector('[data-testid="scenario-id"]')?.textContent).toBe('T07_L7_S7_promedio_28_2026-07-10');
     const ns = el(f).querySelector('[data-testid="sin-snapshot"]')!;
-    expect(ns.textContent).toContain('Sin inventario simulado al 10/07');
+    expect(ns.textContent).toContain('Sin datos de inventario');
+    expect(ns.textContent).toContain('Qué información falta');
     expect(ns.textContent).toContain('SIN_INVENTARIO_SIMULADO_AL_10_07');
     expect(ns.textContent?.toLowerCase()).toContain('no se supone stock cero');
-    expect(ns.textContent).not.toMatch(/\b0\b/);
-    expect(t).toContain('Valor del pedido (PEN, supuesto)');
+    expect(ns.textContent).not.toMatch(/0/);
+    expect(t).toContain('Cantidad sugerida');
 
-    // detalle del SKU con inventario: cálculo paso a paso
+    // detalle del SKU con inventario: cálculo paso a paso (completo, plegado) y resumen en tres pasos
     (el(f).querySelector('[data-testid="reco-table"] tbody button') as HTMLButtonElement).click();
     const d = req('/api/v1/recommendations/SKU-T1');
     await flush(d, { ...recoOk, explanation: 'Texto del servidor' }, f);
+    expect(el(f).querySelectorAll('[data-testid="simple-steps"] > li').length).toBe(3);
     const steps = Array.from(el(f).querySelectorAll('[data-testid="calc-steps"] li')).map((x) => x.textContent!);
     expect(steps.length).toBe(9);
     expect(steps[0]).toContain('Stock simulado');
@@ -136,8 +142,9 @@ describe('Recomendaciones', () => {
     expect(el(f).textContent).toContain('Texto del servidor');
   });
 
-  it('detalle sin snapshot: motivo, sin pedido ni stock 0', async () => {
+  it('detalle sin snapshot: qué falta, sin pedido ni stock 0', async () => {
     const f = mount(RecommendationsPage);
+    runs();
     await flush(req('/api/v1/recommendations'), page([recoNoSnap]), f);
     (el(f).querySelector('[data-testid="sin-snapshot"] button') as HTMLButtonElement).click();
     await flush(req('/api/v1/recommendations/SKU-NEW'), recoNoSnap, f);
@@ -145,16 +152,19 @@ describe('Recomendaciones', () => {
     expect(el(f).querySelector('[data-testid="detail-nosnap"]')?.textContent).toContain('No se supone stock cero');
   });
 
-  it('filtros: categoría, estado y solo con pedido se envían al servidor', async () => {
+  it('filtros: categoría, vista y orden se envían al servidor (vista inicial: sugerencias, status=ok y only_orders=true)', async () => {
     const f = mount(RecommendationsPage);
-    await flush(req('/api/v1/recommendations'), page([recoOk]), f);
+    runs();
+    const first = req('/api/v1/recommendations');
+    expect(first.request.params.get('status')).toBe('ok');
+    expect(first.request.params.get('only_orders')).toBe('true');
+    await flush(first, page([recoOk]), f);
     const form = el(f).querySelector('form.filters') as HTMLFormElement;
-    const set = (name: string, v: string | boolean) => {
+    const set = (name: string, v: string) => {
       const i = form.querySelector(`[name="${name}"]`) as HTMLInputElement & HTMLSelectElement;
-      if (typeof v === 'boolean') { i.checked = v; i.dispatchEvent(new Event('change')); }
-      else { i.value = v; i.dispatchEvent(new Event(i.tagName === 'SELECT' ? 'change' : 'input')); }
+      i.value = v; i.dispatchEvent(new Event(i.tagName === 'SELECT' ? 'change' : 'input'));
     };
-    set('cat', 'CAT-T'); set('status', 'ok'); set('only', true); set('sort', '-order_qty');
+    set('cat', 'CAT-T'); set('sort', '-order_qty');
     f.detectChanges();
     form.dispatchEvent(new Event('submit'));
     const r = req('/api/v1/recommendations');
@@ -178,12 +188,17 @@ describe('Importaciones', () => {
 });
 
 describe('Corridas', () => {
-  it('lista con etiqueta y antigüedad; detalle con método elegido, RF comparador experimental y control', async () => {
+  it('tarjeta con nombre, fechas y estado; detalles técnicos plegados con método elegido, RF comparador experimental y control', async () => {
     const f = mount(RunsPage);
     await flush(req('/api/v1/runs'), page([runSummary]), f);
-    expect(el(f).querySelector('[data-testid="runs-table"]')?.textContent).toContain('Corrida histórica de desarrollo al 10/07/2026');
-    expect(el(f).querySelector('[data-testid="runs-table"]')?.textContent).toContain('99');
-    (el(f).querySelector('[data-testid="runs-table"] button') as HTMLButtonElement).click();
+    const card = el(f).querySelector('[data-testid="runs-list"]')!.textContent!;
+    expect(card).toContain('Ejemplo de julio');
+    expect(card).toContain('En uso por defecto');
+    expect(card).toContain('10 de julio de 2026');
+    const tech = el(f).querySelector('[data-testid="tech-run-test-1"]') as HTMLDetailsElement;
+    expect(tech.open).toBe(false);
+    tech.open = true;
+    tech.dispatchEvent(new Event('toggle'));
     await flush(req('/api/v1/runs/run-test-1'), runDetail, f);
     const m = el(f).querySelector('[data-testid="method"]')!.textContent!;
     expect(m).toContain('promedio_28');
@@ -191,7 +206,7 @@ describe('Corridas', () => {
     expect(m).toContain('no ganó');
     expect(m).toContain('control');
     expect(el(f).querySelector('[data-testid="coverage"]')?.textContent).toContain('SKU sin inventario simulado: 4');
-    expect(el(f).querySelector('[data-testid="stale"]')).toBeTruthy();
+    expect(el(f).querySelector('[data-testid="run-doc"]')).toBeTruthy();
   });
 });
 
@@ -205,7 +220,8 @@ describe('Resumen', () => {
     }, f);
     expect(el(f).querySelector('[data-testid="credit-notes"]')?.textContent).toContain('4 línea(s)');
     expect(el(f).textContent).toContain('no netas');
-    expect(el(f).querySelector('[data-testid="excluded"]')?.textContent).toContain('2026-06-07');
+    expect(el(f).querySelector('[data-testid="excluded"]')?.textContent).toContain('7 de junio de 2026');
+    expect(el(f).querySelector('[data-testid="excluded"]')?.textContent).toContain('no se informa como venta cero');
     expect(el(f).textContent).toContain('OBSERVED_EXCEL');
   });
   it('rango en agosto -> error 422 mostrado, sin tabla', async () => {

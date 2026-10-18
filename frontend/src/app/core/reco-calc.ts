@@ -81,3 +81,48 @@ export function calcSteps(r: Recommendation): CalcResult | null {
   };
   return { steps, check, mode: exact ? 'exact' : 'published' };
 }
+
+/** UX01: un paso sencillo de la explicación (título + líneas de texto) derivado de los valores de `calcSteps`. */
+export interface SimpleStep { n: 1 | 2 | 3; title: string; lines: string[] }
+export interface SimpleSteps { steps: SimpleStep[]; order: number }
+
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+/**
+ * UX01: resumen en tres pasos (con qué se cuenta, qué se busca cubrir, de dónde sale la cantidad).
+ * Reutiliza los valores de `calcSteps` (aritmética entera exacta cuando existe); no recalcula con cifras redondeadas de pantalla.
+ * Devuelve null si no hay inventario simulado (nunca se supone stock cero).
+ */
+export function simpleSteps(r: Recommendation, calc: CalcResult | null = calcSteps(r)): SimpleSteps | null {
+  if (!calc) return null;
+  const [onHand, transit, position, , forecast, safety, target, order] = calc.steps;
+  const u = (n: number) => `${fmtInt(n)} ${plural(n, 'unidad', 'unidades')}`;
+  return {
+    order: order.value,
+    steps: [
+      {
+        n: 1, title: 'Con qué se cuenta',
+        lines: [
+          `Disponible simulado: ${u(onHand.value)}`,
+          `Por recibir (simulado): ${u(transit.value)}`,
+          `Suma de lo que se tiene o está por llegar: ${fmtInt(onHand.value)} + ${fmtInt(transit.value)} = ${u(position.value)}`,
+        ],
+      },
+      {
+        n: 2, title: 'Qué se busca cubrir',
+        lines: [
+          `Ventas previstas para ${r.horizon_days} días (del ${fmtDate(r.forecast_from)} al ${fmtDate(r.forecast_to)}): ${fmtDec(forecast.value)} unidades`,
+          `Reserva de seguridad: ${r.safety_days} días de ventas = ${fmtDec(safety.value)} unidades`,
+          `Para cubrir ambas hay que tener ${u(target.value)} (redondeado hacia arriba)`,
+        ],
+      },
+      {
+        n: 3, title: 'De dónde sale la cantidad',
+        lines: [
+          `Objetivo − lo que se tiene o está por llegar: ${fmtInt(target.value)} − ${fmtInt(position.value)}`,
+          `Cantidad sugerida: ${u(order.value)} (si el resultado fuera negativo, se sugiere 0)`,
+        ],
+      },
+    ],
+  };
+}
