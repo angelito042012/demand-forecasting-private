@@ -1,8 +1,12 @@
 # Estado vigente del proyecto
 
-Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–12. Este resumen sustituye estados anteriores.
+Actualizado el 18/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–17. Este resumen sustituye estados anteriores.
 
 ## Siguiente encargo
+
+**Revisión Codex17 completada:** UX01R/R17 aceptados localmente;48 pruebas propias dirigidas aprobadas y captura de Evaluación simplificada revisada. ETAPA_17 ya ejecutada. **Siguiente paso humano:** Rogelio vuelve a probar comprensión en la demo activa; aceptación pendiente hasta su respuesta real. No hay más correcciones rutinarias encargadas, ni autorización de publicación/gasto/transferencia. Mantener demo y no repetir pruebas/ciencia/Azure sin nueva necesidad.
+
+### Entrega UX01R ya revisada
 
 **UX01R entregado (17/10/2026; `docs/UX01R_REPORTE.md`)** tras `REVISION_CODEX_16`: **R17 cerrado con evidencia** (lista de análisis sin bucle, error visible con «No pudimos cargar tus análisis» y Reintentar, regresión que falla sin el arreglo), **Evaluación de resultados simplificada** (vista inicial breve + «Ver cómo se evaluó: detalle académico»; H14 01–14/08 distinto del bloque 01–21/08) y cinco precisiones de lenguaje. Pruebas: frontend 234/234 y build de producción; comprobación acotada en la imagen real 18/18 (incluye error de carga simulado en el navegador). **Demo actualizada y encendida** en `https://localhost:8443` (imagen `df-app:ux01r-f95092f`, misma base `df_demo_20261017221940`; recargar con Ctrl+F5 e ingresar de nuevo). El rediseño UX01 (`docs/UX01_REPORTE.md`, `docs/UX01_DECISIONES.md`) se conserva.
 

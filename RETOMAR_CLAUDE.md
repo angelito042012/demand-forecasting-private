@@ -1,6 +1,6 @@
 # Retomar sin repetir trabajo
 
-Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente **ETAPA_17_CLAUDE.md**, **REVISION_CODEX_16.md** y **docs/UX01_BRIEF.md**: cierre breve UX01 (R17, Evaluación y precisiones de lenguaje). El rediseño ya fue implementado, no reiniciarlo. La nueva aceptación de comprensión por Rogelio sigue pendiente y la publicación no fue autorizada.
+Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. **REVISION_CODEX_17.md acepta UX01R/R17 localmente** (48 pruebas dirigidas propias). ETAPA_17 ya ejecutada: no repetir ni reiniciar el diseño. La próxima puerta es la respuesta real de Rogelio a la prueba de comprensión; no inferir aceptación. Publicación ETAPA_15 no autorizada y condicional. Mantener demo activa, usuarios/volúmenes/base y límites de datos; no hacer nuevas consultas Azure por rutina.
 
 R12–R16 están aceptados localmente (REVISION_CODEX_13/15): no repetir. No repetir T06/T07/T12 real, el registro de Microsoft.App ni el preflight de Azure (Microsoft.App Registered; ManagedEnvironmentCount Brazil South 0/1).
 
