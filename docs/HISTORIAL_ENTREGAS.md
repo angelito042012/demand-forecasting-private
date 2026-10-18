@@ -1,5 +1,9 @@
 # Historial de entregas anteriores
 
+## Revisión Codex 18: T18 con corrección R18 pendiente (18/10/2026)
+
+Revisados `464eb0c` y `a9c8b35`, contrato, evidencia del ejecutor y código. Reproducida sobre copias una validación ausente: cambios coherentes de cantidad/total o fecha en el CSV se aceptan sin modificar el Excel revisado. Encargo preciso en `REVISION_CODEX_18.md`. 22 pruebas propias del validador aprobadas; intento inicial de batería no aprobado por fallo del directorio temporal, registrado aparte. Docker inaccesible por permisos desde esta sesión; no inferir estado detenido ni nueva verificación de aislamiento en vivo. No se modificaron aplicación/fuentes/bases/servicios. Aceptación técnica pendiente R18 y aceptación humana pendiente respuestas reales de Rogelio. Evidencia privada `artifacts/private/codex_review18/`.
+
 ## Revisión Codex10: T10R aceptado y encargo T12 (17/10/2026)
 
 Entrega 6212f6a revisada; T10/T10R aceptados para demostración local, R07–R10 cerrados. Codex ejecutó 59 pruebas selectivas aprobadas, sin omitidas, 43,65 s, incluida cadena continua timer/worker/Mongo real con reloj acelerado; ruff afectado limpio. Auditoría solo lectura conserva ambas históricas y hash de congelación; staging abandonado conservado como failed; tamaño 459,39 MB. No se abrió agosto en esta revisión. Límites: CLI serial sin concurrencia web y scheduler con fuentes/config estables. Encargo posterior ETAPA_10_CLAUDE.md autoriza evaluación final T12 dedicada bajo congelación, con preparación sellada antes de leer el test, sin re-selección; paquete local antes de integración/capacidad/despliegue. Revisiones y pruebas detalladas en REVISION_CODEX_10.md.
