@@ -1,5 +1,7 @@
 # Traspaso vigente
 
+**Actualización Codex,18/10/2026:** Rogelio recibió compras marzo–septiembre y ventas de septiembre, y pidió revisar los14Excel antes de decidir alcance o validar interfaz. Auditoría de solo lectura en `docs/AUDITORIA_NUEVOS_DATOS_14_EXCEL.md`; detalle privado `artifacts/private/auditoria_14_excel/audit.json`. Hay1 802productos comunes, pero saldo inicial desconocido: compras−ventas no identifica inventario real. Pendientes: aclarar incidencias y decidir si es posible verificar un saldo real para un grupo de productos. No importar, deduplicar ni entrenar por inferencia de esta auditoría; T12 se conserva. UX01R/R17 ya revisados y aceptados localmente en REVISION_CODEX_17 (las menciones posteriores a revisión pendiente son históricas). No se cambió estado de servicios ni se accedió a nube.
+
 Cierre de jornada: 17/10/2026 (America/Lima). Ejecutor: Claude Code. Último commit de código `f95092f` (UX01R); documentación `b3c19f1` (más el commit de este cierre). Árbol de Git limpio al cerrar.
 
 ## Estado actual

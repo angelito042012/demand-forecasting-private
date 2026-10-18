@@ -4,6 +4,8 @@ Actualizado el 18/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex 
 
 ## Siguiente encargo
 
+**18/10, nueva prioridad solicitada por Rogelio:** analizar antes de decidir las 14 fuentes disponibles (7 ventas y 7 compras marzo–septiembre), en lugar de continuar inmediatamente la aceptación de interfaz. Auditoría de solo lectura completada en `docs/AUDITORIA_NUEVOS_DATOS_14_EXCEL.md`; originales/bases/modelos/T12 intactos. Cruce preliminar:1 802 productos comunes; no permite identificar inventario real sin saldo conocido y movimientos completos. Excepciones de compra/ventas por aclarar. No se ha autorizado depuración, carga ni nuevo entrenamiento por esta revisión. No repetir UX ni ciencia; próxima conversación: decidir alcance con datos reales y posibilidad de conteo acotado. Aceptación humana y publicación siguen pendientes.
+
 **Revisión Codex17 completada:** UX01R/R17 aceptados localmente;48 pruebas propias dirigidas aprobadas y captura de Evaluación simplificada revisada. ETAPA_17 ya ejecutada. **Siguiente paso humano:** Rogelio vuelve a probar comprensión en la demo activa; aceptación pendiente hasta su respuesta real. No hay más correcciones rutinarias encargadas, ni autorización de publicación/gasto/transferencia. Mantener demo y no repetir pruebas/ciencia/Azure sin nueva necesidad.
 
 ### Entrega UX01R ya revisada
