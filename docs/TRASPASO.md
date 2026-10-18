@@ -16,8 +16,11 @@
 | | Dirección | Imagen | Base | Comando |
 |---|---|---|---|---|
 | Demo anterior (sin Inventario informado) | https://localhost:8443 | `df-app:ux01r-f95092f` | `df_demo_20261017221940` | `.venv\Scripts\python.exe -m scripts.demo_local up|status|stop` |
-| Ensayo T18 (con Inventario informado) | https://localhost:8444 | `df-app:t18-464eb0c` | `df_ens18_20261018172811` | `.venv\Scripts\python.exe -m scripts.demo_local --env ens18 up|status|stop` |
+| Ensayo T18 (con Inventario informado) | https://localhost:8444 | `df-app:t18r-616b5ef` | `df_ens18_20261018172811` | `.venv\Scripts\python.exe -m scripts.demo_local --env ens18 up|status|stop` |
 Credenciales (nunca imprimirlas): demo en `artifacts/private/t13b/demo_credenciales.txt`; ensayo en `artifacts/private/t13b/ens18_credenciales.txt`. `df-mongo-dev` se encendió solo para las pruebas backend; no lo necesitan las demos. Nunca `down -v`; no tocar contenedores ajenos.
+
+### R18 (corregido, commit `616b5ef`)
+El importador valida el CSV derivado contra el Excel revisado antes de escribir (`DERIVADO_NO_COINCIDE`); ver `docs/T18_REPORTE.md` §5. Ensayo 8444 actualizado a `df-app:t18r-616b5ef` (misma base y snapshot); demo 8443 intacta.
 
 ### Hecho en la etapa 18
 Contrato `docs/T18_CONTRATO_INVENTARIO_INFORMADO.md`, importador `pipeline/inventory/reported_count.py` (CLI; `demo_local --env ens18 import-count …`), API `GET /api/v1/inventory/reported[/snapshots]`, pantalla `/inventario`, `demo_local` multi-entorno y compose con `DF_APP_IMAGE`/`DF_EDGE_PREFIX`. Snapshot `invrep-20261018T1700-a1-608d15a74a58` (v1): 50 productos, 48 con existencia, 2 sin. Reporte `docs/T18_REPORTE.md`.

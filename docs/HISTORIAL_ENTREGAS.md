@@ -372,3 +372,7 @@ Revisión documental completa de los 50 códigos, unidades y cantidades. Corte 1
 ## Etapa 18 (18/10/2026)
 
 Inventario informado integrado en entorno de ensayo aislado (commit 464eb0c); ver `docs/T18_REPORTE.md`. Revisión Codex17 aceptó UX01R/R17 localmente.
+
+## R18 (18/10/2026)
+
+Verificacion del derivado contra el Excel antes de importar (commit 616b5ef); ver `docs/T18_REPORTE.md` §5.

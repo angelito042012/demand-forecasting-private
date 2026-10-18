@@ -87,7 +87,7 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 
 ## Prueba de la versión de ensayo con «Inventario informado» (etapa 18)
 
-- **Dirección:** `https://localhost:8444` (ensayo; la demo anterior sigue en `https://localhost:8443` y no tiene esta pantalla). Usuarios `ens_lector` y `ens_admin`; contraseñas solo en `artifacts/private/t13b/ens18_credenciales.txt` (no las copie a ningún documento). Imagen `df-app:t18-464eb0c`; base `df_ens18_20261018172811`. Aceptación humana: **PENDIENTE**.
+- **Dirección:** `https://localhost:8444` (ensayo; la demo anterior sigue en `https://localhost:8443` y no tiene esta pantalla). Usuarios `ens_lector` y `ens_admin`; contraseñas solo en `artifacts/private/t13b/ens18_credenciales.txt` (no las copie a ningún documento). Imagen `df-app:t18r-616b5ef`; base `df_ens18_20261018172811`. Aceptación humana: **PENDIENTE**.
 - Las tres tareas de comprensión del bloque «Prueba de comprensión (UX01)» se repiten en esta versión (mismos pasos), y se añaden las siguientes. Complete la columna de resultado real solo con lo que usted observe.
 
 | N.º | Paso | Resultado esperado | Resultado real / observación |

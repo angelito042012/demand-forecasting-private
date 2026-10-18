@@ -2,7 +2,7 @@
 
 **18/10, revisión Codex 18 terminada:** T18 requiere R18 antes de aceptación técnica: verificar correspondencia del CSV importado con el Excel revisado antes de primera carga. Encargo y reproducción en `REVISION_CODEX_18.md`; 22 validaciones propias aprobadas. Claude conserva ejecución; revisión posterior acotada, aceptación humana pendiente, sin nube/modelos/T12. Esta anotación sustituye la revisión todavía pendiente del párrafo siguiente.
 
-**18/10, etapa 18 entregada (commit 464eb0c; docs/T18_REPORTE.md):** inventario informado integrado en ensayo aislado (puerto 8444); pendiente la prueba humana de Rogelio, la revisión de Codex y las ventas del 01/10 al corte del conteo. Sin nube.
+**18/10, R18 corregido (commit 616b5ef; docs/T18_REPORTE.md §5); pendiente revisión de Codex solo de ese cambio.** **Etapa 18 entregada (commit 464eb0c; docs/T18_REPORTE.md):** inventario informado integrado en ensayo aislado (puerto 8444); pendiente la prueba humana de Rogelio, la revisión de Codex y las ventas del 01/10 al corte del conteo. Sin nube.
 
 **18/10, prioridad de datos:** preparación académica v1 completada por Codex; ver `PREPARACION_DATOS_ACADEMICA_V1.md`. Pendiente revisar/explicar el paquete y definir contrato de integración; no existe nuevo entrenamiento/importación autorizados. Mantener los saldos retrospectivos fuera del modelo y de T12. Revisión UX01R/R17 ya aceptada en REVISION_CODEX_17: las menciones de revisión pendiente abajo son históricas.
 
