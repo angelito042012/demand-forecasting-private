@@ -62,3 +62,74 @@ export function simConclusion(base: SimBlock | null, exp: SimBlock | null, diff:
   lines.push('Es una simulación con inventario, costos y plazos supuestos; no se atribuye un impacto real.');
   return lines;
 }
+
+// ---- UX01R: vista inicial comprensible (solo presentación; ninguna cifra se calcula aquí) ----
+
+/** Umbral de lectura (presentación): desde este error absoluto se añade «Es un error alto por …». No es un criterio de calidad del modelo. */
+export const HIGH_ERROR = 0.5;
+
+/** Ventana del promedio de 28 días: calendario, días válidos con ceros incluidos, días excluidos fuera. No afirma 28 días de historia. */
+export const WINDOW_NOTE = 'El promedio de 28 días se calcula sobre una ventana de 28 días de calendario antes de la fecha de corte: se usan los días válidos, incluidos los de venta cero; los días excluidos no cuentan. No toda serie tiene 28 días de historia.';
+
+/** Aviso de un análisis generado que no se evalúa contra ventas registradas, por diseño (no afirma que no existan ventas posteriores). */
+export const GENERATED_NO_EVAL = 'Este análisis se creó en la aplicación y no incluye una evaluación contra ventas registradas, por diseño. Para ver una comparación con ventas registradas abre el ejemplo de julio o la evaluación de agosto.';
+
+/** Suma días a una fecha AAAA-MM-DD (UTC). */
+export function addDays(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const parts = (iso: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso); return m ? { y: +m[1], mo: +m[2], d: m[3] } : null; };
+
+/** «01 al 14 de agosto» (mismo mes) o «30 de julio al 14 de agosto»; null si falta una fecha. */
+export function rangeEs(a: string | null | undefined, b: string | null | undefined): string | null {
+  const pa = a ? parts(a) : null; const pb = b ? parts(b) : null;
+  if (!pa || !pb) return null;
+  return pa.mo === pb.mo && pa.y === pb.y ? `${pa.d} al ${pb.d} de ${MESES[pb.mo - 1]}` : `${pa.d} de ${MESES[pa.mo - 1]} al ${pb.d} de ${MESES[pb.mo - 1]}`;
+}
+
+/** «acumulando 14 días» / «día por día» a partir de la vista publicada (acumNN | diaria). */
+export function horizonPhrase(vista: string): string {
+  const m = /^acum(\d+)$/.exec(vista);
+  return m ? `acumulando ${m[1]} días` : vista === 'diaria' ? 'día por día' : vista;
+}
+export function horizonShort(vista: string): string {
+  const m = /^acum(\d+)$/.exec(vista);
+  return m ? `acumulado de ${m[1]} días` : vista === 'diaria' ? 'día por día' : vista;
+}
+/** Quién se evalúa, en palabras sencillas, según el nivel y el tipo de historial. */
+export function whoPhrase(level: 'sku' | 'categoria', cohorte: string): string {
+  const c = cohorte === 'primaria' ? 'con historia suficiente' : cohorte === 'historia_corta' ? 'con historia corta' : '';
+  if (level === 'categoria') return c ? `las categorías de productos ${c}` : 'las categorías';
+  return c ? `los productos ${c}` : 'todos los productos';
+}
+
+/** «productos con historia suficiente · acumulado de 14 días · 1.000 productos». */
+export function simpleScope(level: 'sku' | 'categoria', cohorte: string, vista: string, n: string): string {
+  const who = whoPhrase(level, cohorte).replace(/^los /, '').replace(/^las /, '');
+  return `${who} · ${horizonShort(vista)} · ${n} ${level === 'sku' ? 'productos' : 'categorías'}`;
+}
+
+/** Resultado principal en una frase: error absoluto como porcentaje del volumen vendido, nunca como acierto. */
+export function mainExplanation(wape: number | null | undefined, level: 'sku' | 'categoria', cohorte: string, vista: string): string {
+  if (!isNum(wape)) return 'El error absoluto no es evaluable en este alcance (no hay ventas observadas para calcularlo); no se reemplaza por cero.';
+  const x = fmtPct(wape);
+  const unit = level === 'sku' ? 'producto' : 'categoría';
+  return `Para ${whoPhrase(level, cohorte)}, ${horizonPhrase(vista)}, el error absoluto del promedio de 28 días equivale a cerca del ${x} del volumen vendido; no significa ${x} de acierto.${wape >= HIGH_ERROR ? ` Es un error alto por ${unit}.` : ''}`;
+}
+
+/** Etiquetas distintas: la métrica de N días (primeros N del bloque) y el bloque de prueba disponible. Fechas derivadas de las publicadas. */
+export function metricPeriods(vista: string, start: string | null | undefined, end: string | null | undefined): { metric: string; block: string } {
+  const m = /^acum(\d+)$/.exec(vista);
+  const n = m ? +m[1] : null;
+  const blockRange = rangeEs(start, end);
+  const block = `Bloque de prueba disponible${blockRange ? ` del ${blockRange}` : ': fechas no publicadas'}`;
+  if (n === null) return { metric: 'Métrica diaria: cada día del bloque', block };
+  const mEnd = start ? addDays(start, n - 1) : null;
+  const within = !!end && !!mEnd && mEnd <= end;
+  const r = within ? rangeEs(start, mEnd) : null;
+  const metric = r ? `Métrica del ${r}` : `Métrica de los primeros ${n} días del bloque${start && parts(start) ? ` (desde el ${parts(start)!.d} de ${MESES[parts(start)!.mo - 1]})` : ''}`;
+  return { metric, block };
+}

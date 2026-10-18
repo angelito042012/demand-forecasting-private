@@ -92,7 +92,11 @@ describe('UX01 Evaluación: encabezado, secciones y conclusión', () => {
     const b = aggRow(realBacktest, 'sku', 'primaria', 'promedio_28');
     const e = aggRow(realBacktest, 'sku', 'primaria', 'rf_distribuido');
     const c = txt(m.el, 'est-conclusion');
-    expect(c).toContain(`${fmtPct(b.WAPE)} del volumen observado. No significa un ${fmtPct(b.WAPE)} de acierto`);
+    // vista inicial: una explicación corta con el error como % del volumen vendido, no como acierto
+    const ex = txt(m.el, 'eval-explain');
+    expect(ex).toContain(`el error absoluto del promedio de 28 días equivale a cerca del ${fmtPct(b.WAPE)} del volumen vendido; no significa ${fmtPct(b.WAPE)} de acierto`);
+    expect(ex).toContain('Es un error alto por producto');
+    expect(txt(m.el, 'eval-scope-simple')).toContain(`productos con historia suficiente · acumulado de 14 días · ${fmtInt(b.n)} productos`);
     expect(c).toContain(`Error del modelo experimental: ${fmtPct(e.WAPE)}`);
     expect(c).toContain('por producto');
     expect(c).toContain('Cohorte primaria');
@@ -130,11 +134,15 @@ describe('UX01 Evaluación: encabezado, secciones y conclusión', () => {
     const b = aggRow(realBacktest, 'categoria', 'primaria', 'promedio_28');
     const c = txt(m.el, 'est-conclusion');
     expect(c).toContain('por categoría');
-    expect(c).toContain(`${fmtPct(b.WAPE)} del volumen observado`);
+    expect(txt(m.el, 'eval-explain')).toContain(`cerca del ${fmtPct(b.WAPE)} del volumen vendido`);
+    expect(b.WAPE).toBeLessThan(0.5);
+    expect(txt(m.el, 'eval-explain')).not.toContain('error alto');      // la etiqueta «alto» depende del valor publicado (20 % < 50 %)
+    expect(txt(m.el, 'eval-scope-simple')).toContain('categorías de productos con historia suficiente');
     expect(txt(m.el, 'key-promedio_28')).toContain(fmtPct(b.WAPE));
     expect(q(m.el, 'key-rf_categoria')).toBeTruthy();
     await choose(m.f, m.el, 'pred-vista', 'acum10');
     expect(txt(m.el, 'est-conclusion')).toContain('Acumulado 10 días');
+    expect(txt(m.el, 'eval-scope-simple')).toContain('acumulado de 10 días');
   });
 
   it('WAPE indefinido (null) = «no evaluable» en la conclusión y en las cifras; nunca 0 ni una insignia favorable', async () => {
@@ -143,10 +151,10 @@ describe('UX01 Evaluación: encabezado, secciones y conclusión', () => {
     aggRow(copy, 'sku', 'primaria', 'rf_distribuido').WAPE = null;
     const m = await openHist(copy);
     const c = txt(m.el, 'est-conclusion');
-    expect(c).toContain('Error del promedio de los últimos 28 días (método elegido): no evaluable');
-    expect(c).toContain('no es evaluable');
+    expect(c).toContain('Error del promedio de 28 días (método elegido): no evaluable');
+    expect(txt(m.el, 'eval-explain')).toContain('no es evaluable');
+    expect(txt(m.el, 'eval-explain')).not.toContain('de acierto');
     expect(c).toContain('No se puede comparar');
-    expect(c).not.toContain('No significa un');
     expect(c).not.toMatch(/\b0[.,]0 %/);
     expect(q(m.el, 'key-promedio_28')!.querySelector('[data-testid="key-error"]')!.textContent!.trim()).toBe('no evaluable');
     expect(q(m.el, 'key-rf_distribuido')!.querySelector('[data-testid="key-error"]')!.textContent!.trim()).toBe('no evaluable');
@@ -166,10 +174,15 @@ describe('UX01 Evaluación: encabezado, secciones y conclusión', () => {
     const z = aggRow(copy, 'sku', 'primaria', 'cero');
     z.R2 = null; z.R2_nota = 'varianza observada nula';
     const m = await openHist(copy);
+    // UNA sección académica rotulada, plegada; el detalle de reposición conserva su propio pliegue
+    const acad = q(m.el, 'academic-detail') as HTMLDetailsElement;
+    expect(acad.open).toBe(false);
+    expect(acad.querySelector('summary')!.textContent).toContain('Ver cómo se evaluó: detalle académico');
     const helps = Array.from(m.el.querySelectorAll('details.help')) as HTMLDetailsElement[];
-    expect(helps.length).toBe(2);
+    expect(helps.length).toBe(1);
     for (const h of helps) { expect(h.open).toBe(false); expect(h.querySelector('summary')!.textContent).toContain('Ver detalle completo'); }
-    const pred = q(m.el, 'detail-pred')!;
+    const pred = q(acad as HTMLElement, 'detail-pred')!;
+    expect(pred).toBeTruthy();
     const methods = Array.from(pred.querySelectorAll('[data-testid="pred-table"] tbody tr')).map((r) => r.getAttribute('data-testid'));
     expect(methods).toEqual(['pred-row-promedio_28', 'pred-row-rf_distribuido', 'pred-row-referencia_fija_0531', 'pred-row-cero']);
     expect(pred.querySelector('[data-testid="pred-row-promedio_28"] [data-testid="mape"]')!.textContent).toMatch(/cobertura [\d.]+ % de los casos/);
@@ -192,7 +205,6 @@ describe('UX01 Evaluación: reposición simulada', () => {
     expect(c).toContain(fmtPct(block('rf_categoria_distribuido')['fill_rate']));
     expect(c).toContain('Es una simulación con inventario, costos y plazos supuestos; no se atribuye un impacto real');
     expect(c).toMatch(/Más servicio (vino acompañado de más stock o más compras|puede ir con más stock y más compras)/);
-    expect(t).toContain('más stock y más compras');
     expect(t).toContain('27 combinaciones');
     expect(t).not.toMatch(/ahorro de \d|mejora real de/);
   });
@@ -222,10 +234,10 @@ describe('UX01 Evaluación de agosto (final)', () => {
     const c = txt(m.el, 'est-conclusion');
     expect(c).toContain(`Error del promedio de 28 días (método operativo): ${fmtPct(0.5)}`);
     expect(c).toContain(`Error del modelo experimental: ${fmtPct(0.6)}`);
-    expect(c).toContain(`${fmtPct(0.5)} del volumen observado. No significa un ${fmtPct(0.5)} de acierto`);
+    expect(txt(m.el, 'eval-explain')).toContain(`equivale a cerca del ${fmtPct(0.5)} del volumen vendido; no significa ${fmtPct(0.5)} de acierto`);
+    expect(txt(m.el, 'eval-brief-notice')).toContain('no se declara un método ganador');
+    expect(txt(m.el, 'eval-brief-notice')).toContain('el método operativo no cambia');
     expect(c).toContain('error mayor que el promedio de 28 días');
-    expect(c).toContain('No se declaró ganador experimental');
-    expect(c).toContain('El método operativo no cambia');
     expect(c).toContain('por producto y almacén');
     expect(c).toContain(`n = ${fmtInt(1000)}`);
     const t = visibleText(m.el);
@@ -250,6 +262,7 @@ describe('UX01 Evaluación de agosto (final)', () => {
     for (const r of copy.predictive!.sku!) if (r.metodo === 'rf_distribuido' && r.cohorte === 'primaria' && r.vista === 'acum14') r.WAPE = null;
     const m = await openFinal(copy);
     expect(txt(m.el, 'est-conclusion')).toContain('Error del modelo experimental: no evaluable');
+    expect(txt(m.el, 'eval-explain')).toContain(`cerca del ${fmtPct(0.5)}`);
     expect(txt(m.el, 'est-conclusion')).toContain('No se puede comparar');
     expect(txt(m.el, 'primary-rf')).toContain('no evaluable');
   });
@@ -269,9 +282,9 @@ describe('UX01 Evaluación de agosto (final)', () => {
 
   it('el detalle completo del análisis predictivo (cobertura, SKU nuevos, H10/H14/H21/diaria) sigue disponible, plegado', async () => {
     const m = await openFinal();
-    const det = q(m.el, 'final-detail-est') as HTMLDetailsElement;
+    const det = q(m.el, 'academic-detail') as HTMLDetailsElement;
     expect(det.open).toBe(false);
-    expect(det.classList.contains('help')).toBe(true);
+    expect(det.contains(q(m.el, 'final-detail-est'))).toBe(true);
     for (const v of ['acum10', 'acum14', 'acum21', 'diaria']) expect(det.querySelector(`[data-testid="final-table-${v}"]`)).toBeTruthy();
     expect(det.querySelector('[data-testid="final-coverage"]')!.textContent).toContain('skus_nuevos_con_venta_en_bloque: 7');
     expect(det.querySelector('[data-testid="final-legend"]')!.textContent).toContain('WAPE no es exactitud');
@@ -399,5 +412,219 @@ describe('UX01 Ventas registradas (/resumen)', () => {
     await settle(e.f);
     expect(e.el.querySelector('[data-state="error"] button')?.textContent).toContain('Reintentar');
     expect(e.el.querySelector('[data-testid="sales-table"]')).toBeNull();
+  });
+});
+
+// ---- UX01R: vista inicial comprensible, detalle académico único, pestañas y precisiones de lenguaje ----
+const click = async (m: M<unknown>, id: string) => { (q(m.el, id) as HTMLElement).click(); await settle(m.f); };
+const keydown = async (m: M<unknown>, id: string, key: string) => {
+  (q(m.el, id) as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })); await settle(m.f);
+};
+
+describe('UX01R Evaluación: vista inicial', () => {
+  it('ejemplo histórico: pregunta, una explicación, n, UN aviso breve y «Ver cómo se evaluó»; el detalle académico queda cerrado', async () => {
+    const m = await openHist();
+    const b = aggRow(realBacktest, 'sku', 'primaria', 'promedio_28');
+    expect(txt(m.el, 'page-lead')).toBe('¿Qué tan cerca estuvieron las estimaciones de las ventas registradas?');
+    const sum = q(m.el, 'eval-summary')!;
+    expect(sum.querySelectorAll('.notice').length).toBe(1);                         // no cuatro cajas
+    expect(txt(m.el, 'eval-explain')).toContain(`cerca del ${fmtPct(b.WAPE)} del volumen vendido; no significa ${fmtPct(b.WAPE)} de acierto`);
+    expect(txt(m.el, 'eval-scope-simple')).toContain(`${fmtInt(b.n)} productos`);
+    expect(txt(m.el, 'eval-brief-notice')).toContain('se solapan');
+    expect(txt(m.el, 'eval-open-detail')).toBe('Ver cómo se evaluó');
+    expect((q(m.el, 'academic-detail') as HTMLDetailsElement).open).toBe(false);
+    // el hallazgo detallado no se repite en la vista inicial: la tabla clave y las reglas viven dentro del detalle
+    expect(sum.textContent).not.toContain('Sesgo');
+    expect(q(m.el, 'academic-detail')!.contains(q(m.el, 'key-table'))).toBe(true);
+  });
+
+  it('«Ver cómo se evaluó» abre el detalle académico y vuelve a la pestaña de estimaciones', async () => {
+    const m = await openHist();
+    await click(m, 'jump-rep');
+    expect((q(m.el, 'panel-rep') as HTMLElement).hidden).toBe(false);
+    await click(m, 'jump-est');
+    await click(m, 'eval-open-detail');
+    const acad = q(m.el, 'academic-detail') as HTMLDetailsElement;
+    expect(acad.open).toBe(true);
+    expect((q(m.el, 'panel-est') as HTMLElement).hidden).toBe(false);
+    expect(acad.textContent).toContain('Cómo leer estos resultados');
+  });
+
+  it('evaluación de agosto: n, explicación con alcance en palabras simples y un aviso; sin las cuatro advertencias a la vista', async () => {
+    const m = await openFinal();
+    const sum = q(m.el, 'eval-summary')!;
+    expect(txt(m.el, 'eval-scope-simple')).toBe(`productos con historia suficiente · acumulado de 14 días · ${fmtInt(1000)} productos`);
+    expect(txt(m.el, 'eval-explain')).toContain('Para los productos con historia suficiente, acumulando 14 días, el error absoluto del promedio de 28 días');
+    expect(txt(m.el, 'eval-explain')).toContain('Es un error alto por producto');         // 50 % publicado: no se oculta que es alto
+    expect(sum.querySelectorAll('.notice').length).toBe(1);
+    expect(sum.textContent).not.toContain('suma de unidades base heterogéneas');
+    expect(sum.textContent).not.toContain('no pronostica octubre');
+    const acad = q(m.el, 'academic-detail') as HTMLDetailsElement;
+    expect(acad.open).toBe(false);
+    expect(acad.contains(q(m.el, 'final-warnings'))).toBe(true);
+    expect(acad.contains(q(m.el, 'primary-table'))).toBe(true);
+  });
+
+  it('abierto, el detalle conserva hallazgo primario, advertencias completas, mejora negativa, sesgos, control cero y las 27 combinaciones', async () => {
+    const m = await openFinal();
+    await click(m, 'eval-open-detail');
+    const acad = q(m.el, 'academic-detail') as HTMLDetailsElement;
+    expect(acad.open).toBe(true);
+    const w = txt(m.el, 'final-warnings');
+    for (const t of FINAL_WARNINGS) expect(w).toContain(t);
+    expect(txt(m.el, 'primary-promedio')).toContain(fmtPct(0.5));
+    expect(txt(m.el, 'primary-cero')).toContain(fmtPct(1));
+    expect(txt(m.el, 'primary-mejora')).toContain(fmtPct(-0.2, true));        // desfavorable: se conserva el signo
+    expect(txt(m.el, 'primary-sesgo')).toContain(fmtPct(0.04, true));
+    expect(txt(m.el, 'primary-winner')).toContain('RF declarado ganador: no');
+    expect(acad.textContent).toContain('ventana de 28 días de calendario');
+    expect(acad.textContent).toContain('incluidos los de venta cero');
+    expect(acad.textContent).not.toContain('últimos 28 días con ventas registradas');
+    await click(m, 'jump-rep');
+    expect(m.el.querySelectorAll('[data-testid="final-sim-27"] tbody tr').length).toBe(9);
+  });
+
+  it('métrica H14 y bloque de 21 días con etiquetas distintas y fechas derivadas de los datos publicados', async () => {
+    const m = await openFinal();
+    expect(txt(m.el, 'period-metric')).toBe('Métrica del 01 al 14 de agosto');
+    expect(txt(m.el, 'period-block')).toBe('Bloque de prueba disponible del 01 al 21 de agosto');
+    const sc = txt(m.el, 'est-conclusion');
+    expect(sc).toContain('Métrica del 01 al 14 de agosto');
+    expect(sc).toContain('Bloque de prueba disponible del 01 al 21 de agosto');
+    expect(sc).not.toMatch(/ventas registradas del 01\/08\/2026 al 21\/08\/2026/);   // el WAPE H14 no se adjudica al bloque completo
+  });
+
+  it('otras fechas publicadas: las etiquetas las siguen (no están escritas fijas)', async () => {
+    const other = clone(finalBacktest);
+    other.run!.target_start = '2026-09-03'; other.run!.target_end = '2026-09-23';
+    const m = await openFinal(other);
+    expect(txt(m.el, 'period-metric')).toBe('Métrica del 03 al 16 de septiembre');
+    expect(txt(m.el, 'period-block')).toBe('Bloque de prueba disponible del 03 al 23 de septiembre');
+  });
+
+  it('sin fechas publicadas: «primeros 14 días del bloque» y fechas no publicadas; no se inventan', async () => {
+    const copy = clone(finalBacktest);
+    copy.run!.target_start = null; copy.run!.target_end = null; copy.run!.evaluation_period = null;
+    const m = await openFinal(copy);
+    expect(txt(m.el, 'period-metric')).toContain('Métrica de los primeros 14 días del bloque');
+    expect(txt(m.el, 'period-block')).toContain('fechas no publicadas');
+    expect(txt(m.el, 'period-metric') + txt(m.el, 'period-block')).not.toContain('agosto');
+  });
+
+  it('WAPE indefinido en la final: la explicación dice «no es evaluable» y no habla de acierto ni de 0', async () => {
+    const copy = clone(finalBacktest);
+    copy.selection!.primary!.WAPE_promedio_28 = null;
+    for (const r of copy.predictive!.sku!) if (r.metodo === 'promedio_28' && r.cohorte === 'primaria' && r.vista === 'acum14') r.WAPE = null;
+    const m = await openFinal(copy);
+    expect(txt(m.el, 'eval-explain')).toContain('no es evaluable');
+    expect(txt(m.el, 'eval-explain')).not.toContain('de acierto');
+    expect(txt(m.el, 'primary-promedio')).toContain('no evaluable');
+    expect(txt(m.el, 'est-conclusion')).toContain('Error del promedio de 28 días (método operativo): no evaluable');
+  });
+});
+
+describe('UX01R Evaluación: pestañas y advertencias por sección', () => {
+  it('roles tablist/tab/tabpanel enlazados; solo el panel activo es visible', async () => {
+    const m = await openFinal();
+    expect(m.el.querySelectorAll('[role="tablist"]').length).toBe(1);
+    const tabs = Array.from(m.el.querySelectorAll('[role="tab"]')) as HTMLElement[];
+    expect(tabs.map((t) => t.textContent!.trim())).toEqual(['Estimaciones frente a ventas registradas', 'Comparación de reposición simulada']);
+    expect(tabs.map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+    expect(tabs.map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1']);
+    for (const t of tabs) {
+      const panel = m.el.querySelector('#' + t.getAttribute('aria-controls')!) as HTMLElement;
+      expect(panel.getAttribute('role')).toBe('tabpanel');
+      expect(panel.getAttribute('aria-labelledby')).toBe(t.id);
+    }
+    expect((q(m.el, 'panel-est') as HTMLElement).hidden).toBe(false);
+    expect((q(m.el, 'panel-rep') as HTMLElement).hidden).toBe(true);
+  });
+
+  it('teclado: flechas, Fin e Inicio cambian de pestaña y el foco sigue a la seleccionada', async () => {
+    const m = await openFinal();
+    document.body.appendChild(m.el);
+    try {
+      await keydown(m, 'jump-est', 'ArrowRight');
+      expect(q(m.el, 'jump-rep')!.getAttribute('aria-selected')).toBe('true');
+      expect((q(m.el, 'panel-rep') as HTMLElement).hidden).toBe(false);
+      expect((q(m.el, 'panel-est') as HTMLElement).hidden).toBe(true);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(document.activeElement).toBe(q(m.el, 'jump-rep'));
+      await keydown(m, 'jump-rep', 'ArrowRight');                     // da la vuelta
+      expect(q(m.el, 'jump-est')!.getAttribute('aria-selected')).toBe('true');
+      await keydown(m, 'jump-est', 'End');
+      expect(q(m.el, 'jump-rep')!.getAttribute('aria-selected')).toBe('true');
+      await keydown(m, 'jump-rep', 'Home');
+      expect(q(m.el, 'jump-est')!.getAttribute('aria-selected')).toBe('true');
+      await keydown(m, 'jump-est', 'ArrowLeft');
+      expect(q(m.el, 'jump-rep')!.getAttribute('aria-selected')).toBe('true');
+    } finally { m.el.remove(); }
+  });
+
+  it('las advertencias completas de la final solo están en la sección de estimaciones; la reposición lleva su aviso de simulación', async () => {
+    const m = await openFinal();
+    expect(q(m.el, 'panel-rep')!.querySelector('[data-testid="final-warnings"]')).toBeNull();
+    expect(q(m.el, 'panel-est')!.querySelector('[data-testid="final-warnings"]')).toBeTruthy();
+    const rep = q(m.el, 'panel-rep')!;
+    expect(rep.querySelector('[data-testid="sim-notice"]')!.textContent).toContain('Inventario simulado con supuestos; no corresponde al inventario real de la empresa');
+    expect(txt(m.el, 'final-sim-label')).toContain('Más servicio puede ir con más stock y más compras');
+    expect(txt(m.el, 'final-sim-label')).toContain('no es mejora neta ni impacto real');
+    expect(rep.querySelector('[data-testid="sim-conclusion"]')).toBeTruthy();
+    expect(q(m.el, 'reco-table')).toBeNull();
+    expect(m.el.querySelector('a[href*="recomendaciones"]')).toBeNull();
+  });
+
+  it('ejemplo histórico: pestañas y aviso de simulación en la sección de reposición', async () => {
+    const m = await openHist();
+    expect(m.el.querySelectorAll('[role="tab"]').length).toBe(2);
+    await keydown(m, 'jump-est', 'ArrowRight');
+    const rep = q(m.el, 'panel-rep') as HTMLElement;
+    expect(rep.hidden).toBe(false);
+    expect(rep.querySelector('[data-testid="sim-notice"]')!.textContent).toContain('Inventario simulado con supuestos; no corresponde al inventario real de la empresa');
+    expect(rep.querySelector('[data-testid="sim-conclusion"]')).toBeTruthy();
+    expect((q(m.el, 'panel-est') as HTMLElement).hidden).toBe(true);
+  });
+});
+
+describe('UX01R Evaluación: precisiones de lenguaje', () => {
+  it('el agregado se llama «resultado agregado de 4 bloques», no «promedio de 4 bloques» ni «promedio de folds»', async () => {
+    const m = await openHist();
+    expect(txt(m.el, 'est-conclusion')).toContain('resultado agregado de 4 bloques solapados (G1 a G4)');
+    expect(txt(m.el, 'eval-scope-simple')).toContain('resultado agregado de 4 bloques');
+    const t = m.el.textContent!;
+    expect(t).not.toContain('promedio de 4 bloques');
+    expect(t).not.toMatch(/promedio de (los )?(folds|bloques)/i);
+    await choose(m.f, m.el, 'pred-fold', 'G4');
+    expect(txt(m.el, 'est-conclusion')).toContain('bloque G4');
+    expect(txt(m.el, 'eval-scope-simple')).toContain('bloque G4');
+  });
+
+  it('la ventana de 28 días se explica como calendario con días válidos, ceros incluidos y días excluidos fuera', async () => {
+    const m = await openHist();
+    const lim = txt(m.el, 'limits');
+    expect(lim).toContain('ventana de 28 días de calendario');
+    expect(lim).toContain('se usan los días válidos, incluidos los de venta cero; los días excluidos no cuentan');
+    expect(lim).toContain('No toda serie tiene 28 días de historia');
+    expect(m.el.textContent).not.toContain('últimos 28 días con ventas registradas');
+  });
+
+  it('un análisis generado sin evaluación: no afirma que no existan ventas posteriores; dice que no incluye evaluación, por diseño', async () => {
+    const m = await mountAt(ComparisonPage, '/comparacion?run=gen-test-1');
+    await ok(m.f, one(m.http, '/api/v1/runs'), page([histRun, genRun]));
+    await ok(m.f, one(m.http, '/api/v1/backtests'), page([]));
+    await ok(m.f, m.http.expectOne((r) => r.url === '/api/v1/backtests' && !r.params.has('run_id')), realBacktestList);
+    const t = txt(m.el, 'no-backtest');
+    expect(t).toContain('no incluye una evaluación contra ventas registradas, por diseño');
+    expect(t).not.toMatch(/No hay ventas posteriores|no existen ventas/i);
+    expect(q(m.el, 'eval-summary')).toBeNull();
+    expect(q(m.el, 'sim-conclusion')).toBeNull();
+  });
+
+  it('la final no genera pedidos y ningún valor de reposición aparece sin su aviso', async () => {
+    const m = await openFinal();
+    expect(visibleText(m.el)).toContain('no se generan pedidos ni recomendaciones');
+    const rep = q(m.el, 'panel-rep')!;
+    expect(rep.querySelector('[data-testid="final-sim-main"]')).toBeTruthy();
+    expect(rep.querySelector('[data-testid="sim-notice"]')).toBeTruthy();
   });
 });

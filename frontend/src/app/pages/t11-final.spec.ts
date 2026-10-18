@@ -74,7 +74,7 @@ describe('T11A Corridas: tipos y paquete de la evaluación final', () => {
     expect(fin.querySelector('[data-testid="to-forecasts"]')!.getAttribute('href')).toContain('run=' + FINAL_ID);
     expect(fin.querySelector('[data-testid="to-compare"]')).toBeTruthy();
     expect(cards[0].querySelector('[data-testid="to-reco"]')!.getAttribute('href')).toContain('run=' + HIST_ID);
-    expect(cards[2].textContent).toContain('todavía no hay ventas registradas para comparar');   // sin backtest atribuido
+    expect(cards[2].textContent).toContain('no incluyen una evaluación contra ventas registradas');   // sin backtest atribuido
     expect(cards[2].textContent).not.toContain('Permite comparar');
     expect(visibleText(m.el)).not.toContain(FINAL_ID);           // identificadores solo en detalles técnicos
   });

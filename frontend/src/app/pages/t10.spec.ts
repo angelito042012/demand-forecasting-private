@@ -475,7 +475,7 @@ describe('Comparación: origen, fechas objetivo y período de evaluación', () =
     expect(txt(m.el, 'p-origin')).toBe('10/07/2026');
     expect(txt(m.el, 'p-target')).toBe('11/07/2026 al 31/07/2026');
     expect(txt(m.el, 'p-eval')).toBe('01/06/2026 al 31/07/2026');
-    const t = visibleText(m.el);
+    const t = m.el.textContent!;        // los períodos exactos están en el detalle académico
     // el origen se rotula «Ventas utilizadas hasta»; no se presenta como el fin del período de evaluación
     expect(t).not.toMatch(/evaluaci[óo]n[^.]{0,40}hasta el 10\/07\/2026/);
     expect(t).toContain('no es el fin de la evaluación');

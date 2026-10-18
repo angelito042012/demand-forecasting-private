@@ -36,7 +36,7 @@ export function analysisName(r: RunLike | null | undefined): string {
 export function analysisPurpose(r: Pick<RunSummary, 'kind'> | null | undefined): string {
   if (!r) return '';
   if (isFinal(r.kind)) return 'Permite comparar estimaciones con ventas registradas; no genera pedidos.';
-  if (isGenerated(r.kind)) return 'Estimaciones creadas desde la aplicación con el promedio de los últimos 28 días; todavía no hay ventas registradas para comparar.';
+  if (isGenerated(r.kind)) return 'Estimaciones creadas desde la aplicación con el promedio de una ventana de 28 días de calendario; no incluyen una evaluación contra ventas registradas, por diseño.';
   return 'Ejemplo con datos históricos: compara estimaciones con ventas ya registradas y permite explorar una reposición simulada.';
 }
 
@@ -101,7 +101,7 @@ export const GLOSSARY: { term: string; meaning: string; technical: string }[] = 
   { term: 'Período estimado', meaning: 'Fechas para las que se estimaron ventas; «día de la previsión» indica cuántos días después de la fecha de corte cae cada estimación.', technical: 'horizonte / h' },
   { term: 'Código del producto', meaning: 'Identificador del producto en las ventas. La aplicación no muestra nombres comerciales porque los archivos no los traen autorizados.', technical: 'SKU' },
   { term: 'Por recibir (simulado)', meaning: 'Unidades que, en el escenario simulado, ya fueron pedidas y todavía no llegan.', technical: 'tránsito / in_transit' },
-  { term: 'Promedio de los últimos 28 días', meaning: 'Método elegido: estima las ventas diarias con el promedio de los últimos 28 días con ventas registradas.', technical: 'promedio_28' },
+  { term: 'Promedio de los últimos 28 días', meaning: 'Método elegido: estima las ventas diarias con el promedio de una ventana de 28 días de calendario: cuentan los días válidos, incluidos los de venta cero, y no cuentan los días excluidos. No supone que todo producto tenga 28 días de historia.', technical: 'promedio_28' },
   { term: 'Modelo experimental', meaning: 'Un segundo método (bosque aleatorio) que se compara con el promedio. No resultó mejor y no se usa para decidir.', technical: 'RF distribuido / Random Forest' },
   { term: 'Comparación con ventas registradas', meaning: 'Qué tanto se parecieron las estimaciones a las ventas que sí ocurrieron en un período ya conocido.', technical: 'backtest' },
   { term: 'Tipo de historial', meaning: 'Productos con historia suficiente («primaria») o con historia corta; se evalúan por separado.', technical: 'cohorte' },

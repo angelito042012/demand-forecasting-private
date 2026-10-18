@@ -13,12 +13,14 @@ import {
 import { DASH, fmtDate, fmtInt, fmtPct, fmtPen, fmtPp, fmtDec } from '../core/format';
 import { analysisName, isReplaced } from '../core/ux-text';
 import { StatePanel } from '../ui/state-panel';
-import { FinalWarnings, SimNotice, SupersededBanner, isRunInvalid } from '../ui/notices';
+import { SimNotice, SupersededBanner, isRunInvalid } from '../ui/notices';
 import { PageHeader } from '../ui/page-header';
 import { AnalysisBar } from '../ui/analysis-bar';
 import { EvalConclusion } from '../ui/eval-conclusion';
+import { EvalSummary } from '../ui/eval-summary';
+import { EvalTab, EvalTabs } from '../ui/eval-tabs';
 import { FinalEvaluation } from './final-evaluation';
-import { NOT_EVALUABLE, biasText, compareSentence, errorText, readingSentence, simConclusion } from './eval-text';
+import { GENERATED_NO_EVAL, NOT_EVALUABLE, WINDOW_NOTE, biasText, compareSentence, errorText, mainExplanation, simConclusion, simpleScope, addDays } from './eval-text';
 
 const EVAL_START = '2026-06-01';
 const EVAL_END = '2026-07-31';
@@ -27,15 +29,9 @@ const EXP_BY_LEVEL: Record<string, string> = { sku: 'rf_distribuido', categoria:
 
 interface KeyRow { id: string; label: string; role: string; n: string; error: string; bias: string; coverage: string }
 
-/** Suma días a una fecha AAAA-MM-DD (UTC, sin zona horaria local). */
-function addDays(iso: string, n: number): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
-}
-
 @Component({
   selector: 'app-comparison-page',
-  imports: [StatePanel, SimNotice, SupersededBanner, RouterLink, FinalEvaluation, FinalWarnings, PageHeader, AnalysisBar, EvalConclusion],
+  imports: [StatePanel, SimNotice, SupersededBanner, RouterLink, FinalEvaluation, PageHeader, AnalysisBar, EvalConclusion, EvalSummary, EvalTabs],
   template: `
     <app-page-header title="Evaluación de resultados" lead="¿Qué tan cerca estuvieron las estimaciones de las ventas registradas?" />
     <app-analysis-bar [runId]="barRun()" />
@@ -59,7 +55,8 @@ function addDays(iso: string, n: number): string {
       <section class="notice info" data-testid="no-backtest" aria-label="Sin comparación para este análisis">
         @if (choice.id()) {
           @if (generatedChoice()) {
-            <p><strong>Este análisis se creó en la aplicación y todavía no tiene una comparación con ventas registradas.</strong> No hay ventas posteriores a la fecha utilizada que permitan medir el error.</p>
+            <p><strong>Este análisis se creó en la aplicación y todavía no tiene una comparación con ventas registradas.</strong></p>
+            <p data-testid="generated-no-eval">{{ generatedNoEval }}</p>
           } @else {
             <p><strong>Este análisis no tiene una comparación con ventas registradas.</strong></p>
           }
@@ -76,19 +73,17 @@ function addDays(iso: string, n: number): string {
     @if (chosen()) {
       <app-state-panel [state]="detail.state()" emptyText="La comparación no publicó resultados. Vuelve a «Mis análisis» y elige otro análisis." (retry)="detail.reload()">
         @if (det(); as d) {
-          <nav class="seg" aria-label="Ir a una sección de la evaluación">
-            <button type="button" (click)="jump('sec-estimaciones')" data-testid="jump-est">Estimaciones frente a ventas registradas</button>
-            <button type="button" (click)="jump('sec-reposicion')" data-testid="jump-rep">Comparación de reposición simulada</button>
-          </nav>
-
           @if (final()) {
-            <app-final-warnings [warnings]="run()?.warnings" />
-            @if (d.disclaimer) { <p class="notice warn" data-testid="disclaimer">{{ d.disclaimer }}</p> }
             <app-final-evaluation [d]="d" />
           } @else {
+          <app-eval-tabs [tabs]="tabs" [(active)]="tab" label="Secciones de la evaluación" />
+          <div role="tabpanel" id="panel-est" aria-labelledby="tab-est" tabindex="0" [hidden]="tab() !== 'est'" data-testid="panel-est">
           <section id="sec-estimaciones" aria-labelledby="h-est" data-testid="sec-estimaciones">
             <h2 id="h-est">Estimaciones frente a ventas registradas</h2>
-            <p>Resultados históricos de desarrollo, calculados sobre meses ya conocidos (junio y julio de 2026). Este ejemplo no incluye agosto: agosto se evalúa aparte.</p>
+            <app-eval-summary context="Resultados históricos de desarrollo, calculados sobre meses ya conocidos (junio y julio de 2026). Este ejemplo no incluye agosto: agosto se evalúa aparte."
+              [scope]="simple()" [explanation]="explanation()" [notice]="briefNotice()" (openDetail)="openDetail()" />
+            <details class="academic" id="academic-detail" data-testid="academic-detail" [open]="acOpen()" (toggle)="acOpen.set($any($event.target).open)">
+            <summary id="academic-summary">Ver cómo se evaluó: detalle académico</summary>
             <dl class="periods" data-testid="periods">
               <dt>Ventas utilizadas hasta</dt><dd data-testid="p-origin">{{ originText() }}</dd>
               <dt>Período estimado</dt><dd data-testid="p-target">{{ targetText() }}</dd>
@@ -97,7 +92,7 @@ function addDays(iso: string, n: number): string {
             <p class="muted" data-testid="periods-note">«Ventas utilizadas hasta» es el último día con historia usada para estimar; no es el fin de la evaluación. Las estimaciones cubren el período estimado y la simulación de reposición recorre todo el período de evaluación.</p>
 
             @if (keyRows().length) {
-              <app-eval-conclusion testid="est-conclusion" [scope]="scopeText()" [lines]="estLines()" />
+              <app-eval-conclusion heading="Lectura de las cifras" testid="est-conclusion" [scope]="scopeText()" [lines]="estLines()" />
               <div class="table-wrap" tabindex="0" role="region" aria-label="Error del método elegido y del modelo experimental (desplázate para ver todas las columnas)">
                 <table data-testid="key-table">
                   <caption>Cifras clave del alcance elegido</caption>
@@ -152,15 +147,15 @@ function addDays(iso: string, n: number): string {
             <section class="notice info" data-testid="limits" aria-labelledby="h-leer">
               <h3 id="h-leer">Cómo leer estos resultados</h3>
               <ul class="plain">
-                <li>El método elegido es el <strong>promedio de los últimos 28 días</strong>. El <strong>modelo experimental</strong> (bosque aleatorio) se compara con él, pero no se usa para decidir.</li>
+                <li>El método elegido es el <strong>promedio de 28 días</strong>. {{ windowNote }} El <strong>modelo experimental</strong> (bosque aleatorio) se compara con él, pero no se usa para decidir.</li>
                 <li>Los 4 bloques de evaluación (G1 a G4) se solapan: el agregado no es una evaluación independiente ni permite pruebas de significación.</li>
                 <li>La venta observada puede estar limitada por falta de stock: los faltantes reales son desconocidos.</li>
                 <li>Se muestran todos los resultados, también los desfavorables y el control «cero»; los selectores solo cambian qué parte se ve.</li>
               </ul>
             </section>
 
-            <details class="help" data-testid="detail-pred">
-              <summary>Ver detalle completo: todos los métodos y métricas</summary>
+            <section data-testid="detail-pred" aria-labelledby="h-allm">
+              <h3 id="h-allm">Todos los métodos y métricas</h3>
               @if (pred().length) {
                 <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla de métricas por método (desplázate para ver todas las columnas)">
                   <table data-testid="pred-table">
@@ -217,8 +212,12 @@ function addDays(iso: string, n: number): string {
                 <li>Nombres técnicos: «modelo experimental» = RF (Random Forest) distribuido o por categoría; «tipo de historial» = cohorte; «bloque de evaluación» = fold.</li>
               </ul>
               @if (d.predictive?.nota; as n) { <p class="muted">{{ n }}</p> }
+            </section>
             </details>
           </section>
+          </div>
+
+          <div role="tabpanel" id="panel-rep" aria-labelledby="tab-rep" tabindex="0" [hidden]="tab() !== 'rep'" data-testid="panel-rep">
 
           <section id="sec-reposicion" aria-labelledby="h-sim" data-testid="sec-reposicion">
             <h2 id="h-sim">Comparación de reposición simulada</h2>
@@ -232,10 +231,7 @@ function addDays(iso: string, n: number): string {
             } @else {
               <p class="state" data-testid="sim-empty">Datos insuficientes: no hay simulación publicada para L{{ L() }} / S{{ S() }}.</p>
             }
-            <ul class="plain" data-testid="sim-limits">
-              <li>Más nivel de servicio viene con más stock y más compras: una mejora en servicio no es una ganancia neta si no se mira su costo.</li>
-              <li>La simulación (nueve escenarios × 3 políticas = 27 combinaciones) usa inventario, costos y plazos supuestos; no demuestra una mejora real para la empresa ni autoriza compras.</li>
-            </ul>
+            <p class="muted" data-testid="sim-limits">La simulación (nueve escenarios × 3 políticas = 27 combinaciones) usa inventario, costos y plazos supuestos; no demuestra una mejora real para la empresa ni autoriza compras.</p>
 
             <fieldset class="toolbar selectors" aria-label="Elige el escenario de simulación">
               <legend>Escenario simulado</legend>
@@ -345,6 +341,7 @@ function addDays(iso: string, n: number): string {
               @if (d.disclaimer) { <p class="notice warn" data-testid="disclaimer">{{ d.disclaimer }}</p> }
             </details>
           </section>
+          </div>
           }
         }
       </app-state-panel>
@@ -359,6 +356,8 @@ function addDays(iso: string, n: number): string {
     .toolbar-links { display: flex; flex-wrap: wrap; gap: 0.6rem; }
     .seg { margin: 0.6rem 0; }
     section[id] { scroll-margin-top: 1rem; }
+    .academic { margin: 0.75rem 0; border: 1px solid var(--line, #c9d1d9); border-radius: 8px; padding: 0.5rem 0.9rem; }
+    .academic > summary { font-weight: 700; cursor: pointer; padding: 0.4rem 0; }
     pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft); padding: 0.5rem; max-height: 22rem; overflow: auto; font-size: 1rem; }
   `,
 })
@@ -379,6 +378,14 @@ export class ComparisonPage {
   readonly agregado = AGREGADO;
   readonly base = BASE_POLICY;
   readonly noEval = NOT_EVALUABLE;
+  readonly windowNote = WINDOW_NOTE;
+  readonly generatedNoEval = GENERATED_NO_EVAL;
+  readonly tabs: EvalTab[] = [
+    { id: 'est', label: 'Estimaciones frente a ventas registradas', testid: 'jump-est' },
+    { id: 'rep', label: 'Comparación de reposición simulada', testid: 'jump-rep' },
+  ];
+  tab = signal<string>('est');
+  acOpen = signal(false);
 
   chosen = signal<string | null>(null);
   list = load<BacktestItem[]>(
@@ -492,7 +499,7 @@ export class ComparisonPage {
   private wapeOf = (r: PredRow | null): number | null => (r && r.n > 0 && typeof r.WAPE === 'number' ? r.WAPE : null);
   keyRows = computed<KeyRow[]>(() => [this.baseRow(), this.expRow()].filter((r): r is PredRow => r !== null).map((r) => ({
     id: r.metodo,
-    label: r.metodo === BASE_POLICY ? 'Promedio de los últimos 28 días' : 'Modelo experimental',
+    label: r.metodo === BASE_POLICY ? 'Promedio de 28 días' : 'Modelo experimental',
     role: r.metodo === BASE_POLICY ? 'método elegido' : 'comparador; no se usa para decidir',
     n: this.int(r.n),
     error: r.n > 0 ? errorText(r.WAPE) : 'sin datos evaluables',
@@ -501,14 +508,25 @@ export class ComparisonPage {
   })));
   scopeText = computed(() => {
     const nivel = this.level() === 'sku' ? 'por producto (código del producto)' : 'por categoría (suma de unidades de productos distintos)';
-    const bloque = this.fold() === AGREGADO ? 'promedio de 4 bloques solapados (G1 a G4)' : `bloque ${this.fold()}`;
+    const bloque = this.fold() === AGREGADO ? 'resultado agregado de 4 bloques solapados (G1 a G4)' : `bloque ${this.fold()}`;
     return `Alcance: ${nivel} · ${this.predCohLabel()} · ${this.vistaLabel()} · ${bloque} · ventas registradas del ${this.evalText}.`;
   });
+  /** Alcance en palabras sencillas: tipo de historial · período · número de productos o categorías · bloques. */
+  simple = computed(() => `${simpleScope(this.level(), this.predCoh(), this.vista(), this.int(this.baseRow()?.n ?? null))} · ${this.fold() === AGREGADO ? 'resultado agregado de 4 bloques' : `bloque ${this.fold()}`}`);
+  explanation = computed(() => mainExplanation(this.wapeOf(this.baseRow()), this.level(), this.predCoh(), this.vista()));
+  briefNotice = computed(() => (this.fold() === AGREGADO
+    ? 'Los 4 bloques se solapan: el resultado agregado no es una evaluación independiente. El modelo experimental no se usa para decidir y no se declaró ganador.'
+    : `Es uno de los 4 bloques solapados (${this.fold()}): no permite pruebas de significación. El modelo experimental no se usa para decidir y no se declaró ganador.`));
+  /** «Ver cómo se evaluó»: abre el detalle académico y lleva el foco a su rótulo. */
+  openDetail() {
+    this.tab.set('est');
+    this.acOpen.set(true);
+    queueMicrotask(() => { const s = document.getElementById('academic-summary'); s?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }); s?.focus?.(); });
+  }
   estLines = computed(() => {
     const wb = this.wapeOf(this.baseRow()); const we = this.wapeOf(this.expRow());
     const lines = [
-      `Error del promedio de los últimos 28 días (método elegido): ${errorText(wb)}. Error del modelo experimental: ${errorText(we)}.`,
-      readingSentence(wb),
+      `Error del promedio de 28 días (método elegido): ${errorText(wb)}. Error del modelo experimental: ${errorText(we)}.`,
       compareSentence(wb, we),
     ];
     const sel = this.selectionText();
@@ -556,8 +574,5 @@ export class ComparisonPage {
     return `${fmtInt(c.conPrediccion)} de ${fmtInt(c.universo)} (${fmtPct(c.conPrediccion / c.universo)})`;
   }
 
-  pick(id: string) { this.chosen.set(id); this.detail.reload(); }
-
-  /** Lleva la vista a una sección (botones de «Ir a»); no cambia la dirección ni el análisis elegido. */
-  jump(id: string) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  pick(id: string) { this.chosen.set(id); this.tab.set('est'); this.acOpen.set(false); this.detail.reload(); }
 }

@@ -22,6 +22,7 @@ async function open(detail: BacktestDetail = realBacktest) {
 }
 const block = (L: number, S: number, policy: string, coh = 'total') =>
   realBacktest.simulation!.find((s) => s.L === L && s.S === S && s.policy === policy)![coh as 'total'];
+const txt = (el: HTMLElement, id: string) => (el.querySelector(`[data-testid="${id}"]`)?.textContent ?? '').replace(/\s+/g, ' ').trim();
 const rowText = (el: HTMLElement, id: string) => (el.querySelector(`[data-testid="${id}"]`)?.textContent ?? '').replace(/\s+/g, ' ');
 
 afterEach(() => { /* HttpTestingController se verifica en cada prueba */ });
@@ -95,17 +96,18 @@ describe('Comparación: lenguaje sencillo y detalles técnicos', () => {
     expect(t).toContain('Inventario simulado con supuestos; no corresponde al inventario real de la empresa');
     expect(t).toContain('10/07/2026');
     expect(t).toContain('Ejemplo de julio');
-    expect(t).toContain('Ventas utilizadas hasta');
-    expect(t).toContain('no ganó');
-    expect(t).toContain('más stock y más compras');
+    expect(m.el.textContent).toContain('Ventas utilizadas hasta');       // períodos exactos: en el detalle académico
+    expect(t).toContain('no se declaró ganador');
+    expect(txt(m.el, 'sim-conclusion')).toMatch(/Más servicio (vino acompañado de más stock o más compras|puede ir con más stock y más compras)/);
     expect(t).toContain('se solapan');
     expect(t).toContain('Resultados históricos de desarrollo');
     expect(t).toContain('27 combinaciones');
     // el detalle académico completo (leyenda de métricas) sigue en la página, plegado y fácil de encontrar
-    const detail = m.el.querySelector('[data-testid="detail-pred"]') as HTMLDetailsElement;
-    expect(detail.classList.contains('help')).toBe(true);
-    expect(detail.open).toBe(false);
-    expect(detail.querySelector('summary')?.textContent).toContain('Ver detalle completo');
+    const acad = m.el.querySelector('[data-testid="academic-detail"]') as HTMLDetailsElement;
+    expect(acad.open).toBe(false);
+    expect(acad.querySelector('summary')?.textContent).toContain('Ver cómo se evaluó: detalle académico');
+    const detail = acad.querySelector('[data-testid="detail-pred"]') as HTMLElement;
+    expect(detail).toBeTruthy();
     expect(detail.querySelector('[data-testid="pred-legend"]')?.textContent).toContain('WAPE = error absoluto total / unidades observadas');
     m.http.verify();
   });

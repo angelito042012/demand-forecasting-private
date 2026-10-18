@@ -6,9 +6,11 @@ import {
   scalarsOf, scenarioOf, serviceVsInventory, universe,
 } from '../core/final-eval';
 import { DASH, fmtDate, fmtDec, fmtInt, fmtPct, fmtPen, fmtPp } from '../core/format';
-import { SimNotice } from '../ui/notices';
+import { FinalWarnings, SimNotice } from '../ui/notices';
 import { EvalConclusion } from '../ui/eval-conclusion';
-import { NOT_EVALUABLE, compareSentence, errorText, readingSentence, simConclusion } from './eval-text';
+import { EvalSummary } from '../ui/eval-summary';
+import { EvalTab, EvalTabs } from '../ui/eval-tabs';
+import { NOT_EVALUABLE, WINDOW_NOTE, compareSentence, errorText, mainExplanation, metricPeriods, simConclusion, simpleScope } from './eval-text';
 
 const NE = NOT_EVALUABLE;
 /** Pares «política − comparación» publicados en la simulación del escenario elegido. */
@@ -26,18 +28,22 @@ const PAIRS: { policy: string; vs: string }[] = [
  */
 @Component({
   selector: 'app-final-evaluation',
-  imports: [SimNotice, EvalConclusion],
+  imports: [SimNotice, EvalConclusion, EvalSummary, EvalTabs, FinalWarnings],
   template: `
     <div data-testid="final-view">
-      <p class="notice info" data-testid="final-scope">
-        Esta es la <strong>evaluación de agosto</strong>, distinta del ejemplo de julio. Compara un pronóstico fijado el
-        <strong>{{ date(originIso()) }}</strong> con las ventas registradas del <strong>{{ date(targetStart()) }} al {{ date(targetEnd()) }}</strong>
-        (un solo bloque de 21 días), más una simulación de reposición del 01/08 al 31/08/2026. Ya hay un resultado final disponible; no se declara un método ganador y no se generan pedidos ni recomendaciones.
-      </p>
+      <app-eval-tabs [tabs]="tabs" [(active)]="tab" label="Secciones de la evaluación de agosto" />
 
+      <div role="tabpanel" id="panel-est" aria-labelledby="tab-est" tabindex="0" [hidden]="tab() !== 'est'" data-testid="panel-est">
       <section id="sec-estimaciones" aria-labelledby="h-est" data-testid="final-est">
         <h2 id="h-est">Estimaciones frente a ventas registradas</h2>
-        <app-eval-conclusion testid="est-conclusion" [scope]="scopeText()" [lines]="estLines()" />
+        <app-eval-summary [context]="contextText()" [scope]="simple()" [explanation]="explanation()" [periods]="periodItems()"
+          [notice]="briefNotice" (openDetail)="openDetail()" />
+
+        <details class="academic" id="academic-detail" data-testid="academic-detail" [open]="acOpen()" (toggle)="acOpen.set($any($event.target).open)">
+          <summary id="academic-summary">Ver cómo se evaluó: detalle académico</summary>
+          <app-final-warnings [warnings]="d().run?.warnings" />
+          <app-eval-conclusion heading="Lectura de las cifras del hallazgo primario" testid="est-conclusion" [scope]="scopeText()" [lines]="estLines()" />
+          <div data-testid="final-detail-est">
 
         <section aria-labelledby="h-prim" data-testid="final-primary">
           <h3 id="h-prim">Hallazgo primario</h3>
@@ -62,8 +68,6 @@ const PAIRS: { policy: string; vs: string }[] = [
           </ul>
         </section>
 
-        <details class="help" data-testid="final-detail-est">
-          <summary>Ver detalle completo: tipos de historial, horizontes, cobertura y SKU nuevos</summary>
           <section aria-labelledby="h-coh">
             <h3 id="h-coh">Resumen por tipo de historial (SKU-almacén, acumulado 14 días)</h3>
             <div class="table-wrap" tabindex="0" role="region" aria-label="Resumen por tipo de historial">
@@ -163,13 +167,26 @@ const PAIRS: { policy: string; vs: string }[] = [
               <ul class="plain">@for (kv of scalars(n); track kv[0]) { <li>{{ kv[0] }}: <strong>{{ kv[1] }}</strong></li> }</ul>
             } @else { <p class="muted" data-testid="final-new-skus-missing">La API no publicó el resumen de SKU nuevos para esta evaluación.</p> }
           </section>
+
+          <section aria-labelledby="h-met" data-testid="final-methods">
+            <h3 id="h-met">Cómo se calcularon los métodos</h3>
+            <ul class="plain">
+              <li><strong>Promedio de 28 días</strong> (método operativo). {{ windowNote }}</li>
+              <li><strong>Modelo experimental</strong> (RF distribuido por producto; RF por categoría en el nivel categoría): comparador; no se usa para decidir.</li>
+              <li><strong>Control cero</strong>: estima cero unidades cada día; sirve solo como referencia.</li>
+              <li>El pronóstico es un bloque fijo de 21 días desde el origen. Las métricas acumuladas (10, 14 y 21 días) y la diaria se calculan sobre los primeros días de ese bloque; no son bloques distintos.</li>
+            </ul>
+          </section>
+          </div>
         </details>
       </section>
+      </div>
 
+      <div role="tabpanel" id="panel-rep" aria-labelledby="tab-rep" tabindex="0" [hidden]="tab() !== 'rep'" data-testid="panel-rep">
       <section id="sec-reposicion" aria-labelledby="h-fsim" data-testid="final-sim">
         <h2 id="h-fsim">Comparación de reposición simulada</h2>
         <app-sim-notice [scenarioId]="d().scenario_id ?? null" />
-        <p class="notice warn" data-testid="final-sim-label">Todo lo de esta sección usa existencias, costos y plazos supuestos. La demanda es la venta observada (proxy), posiblemente limitada por stock; costos, plazos y seguridad son supuestos. Más servicio puede ir con más stock y más compras. No demuestra impacto real ni autoriza compras.</p>
+        <p class="notice warn" data-testid="final-sim-label">La demanda es la venta observada (proxy), posiblemente limitada por stock; existencias, costos, plazos y seguridad son supuestos. Más servicio puede ir con más stock y más compras: no es mejora neta ni impacto real, y no autoriza compras.</p>
         @if (simLines().length) {
           <app-eval-conclusion testid="sim-conclusion" [scope]="simScope()" [lines]="simLines()" />
         } @else { <p class="state" data-testid="final-sim-empty">Datos insuficientes: no hay simulación publicada para el escenario principal.</p> }
@@ -264,6 +281,7 @@ const PAIRS: { policy: string; vs: string }[] = [
               </table>
             </div>
           </details>
+          @if (d().disclaimer; as dis) { <p class="notice warn" data-testid="disclaimer">{{ dis }}</p> }
           @if (assumptionList().length) {
             <details class="tech" data-testid="final-assumptions">
               <summary>Supuestos y límites</summary>
@@ -272,11 +290,14 @@ const PAIRS: { policy: string; vs: string }[] = [
           }
         </details>
       </section>
+      </div>
     </div>
   `,
   styles: `
     .selectors legend { font-weight: 600; }
     section[id] { scroll-margin-top: 1rem; }
+    .academic { margin: 0.75rem 0; border: 1px solid var(--line, #c9d1d9); border-radius: 8px; padding: 0.5rem 0.9rem; }
+    .academic > summary { font-weight: 700; cursor: pointer; padding: 0.4rem 0; }
   `,
 })
 export class FinalEvaluation {
@@ -294,10 +315,26 @@ export class FinalEvaluation {
   simCoh = signal<Cohorte>('total');
 
   pf = computed(() => primaryFinding(this.d()));
-  originIso = computed(() => this.d().run?.cutoff ?? '2026-07-31');
-  /** Fechas del bloque evaluado: las publica el análisis; el respaldo es el período fijado en el contrato (01–21/08/2026). */
-  targetStart = computed(() => this.d().run?.target_start ?? '2026-08-01');
-  targetEnd = computed(() => this.d().run?.target_end ?? '2026-08-21');
+  readonly tabs: EvalTab[] = [
+    { id: 'est', label: 'Estimaciones frente a ventas registradas', testid: 'jump-est' },
+    { id: 'rep', label: 'Comparación de reposición simulada', testid: 'jump-rep' },
+  ];
+  tab = signal<string>('est');
+  acOpen = signal(false);
+  readonly windowNote = WINDOW_NOTE;
+  /** Aviso breve de la vista inicial: la explicación ya dice que el error no es acierto; aquí, que no hay ganador. */
+  readonly briefNotice = 'Con un solo bloque de prueba no se declara un método ganador; el método operativo no cambia por este resultado.';
+
+  originIso = computed(() => this.d().run?.cutoff ?? null);
+  /** Fechas del bloque evaluado: solo las publica el análisis (target_start/target_end o evaluation_period); sin respaldo escrito. */
+  targetStart = computed(() => this.d().run?.target_start ?? (this.d().run?.evaluation_period?.['start'] as string | undefined) ?? null);
+  targetEnd = computed(() => this.d().run?.target_end ?? (this.d().run?.evaluation_period?.['end'] as string | undefined) ?? null);
+  /** Dos períodos distintos: la métrica H14 (primeros 14 días) y el bloque de prueba disponible (pronóstico fijo de 21 días). */
+  periods = computed(() => metricPeriods('acum14', this.targetStart(), this.targetEnd()));
+  periodItems = computed(() => [{ label: this.periods().metric, testid: 'period-metric' }, { label: this.periods().block, testid: 'period-block' }]);
+  contextText = computed(() => `Esta es la evaluación de agosto, distinta del ejemplo de julio. Compara un pronóstico fijado el ${this.originIso() ? fmtDate(this.originIso()) : 'sin fecha publicada'} con las ventas registradas del bloque de prueba. Ya hay un resultado final disponible; no se generan pedidos ni recomendaciones.`);
+  simple = computed(() => simpleScope('sku', 'primaria', 'acum14', fmtInt(this.pf().n)));
+  explanation = computed(() => mainExplanation(this.pf().wape.promedio_28, 'sku', 'primaria', 'acum14'));
   principal = computed(() => this.d().assumptions?.escenario_principal ?? { L: 7, S: 7 });
   pL = computed(() => this.principal().L);
   pS = computed(() => this.principal().S);
@@ -311,21 +348,28 @@ export class FinalEvaluation {
   nuevos = computed(() => newSkus(this.d()));
   uni = computed(() => universe(this.d()));
 
-  /** Alcance del hallazgo primario (fijo por contrato: WAPE H14, SKU-almacén, tipo de historial primaria, universo común). */
-  scopeText = computed(() => `Alcance: por producto y almacén (SKU-almacén) · tipo de historial «primaria» · acumulado de 14 días · universo común (n = ${fmtInt(this.pf().n)}) · ventas registradas del ${fmtDate(this.targetStart())} al ${fmtDate(this.targetEnd())}.`);
-  /** Conclusión del hallazgo primario, calculada de los valores publicados; un error indefinido se rotula «no evaluable». */
+  /** «Ver cómo se evaluó»: abre el detalle académico de las estimaciones y lleva el foco a su rótulo. */
+  openDetail() {
+    this.tab.set('est');
+    this.acOpen.set(true);
+    queueMicrotask(() => {
+      const s = document.getElementById('academic-summary');
+      s?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      s?.focus?.();
+    });
+  }
+
+  /** Alcance exacto del hallazgo primario (fijo por contrato: WAPE H14, SKU-almacén, tipo de historial primaria, universo común). */
+  scopeText = computed(() => `Alcance exacto: por producto y almacén (SKU-almacén) · tipo de historial «primaria» · acumulado de 14 días · universo común (n = ${fmtInt(this.pf().n)}). ${this.periods().metric}. ${this.periods().block}.`);
+  /** Cifras del hallazgo primario, calculadas de los valores publicados; un error indefinido se rotula «no evaluable». */
   estLines = computed(() => {
     const p = this.pf();
     const lines = [
       `Error del promedio de 28 días (método operativo): ${errorText(p.wape.promedio_28)}. Error del modelo experimental: ${errorText(p.wape.rf)}. Control cero: ${errorText(p.wape.cero)}.`,
-      readingSentence(p.wape.promedio_28),
       compareSentence(p.wape.promedio_28, p.wape.rf),
     ];
     if (p.sesgoObs.promedio_28 !== null) lines.push(`Sesgo del promedio de 28 días: ${fmtPct(p.sesgoObs.promedio_28, true)} del volumen observado (negativo = se estimó de menos).`);
     else lines.push(`Sesgo del promedio de 28 días: ${NE}.`);
-    if (p.rfDeclaredWinner === false) lines.push('No se declaró ganador experimental: con un solo bloque de 21 días no hay inferencia de ganador. El método operativo no cambia por este resultado.');
-    else if (p.rfDeclaredWinner === true) lines.push('La API publicó un ganador experimental (valor publicado); el método operativo no cambia por este resultado.');
-    else lines.push('El método operativo no cambia por este resultado.');
     return lines;
   });
   /** Conclusión de la reposición: escenario principal, total, modelo experimental frente al promedio de 28 días. */

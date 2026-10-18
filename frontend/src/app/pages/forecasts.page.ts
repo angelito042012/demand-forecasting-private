@@ -83,7 +83,7 @@ export const NA = 'no disponible para esta corrida';
 
     <p class="muted" data-testid="units-note">
       Cantidades en <strong>unidades base</strong> (la unidad en que se registra la venta de cada producto). La cantidad estimada es la venta diaria que
-      calcula el promedio de los últimos 28 días con ventas registradas.
+      calcula el promedio de una ventana de 28 días de calendario (cuentan los días válidos, incluidos los de venta cero; los días excluidos no cuentan).
     </p>
 
     <app-state-panel [state]="l.state()" emptyText="No hay estimaciones para estos filtros. Prueba quitar el código o ampliar las fechas." (retry)="l.reload()">
@@ -92,7 +92,7 @@ export const NA = 'no disponible para esta corrida';
           <p class="notice warn" data-testid="insufficient">Datos insuficientes para evaluar algunas filas: se marcan «no evaluable» y no cuentan para la comparación.</p>
         }
         @if (generated() && !anyObserved()) {
-          <p class="notice info" data-testid="no-observed-note">Aún no hay ventas registradas para comparar: este análisis se creó antes de que ocurrieran las ventas de esas fechas. No es un cero.</p>
+          <p class="notice info" data-testid="no-observed-note">Aún no hay ventas registradas para comparar: este análisis no incluye una evaluación contra ventas registradas, por diseño. No es un cero.</p>
         }
         <p><button type="button" class="secondary small" data-testid="toggle-details" [attr.aria-pressed]="details()" (click)="details.set(!details())">Comparar métodos / ver detalles</button></p>
         <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla de ventas previstas">
@@ -137,7 +137,7 @@ export const NA = 'no disponible para esta corrida';
             Las ventas registradas pueden estar limitadas por stock. En el nivel categoría, la estimación es la suma de las de cada producto (unidades base heterogéneas).
             Los productos nuevos (primera venta posterior al corte) no son filas: se resumen en la cobertura de la comparación.</p>
         } @else if (generated()) {
-          <p>Análisis creado por la aplicación: no hay ventas registradas posteriores a la fecha de corte, por eso «vendido» y «evaluable» figuran «{{ na }}» (no son cero).
+          <p>Análisis creado por la aplicación: no incluye una evaluación contra ventas registradas, por diseño, por eso «vendido» y «evaluable» figuran «{{ na }}» (no son cero).
             El modelo experimental solo aparece si el análisis lo publica.</p>
         } @else {
           <p>Los valores «vendido» existen solo porque es un ejemplo histórico (ventas registradas en Excel; pueden estar limitadas por stock).
