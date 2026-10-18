@@ -1,6 +1,6 @@
 # Manual de operación (borrador)
 
-Estado: borrador T14A, código de referencia `28a5f49` (18/10/2026). Todo lo descrito como probado se probó **en local**. Publicación en la nube: **pendiente de aprobación** (ver `docs/T11_PLAN_DESPLIEGUE.md`, propuesta no ejecutada). Fuentes: `docs/GUIA_LOCAL.md`, `docs/T11A_EMPAQUETADO.md`, `docs/T11B_ACTA_RECUPERACION_INTEGRAL.md`, `docs/T11B_GENERACION_CONTENEDOR.md`, `docs/T10_CONTRATO.md`, `docs/T11_CONTRATO.md`.
+Estado: borrador T14A, código de referencia `28a5f49` (17/10/2026). Todo lo descrito como probado se probó **en local**. Publicación en la nube: **pendiente de aprobación** (ver `docs/T11_PLAN_DESPLIEGUE.md`, propuesta no ejecutada). Fuentes: `docs/GUIA_LOCAL.md`, `docs/T11A_EMPAQUETADO.md`, `docs/T11B_ACTA_RECUPERACION_INTEGRAL.md`, `docs/T11B_GENERACION_CONTENEDOR.md`, `docs/T10_CONTRATO.md`, `docs/T11_CONTRATO.md`.
 
 ## 1. Dos escenarios: local y publicación
 
@@ -11,23 +11,40 @@ Estado: borrador T14A, código de referencia `28a5f49` (18/10/2026). Todo lo des
 | HTTPS | HTTP local (`COOKIE_SECURE=false`, solo con `APP_ENV=development`) o TLS interno de Caddy | HTTPS de la plataforma (pendiente) |
 | Estado | Probado en local | **[PENDIENTE: no existe publicación]** |
 
-## 2. Arranque local (sin contenedores)
+## 2. Demostración local sobre una copia restaurada (procedimiento recomendado para la aceptación)
 
-Requisitos: Windows, Python 3.12 en `.venv`, Node 24/npm 11, MongoDB en `127.0.0.1:27017` (contenedor `df-mongo-dev`; los scripts no lo crean ni lo detienen), `.env` local a partir de `.env.example` (no versionado, no imprimir).
+Un solo método: imagen de producción en contenedores, **copia nueva restaurada** del respaldo verificado (T11A) y **una única base** para API, worker y creación de usuarios. Solo escucha en `127.0.0.1` (puerto 8443); no usa `v1`/`v2`/`demand_forecasting_pub` originales ni `.env`.
 
-1. Crear usuario (la contraseña se pide por consola):
-   `.venv\Scripts\python.exe -m backend.cli create-user --username <usuario> --role admin` (o `--role lector`).
-2. Publicar la corrida histórica (una vez, idempotente):
-   `.venv\Scripts\python.exe -m scripts.publish_run --manifest t07` (opción `--supersede <run_id>` para sustituir una corrida con defecto).
-3. Iniciar API, frontend y un worker: `powershell -File scripts/start-local.ps1` → API `http://127.0.0.1:8000/api/v1/health`, web `http://localhost:4200`. Registra los procesos en `artifacts/private/t08/procesos.json` (logs en `artifacts/private/t08`). Si ya existe ese registro el script se niega: ejecute antes `stop-local.ps1`.
-4. Temporizador opcional (deshabilitado por defecto): `powershell -File scripts/start-local.ps1 -Scheduler -EnableScheduler [-SchedulerMinutes 1440]`.
-5. Detener solo los procesos propios: `powershell -File scripts/stop-local.ps1`.
+```
+.venv\Scripts\python.exe -m scripts.demo_local up            # crea (si falta) el estado privado, levanta mongo, restaura la copia, levanta api+worker+proxy
+.venv\Scripts\python.exe -m scripts.demo_local status        # contenedores, MISMA base en api y worker, corridas visibles, puntero, jobs
+.venv\Scripts\python.exe -m scripts.demo_local status --writers   # además: ¿hay escritores activos? (antes de cualquier mantenimiento)
+.venv\Scripts\python.exe -m scripts.demo_local create-user --username <usuario> --role admin     # contraseña por consola (no se muestra)
+.venv\Scripts\python.exe -m scripts.demo_local create-user --username <usuario> --role lector --generate   # alternativa: se genera y se guarda en un archivo privado
+.venv\Scripts\python.exe -m scripts.demo_local stop          # detiene contenedores; conserva volúmenes y base
+.venv\Scripts\python.exe -m scripts.demo_local down          # elimina contenedores y redes; conserva volúmenes (nunca `down -v`)
+```
 
-Worker manual: `.venv\Scripts\python.exe -m pipeline.jobs.worker --once` (una vuelta) o sin `--once` (continuo). Scheduler: `-m pipeline.jobs.scheduler --once` o `--loop --enable` (06:00 Lima, 1440 min; la misma ranura no duplica trabajos).
-Carga masiva por CLI: `python -m pipeline.data.importer --source <carpeta> --db <base>`; es administrativa, **serial, nunca simultánea con cargas web/worker**.
-Diagnóstico del entorno: `powershell -File scripts/doctor.ps1`.
+- **Misma base en todos los procesos:** `scripts/demo_local.py` guarda en `artifacts/private/t13b/demo_state.json` (fuera de Git) la URI y la base, y las inyecta al compose, de modo que API, worker y `create-user` (que se ejecuta dentro del contenedor `api`) usan **la misma**. `status` lo comprueba comparando un hash del nombre de base que ve cada contenedor, sin imprimir URI ni claves; si difieren, termina con error.
+- **Base de ensayo realmente activa:** la imprime `up`/`status` (nombre `df_demo_<fecha>`); el guion de aceptación pide anotarla.
+- **Contraseñas:** nunca por chat ni en comandos. Con `create-user` sin `--generate`, la contraseña se pide dos veces por consola. Con `--generate` se escribe solo en `artifacts/private/t13b/demo_credenciales.txt` (privado, ignorado por Git): ábralo localmente, cámbielo si quiere creando otro usuario, y bórrelo al terminar la prueba. Los usuarios no están en el respaldo: se crean después de restaurar.
+- **No se republica la histórica ni se tocan punteros:** la copia ya trae la histórica auditada activa, la sustituida y la evaluación final T12.
+- **Si el puerto 8443 está ocupado** por otro programa, `up` se detiene sin tocarlo.
 
-## 3. Contenedores y compose (ensayo local, T11A/T11B)
+## 2.1 Desarrollo con PowerShell (base `demand_forecasting_v2`; no es la demostración)
+
+Solo para desarrollo. Usa `.env` local (API y CLI de usuarios) pero el **worker, el scheduler y `publish_run` leen variables de entorno** (por defecto `demand_forecasting_v2`): cambiar solo `.env` **no** garantiza la misma base en todos los procesos. No lo use para la aceptación: allí no está la evaluación final T12.
+
+1. Requisitos: Windows, Python 3.12 en `.venv`, Node 24/npm 11, MongoDB en `127.0.0.1:27017` (contenedor `df-mongo-dev`; los scripts no lo crean ni lo detienen), `.env` a partir de `.env.example` (no versionado, no imprimir).
+2. Crear usuario: `.venv\Scripts\python.exe -m backend.cli create-user --username <usuario> --role admin` (o `--role lector`; contraseña por consola).
+3. Publicar la corrida histórica (una vez, idempotente): `.venv\Scripts\python.exe -m scripts.publish_run --manifest t07` (`--supersede <run_id>` para sustituir una con defecto).
+4. Iniciar API, frontend y worker: `powershell -File scripts/start-local.ps1` → API `http://127.0.0.1:8000/api/v1/health`, web `http://localhost:4200`; registra los procesos en `artifacts/private/t08/procesos.json`.
+5. Temporizador opcional (deshabilitado por defecto): `powershell -File scripts/start-local.ps1 -Scheduler -EnableScheduler [-SchedulerMinutes 1440]`.
+6. Detener: `powershell -File scripts/stop-local.ps1` **solo detiene los procesos PowerShell registrados**; no toca contenedores ni Mongo. Los contenedores de la demostración (sección 2) se detienen con `demo_local stop`, no con este script.
+
+Worker manual: `.venv\Scripts\python.exe -m pipeline.jobs.worker --once` (una vuelta) o sin `--once` (continuo). Scheduler: `-m pipeline.jobs.scheduler --once` o `--loop --enable` (06:00 Lima, 1440 min). Carga masiva por CLI: `python -m pipeline.data.importer --source <carpeta> --db <base>`; administrativa, **serial, nunca simultánea con cargas web/worker**. Diagnóstico: `powershell -File scripts/doctor.ps1`.
+
+## 3. Contenedores y compose en general (T11A/T11B)
 
 Una imagen (`Dockerfile`, 3 etapas) con roles por comando: `api` (por defecto), `worker`/`worker-once`, `scheduler` (sale con código 3 salvo `DF_SCHEDULER_ENABLE=true`), `scheduler-once`, `cli …` (`python -m backend.cli`).
 
@@ -36,11 +53,11 @@ Variables obligatorias para el compose (nunca en archivos; `docker-compose.yml` 
 - Levantar: `docker compose -p df-t11a up -d --build` → `https://localhost:8443` (advertencia de certificado autofirmado: esperada).
 - Crear usuarios: `docker compose exec -T -e DF_NEW_PASSWORD api df-entrypoint cli create-user --username U --role admin` (la contraseña sale del entorno).
 - Scheduler (perfil, no arranca por defecto): `docker compose --profile scheduler up`.
-- Detener conservando datos: `docker compose down`; borrar todo (incluye volúmenes): `docker compose down -v`.
+- Parada habitual: `docker compose stop` o `docker compose down` (**conservan volúmenes**). `docker compose down -v` borra la base y las subidas: solo para desmontar un ensayo propio, nunca como parada rutinaria. Use siempre el nombre de proyecto del stack propio (`-p df-demo`) para no afectar otros.
 - Topología: Mongo en red interna sin puertos; solo el proxy publica puerto, en `127.0.0.1`; volúmenes `mongo_data`, `df_data` (`/data`, subidas, compartido por API y worker), `caddy_data`; contenedores de solo lectura, sin capacidades, usuario 10001.
 - Generación en contenedor: el **worker** necesita `DF_RUNTIME_REFERENCE_DIR=/reference` con el paquete de referencia montado **solo lectura** (`DF_RUNTIME_REFERENCE_HOST_DIR`, defecto `./artifacts/private/runtime_reference`). La API no lo monta. Construcción del paquete (usa Git local solo aquí): `python -m scripts.build_runtime_reference [--out ...] [--force]`. Si la variable está definida y el paquete es inválido, la generación falla con `REFERENCIA_INVALIDA` (no degrada en silencio); sin la variable, la corrida se publica sin comparador ni recomendaciones.
 
-Medido en local (17–18/10/2026, una ejecución): generación real 22,2 s, memoria pico del worker ≈ 406 MiB con límite 1 GiB, sin OOM. No es prueba de carga ni de rendimiento en nube.
+Medido en local (17/10/2026, una ejecución): generación real 22,2 s, memoria pico del worker ≈ 406 MiB con límite 1 GiB, sin OOM. No es prueba de carga ni de rendimiento en nube.
 
 ## 4. Variables de producción (sin valores)
 
@@ -75,7 +92,7 @@ python -m scripts.backup_restore restore-all --from artifacts/private/t11b/respa
 ```
 
 Reglas:
-1. **Mantenimiento obligatorio:** antes de `export-all`, detenga API, worker y scheduler (`stop-local.ps1`). `--maintenance-confirmed` es requisito; el comando además rechaza si hay corridas en `staging`, trabajos `running`, ticks en proceso o escrituras activas, y aborta si el contenido de alguna colección cambia durante el volcado (aun con el mismo conteo). Estos controles son barreras, no sustituyen detener los escritores.
+1. **Mantenimiento obligatorio:** antes de `export-all`, detenga los escritores que correspondan al escenario: procesos PowerShell con `stop-local.ps1`, o contenedores con `docker compose -p <proyecto> stop api worker scheduler` (son procedimientos distintos), y compruebe que no quedan escritores (`demo_local status --writers`: jobs `queued/running` y corridas `staging` en 0). `--maintenance-confirmed` es requisito; el comando además rechaza si hay corridas en `staging`, trabajos `running`, ticks en proceso o escrituras activas, y aborta si el contenido de alguna colección cambia durante el volcado (aun con el mismo conteo). Estos controles son barreras, no sustituyen detener los escritores.
 2. `--out` debe ser un directorio nuevo o vacío. Un archivo de la lista cerrada ausente deja el respaldo `integro=false` y falla salvo `--allow-partial`; un respaldo parcial no se restaura.
 3. `restore-all` exige una base destino **nueva y vacía**, distinta de `demand_forecasting_v2/_dev/_pub`, y un directorio `--dest` nuevo y vacío distinto de los originales y del bundle. Verifica hashes antes y después y ejecuta una prueba funcional del paquete. Informa por separado `mongo_ok`, `artefactos_ok` y `recuperacion_integral_ok` (true solo si ambos).
 4. Se excluyen del respaldo `users`, `sessions`, `login_*`, `jobs` y `scheduler_ticks`: tras restaurar hay que **recrear usuarios**.

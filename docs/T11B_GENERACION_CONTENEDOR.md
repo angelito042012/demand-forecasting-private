@@ -43,7 +43,7 @@ El almacén privado no se sirve por web: la API solo sirve el Angular compilado 
 
 Límites: `docker-compose.yml` fija `deploy.resources.limits` 0,5 CPU / 1 GiB para API y worker (`DF_APP_CPUS`, `DF_APP_MEMORY` los sobrescriben), equivalente a `infra/main.bicep` (0,5 / 1Gi).
 
-## 4. Generación real medida (17–18/10/2026)
+## 4. Generación real medida (17/10/2026)
 
 Entorno: imagen reconstruida (`docker build`, 25,8 s con caché), stack `df-t11b` (mongo 8.3.8, api, worker, proxy Caddy), Docker Desktop/Windows 11. Datos: **copia restaurada** `df_t11b_<ts>` desde `artifacts/private/t11a/backup` (restauración dentro de la red del stack con la propia imagen: ok=true, 0 problemas, 24,2 s incl. arranque del contenedor, 213,5 MB), usuarios de prueba nuevos con contraseñas aleatorias no impresas. No se tocó `demand_forecasting_v2/_dev/_pub`. Al terminar: `compose down -v` y borrado del archivo de secretos; solo se eliminaron contenedores, volúmenes y redes `df-t11b*`.
 

@@ -1,6 +1,6 @@
 # T13A — Pruebas locales de uso, rendimiento y accesibilidad
 
-Fecha: 18/10/2026 (America/Lima). **Todo es local** (Docker Desktop en el equipo de desarrollo): no acredita latencia ni comportamiento de Azure/Atlas, HTTPS externo (A13) ni aceptación humana (A14, **pendiente**). No se entrenó ningún modelo, no se repitió T12, no se tocó v1/v2/pub ni se usó Azure.
+Fecha: 17/10/2026 (America/Lima). **Todo es local** (Docker Desktop en el equipo de desarrollo): no acredita latencia ni comportamiento de Azure/Atlas, HTTPS externo (A13) ni aceptación humana (A14, **pendiente**). No se entrenó ningún modelo, no se repitió T12, no se tocó v1/v2/pub ni se usó Azure.
 
 ## 1. Montaje
 
@@ -11,7 +11,9 @@ Fecha: 18/10/2026 (America/Lima). **Todo es local** (Docker Desktop en el equipo
 
 ## 2. Rendimiento (lecturas paginadas, solo GET)
 
-Método: `scripts/t13a_perf.py`; por consulta y nivel de concurrencia, **5 solicitudes de calentamiento descartadas** y **20 medidas por sesión**, páginas distintas, sesiones separadas (cada una con su login; 1 y 5 sesiones, hilos concurrentes en bucle cerrado), vía el proxy TLS local. 3 consultas representativas sobre la corrida histórica `hist-20260710-4ea348836e35` (3 647 SKU, 73 páginas de 50). Sin tormenta de peticiones ni evasión del límite de intentos. Con 20 muestras por sesión, el p95 es la 19.ª ordenada: **indicativo, no estadístico**.
+Método: `scripts/t13a_perf.py`; por consulta y nivel de concurrencia, **5 solicitudes de calentamiento descartadas** y **20 medidas por sesión**, páginas distintas, sesiones separadas (cada una con su login; 1 y 5 sesiones, hilos concurrentes en bucle cerrado), vía el proxy TLS local. 3 consultas representativas sobre la corrida histórica `hist-20260710-4ea348836e35` (3 647 SKU, 73 páginas de 50). Sin tormenta de peticiones ni evasión del límite de intentos.
+
+> **Corrección R15 (revisión Codex14).** La tanda de la tabla se midió con una fórmula de percentil que devolvía la observación 20 de 20 (para n=20) y la 96 de 100 (para n=100): **las cifras «p95» de esta tabla son una cota conservadora (≈ el máximo de cada muestra de 20), no el nearest-rank exacto**, y no hay muestras crudas de esa tanda para recalcularlas. Se corrigió el medidor (nearest-rank: p95 = 19.ª de 20 / 95.ª de 100; rechazo de tandas incompletas; muestras guardadas) y se repitió **solo el ensayo local corto** con la demo restaurada (sección 2.1). El p95 de la tabla no debe citarse como percentil exacto.
 
 | Consulta | Tamaño de página / respuesta | 1 sesión p50 / p95 (ms) | 5 sesiones p50 / p95 (ms) | Errores |
 |---|---|---|---|---|
@@ -19,10 +21,25 @@ Método: `scripts/t13a_perf.py`; por consulta y nivel de concurrencia, **5 solic
 | `GET /recommendations?only_orders=true` | 50 filas / 119,1 KB | 38,3 / 65,5 | 90,7 / 167,5 | 0 |
 | `GET /recommendations/{sku}` (explicación) | 1 SKU / 4,2 KB | 13,9 / 24,0 | 26,0 / 88,2 | 0 |
 
-- **Meta del contrato p95 < 2 s para lecturas precalculadas: cumplida en esta medición local** (peor caso 373 ms con 5 sesiones). No se cambió la meta.
+- **Meta del contrato p95 < 2 s para lecturas precalculadas: cumplida en local** con la cota de esta tabla (373 ms con 5 sesiones) y con el ensayo corregido (2.1). La meta no se cambió. **Las latencias máximas son otra cosa y no cumplen 2 s en todos los casos** (ver 2.1).
 - **Arranque en frío** (reinicio del contenedor de la API): `/health` disponible a los **6,1 s**; primera solicitud de cada consulta 181,5 ms (pronósticos), 30,0 ms (pedidos) y 15,4 ms (detalle). Aparte de las tablas anteriores.
 - **Memoria:** pico de la API **91,4 MiB** (cgroup `memory.peak`) de 1 GiB tras todas las mediciones. **CPU:** el cgroup registró estrangulación (`nr_throttled` 150 de 647 periodos, ≈ 10,1 s acumulados) por el tope de 0,5 vCPU: coherente con que p50/p95 suban con 5 sesiones; no hubo errores ni reinicios.
 - Límites: la consulta de pronósticos es la más pesada (p95 373 ms con 5 sesiones); no se midió carga mayor ni la latencia hacia Atlas (Mongo corre en un contenedor local); no se midió la generación de corridas aquí (ver T11B: 22,2 s, pico del worker 406 MiB).
+
+### 2.1 Ensayo corto corregido (R15), demo local restaurada, 17/10/2026
+
+`scripts.t13a_perf` corregido (nearest-rank; tanda incompleta ⇒ `completa:false` y código de salida 1; errores por hilo contabilizados; recursos cerrados en `finally`; timeout total de arranque; TLS verificado salvo `--insecure-local`; muestras crudas privadas). Mismo método (5 + 20 por sesión, 1 y 5 sesiones, 3 consultas), contra la demo `df-demo` (0,5 vCPU / 1 GiB, base restaurada nueva, usuarios `demo_lector` y `demo_admin`). Resultado `completa: true`, 0 errores, 600 medidas esperadas = 600 obtenidas. Evidencia privada: `artifacts/private/t13b/perf_r15.json` y `perf_r15_muestras.json`.
+
+| Consulta | 1 sesión p50 / p95 / máx (ms) | 5 sesiones p50 / p95 / máx (ms) | Solicitudes > 2 s (1 / 5 sesiones) |
+|---|---|---|---|
+| `forecasts` SKU (50 filas) | 82,9 / 107,4 / 107,6 | 231,5 / 294,9 / 2 266,0 | 0 / 2 |
+| `recommendations` con pedido (50 filas) | 21,2 / 29,1 / 31,9 | 88,1 / 298,6 / 2 504,7 | 0 / 2 |
+| `recommendation` detalle | 10,2 / 19,0 / 20,2 | 18,6 / 79,9 / 2 058,3 | 0 / 2 |
+
+- p95 (nearest-rank) más alto: **298,6 ms** (5 sesiones); meta p95 < 2 s cumplida en local.
+- **Máximos > 2 s:** en cada consulta, con 5 sesiones, la **primera solicitud medida de dos de las cinco sesiones** tardó 2,06–2,50 s (índice 0 de las muestras; el resto de cada serie quedó por debajo de 0,4 s en los p95). Coincide con el arranque simultáneo de las sesiones bajo el tope de 0,5 vCPU (el cgroup registró estrangulación: 118 de 591 periodos, ≈ 11,5 s). No se descarta una causa de la aplicación (apertura de conexión/caché en frío): no investigada; **no confundir p95 con la latencia máxima**.
+- Arranque en frío (reinicio de la API): `/health` a los 2,15 s; primera solicitud por consulta 109,6 / 21,9 / 11,9 ms. Pico de memoria de la API 91,6 MiB.
+- Límites: ensayo local con Mongo en contenedor; sigue sin acreditar latencia de Azure/Atlas.
 
 ## 3. Recorrido en navegador (Chrome real, 22 comprobaciones)
 

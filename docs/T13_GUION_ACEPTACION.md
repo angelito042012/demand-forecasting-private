@@ -2,10 +2,19 @@
 
 **Estado de la aceptación humana: PENDIENTE.** Este documento no está firmado ni acredita participantes, conformidad de asesor o de la MYPE, ni actas. Lo completará Rogelio al ejecutarlo.
 
-- Versión del sistema: commit `28a5f49` (rama master); fecha del guion: 18/10/2026 (America/Lima).
-- Entorno a probar: ejecución local (`scripts/start-local.ps1`, web `http://localhost:4200`). Publicación en la nube: [PENDIENTE: no existe publicación]; este guion no acredita pruebas en nube.
+- **Versión del sistema:** commit `@@COMMIT@@` (rama master); imagen `df-app:t11a-local` (`sha256:59c92de892aa`, construida con la corrección de estilos de producción). Fecha del guion: 17/10/2026 (America/Lima).
+- **Entorno a probar:** demostración local `df-demo` sobre una **copia restaurada** (no es la base v1/v2 ni la publicación original). **URL: `https://localhost:8443`** (solo este equipo, 127.0.0.1; certificado autofirmado: el navegador avisará, elija «Avanzado» → «Continuar»). **Base de ensayo activa:** `df_demo_20261017221940` (compruébela con `status`, abajo). Publicación en la nube: [PENDIENTE: no existe publicación]; este guion no acredita pruebas en nube.
 - Fecha y hora de ejecución: ____________ Ejecutó: Rogelio ____________ (nombre/firma solo cuando se ejecute).
-- Antes de empezar: tener un usuario lector y uno admin propios (ver `docs/MANUAL_OPERACION.md` §2). No anote contraseñas aquí.
+- **Usuarios (sin compartir contraseñas por chat):** ya existen `demo_admin` y `demo_lector`, con contraseñas generadas guardadas **solo** en `artifacts/private/t13b/demo_credenciales.txt` (ábralo en su equipo; fuera de Git). Para usar su propia contraseña: `.venv\Scripts\python.exe -m scripts.demo_local create-user --username <su_usuario> --role admin` (la pide dos veces por consola y no la muestra). No anote contraseñas aquí.
+- **Comprobar antes de empezar:** `.venv\Scripts\python.exe -m scripts.demo_local status` debe decir «misma base en api y worker … True» y listar tres corridas (histórica activa, histórica sustituida y evaluación final).
+
+## Inicio rápido: cinco pasos
+
+1. Abra `https://localhost:8443`, acepte el aviso del certificado e ingrese como `demo_lector`.
+2. En «Corridas» identifique la **histórica de desarrollo (activa, corte 10/07/2026)** y la **evaluación final (T12)**; abra «Ver detalle» de la final.
+3. En «Comparación» (final) lea el WAPE a 14 días de `promedio_28` (0,78) frente a RF (0,79): **no es 78 % de acierto**; RF no se declara ganador.
+4. En «Recomendaciones» de la histórica activa marque «Solo con pedido», abra «Ver cálculo» de un SKU y lea el rótulo **«Inventario simulado con supuestos; no corresponde al inventario real de la empresa»**.
+5. Salga e ingrese como `demo_admin`: verá «Importaciones» (carga) y «Generar una corrida»; no suba archivos reales ni genere corridas durante esta prueba inicial.
 
 ## Pasos
 
@@ -14,7 +23,7 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 | N.º | Paso (qué hacer) | Resultado esperado | Resultado real / observación |
 |---|---|---|---|
 | **A. Acceso** | | | |
-| 1 | Abrir `http://localhost:4200` sin sesión | Aparece «Acceso»; no se ve ningún dato | |
+| 1 | Abrir `https://localhost:8443` sin sesión | Aparece «Acceso»; no se ve ningún dato | |
 | 2 | Ingresar con una contraseña incorrecta | Mensaje «Usuario o contraseña incorrectos.» | |
 | 3 | Ingresar con el usuario lector | Entra a «Resumen»; arriba se ve usuario y rol «lector» | |
 | 4 | Abrir «Importaciones» | Mensaje de solo lectura; no hay botón de carga | |

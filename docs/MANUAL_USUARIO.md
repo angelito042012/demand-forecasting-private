@@ -1,6 +1,6 @@
 # Manual de usuario (borrador)
 
-Estado: borrador T14A, versión de código de referencia `28a5f49` (18/10/2026). Describe las pantallas tal como existen en `frontend/src`. No hay publicación: **URL pública: [PENDIENTE: no existe publicación]**. Hoy el sistema solo se ejecuta en el equipo local (ver `docs/GUIA_LOCAL.md` y `docs/MANUAL_OPERACION.md`).
+Estado: borrador T14A, versión de código de referencia `28a5f49` (17/10/2026). Describe las pantallas tal como existen en `frontend/src`. No hay publicación: **URL pública: [PENDIENTE: no existe publicación]**. Hoy el sistema solo se ejecuta en el equipo local (ver `docs/GUIA_LOCAL.md` y `docs/MANUAL_OPERACION.md`).
 
 ## 1. Qué es y qué no es
 
@@ -10,7 +10,7 @@ Aviso que aparece en pantalla: **«Inventario simulado con supuestos; no corresp
 
 ## 2. Acceder
 
-1. Abra la dirección que le indique el administrador (local: `http://localhost:4200`).
+1. Abra la dirección que le indique el administrador (demostración local: `https://localhost:8443`; en desarrollo `http://localhost:4200`).
 2. En la pantalla **Acceso** escriba *Usuario* y *Contraseña* y pulse **Ingresar**.
 3. No existe registro público: la cuenta la crea el administrador por línea de comandos. Si olvidó la contraseña, pídale otra al administrador.
 4. Mensajes: «Usuario o contraseña incorrectos.» Tras 5 fallos seguidos del mismo usuario desde el mismo equipo (o 20 desde un mismo equipo) el acceso se bloquea unos 15 minutos.
@@ -32,8 +32,8 @@ Una *corrida* es un conjunto publicado de pronósticos. Hay tres tipos y nunca s
 
 | Tipo en pantalla | Qué es | Qué hacer con ella |
 |---|---|---|
-| **Histórica de desarrollo (T07)** | Backtest de desarrollo con origen 10/07/2026; es la corrida **activa** por defecto y la única con recomendaciones validadas | Úsela para ver pronósticos, recomendaciones simuladas y la comparación de métodos |
-| **Generada por la aplicación** | `promedio_28` calculado por la aplicación para un origen elegido por el administrador (horizonte 21 días); no tiene ventas observadas posteriores ni backtest propio | Es una demostración de generación; no activa la corrida por defecto |
+| **Histórica de desarrollo (T07)** | Backtest de desarrollo con origen (fecha de corte) 10/07/2026; es la corrida **activa** por defecto. Ese 10/07 es el corte de esta corrida, no de todas | Úsela para ver pronósticos, recomendaciones simuladas y la comparación de métodos |
+| **Generada por la aplicación** | `promedio_28` calculado por la aplicación para un origen elegido por el administrador (horizonte 21 días); no tiene ventas observadas posteriores ni backtest propio. Puede traer recomendaciones si existe un snapshot válido de inventario simulado para su fecha de corte; si no, se rotulan «Sin inventario simulado» | Es una demostración de generación; no activa la corrida por defecto. Lea siempre la fecha del snapshot simulado que muestra la pantalla de Recomendaciones |
 | **Evaluación final (T12)** | Pronóstico fijado el 31/07/2026 comparado con las ventas ya observadas del 01 al 21/08/2026 (un solo bloque) | Sirve para evaluar, **no genera recomendaciones ni pedidos** |
 
 Pulse **Ver detalle** para ver estado (Completada / Sustituida), fechas (origen, fechas objetivo, período de evaluación), método, cobertura y enlaces «Ver pronósticos / recomendaciones / comparación de esta corrida». Cada corrida muestra su **antigüedad** al consultar; si supera 7 días aparece «Corrida antigua». Una corrida **Sustituida** (corrección de precisión) muestra un aviso rojo: no use sus pedidos y abra la corrida corregida con el enlace.
@@ -70,7 +70,7 @@ Estado general (operativo/degradado), base de datos y versión de la API.
 **Corridas → Generar una corrida de desarrollo**
 1. Elija el *Origen (fecha de corte)* entre los límites que indica la pantalla (01/06 a 10/07/2026). Horizonte (21 días) y método (`promedio_28`) son fijos.
 2. Pulse **Generar** y siga el trabajo en «Trabajos de generación recientes»; al terminar use «Ver la corrida generada».
-3. La corrida generada no cambia la corrida por defecto. Si el origen es distinto del 10/07 puede no haber comparador RF ni recomendaciones.
+3. La corrida generada no cambia la corrida por defecto. Si el origen es distinto del 10/07 puede no haber comparador RF; las recomendaciones dependen de que exista un snapshot de inventario simulado válido para ese origen (si no, la fila indica «Sin inventario simulado»).
 
 El lector verá «Esta pantalla es de solo lectura para su rol».
 
@@ -79,7 +79,7 @@ El lector verá «Esta pantalla es de solo lectura para su rol».
 - **WAPE no es precisión porcentual.** WAPE = error absoluto total / unidades observadas. Un WAPE de 0,78 significa que el error absoluto acumulado equivale al 78 % del volumen observado; no «78 % de acierto». Menor es mejor. Un valor sobre 100 % es posible. Los WAPE por SKU son altos (la demanda es intermitente); por categoría son mucho menores porque los errores se compensan.
 - **MAPE** solo se calcula con ventas reales positivas; se muestra su cobertura y los ceros excluidos. **R²** puede ser «no evaluable» (indefinido) y no debe leerse como porcentaje de acierto.
 - **Inventario simulado:** stock, tránsito, costos y plazos son supuestos del simulador (procedencia `SYNTHETIC_NOT_REAL_INVENTORY`). No corresponde al inventario real de la empresa ni demuestra una mejora real.
-- **Antigüedad:** el inventario simulado corresponde al cierre del 10/07/2026 (fecha mostrada) y la corrida tiene su corte; mire siempre «antigüedad N día(s) al consultar» antes de interpretar.
+- **Antigüedad:** cada corrida usa el snapshot de inventario simulado de su propia fecha de corte (para la histórica predeterminada, el cierre del 10/07/2026; en una generada, la fecha que muestre la pantalla) y la corrida tiene su corte; mire siempre «antigüedad N día(s) al consultar» antes de interpretar.
 - **Ventas posiblemente censuradas:** la demanda es la venta observada, que puede estar limitada por falta de stock; los faltantes reales se desconocen.
 - **Evaluación final sin recomendaciones:** compara pronósticos con agosto observado; no crea pedidos. Es un solo bloque de 21 días: no permite declarar ganador.
 - Los folds de desarrollo se solapan: el agregado no es una evaluación independiente. Se muestran también los resultados desfavorables y el control «cero».
@@ -95,7 +95,7 @@ El lector verá «Esta pantalla es de solo lectura para su rol».
 | No veo Importaciones/Generar | Su rol es lector; solo el administrador carga y genera |
 | La carga se rechaza | Lea el motivo: extensión, tamaño (>25 MiB), fechas fuera de marzo–julio, mes con fuente ya aprobada |
 | El trabajo queda «En cola» | El worker puede no estar activo; avise al administrador |
-| Recomendaciones vacías en una corrida | Si es evaluación final o generada con otro origen, es esperado (ver 3.4) |
+| Recomendaciones vacías en una corrida | Si es evaluación final, es esperado; en una generada, puede faltar snapshot simulado para su origen (ver 3.4) |
 | Aviso rojo de corrida sustituida | No use sus pedidos; abra la corrida corregida |
 | Fechas de agosto no disponibles | Agosto está reservado; solo la evaluación final lo muestra, hasta el 21/08 |
 

@@ -1,10 +1,10 @@
 # Estado vigente del proyecto
 
-Actualizado el 18/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–12. Este resumen sustituye estados anteriores.
+Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–12. Este resumen sustituye estados anteriores.
 
 ## Siguiente encargo
 
-**Etapa 13 (T13A + T14A + plan de publicación) entregada para revisión de Codex el 18/10/2026.** R12–R14 aceptados por Codex para el alcance local (REVISION_CODEX_13.md). Azure: `Microsoft.App` registrado y `ManagedEnvironmentCount` Brazil South uso 0 / límite 1 (verificado por Codex; no se repite); sesión cerrada. **No hay recursos facturables, imágenes subidas, datos transferidos ni despliegue.** Hecho en esta etapa: pruebas locales de rendimiento/uso/accesibilidad (`docs/T13A_REPORTE.md`; defecto de estilos de producción hallado y corregido), borradores T14A (matriz de cierre, informe, manuales, guion de video, guion de aceptación) y plan de publicación actualizado con acciones que requieren aprobación (`docs/T11_PLAN_DESPLIEGUE.md`). Siguiente: revisión Codex; decisión del usuario sobre publicar en nube (crédito máximo propuesto US$ 20, parada > US$ 12, acciones numeradas del plan); ejecución del guion de aceptación por Rogelio; completar T14 con URL/evidencia reales y T15 (entrega 23/10/2026). Aceptación humana: **pendiente**.
+**Etapa 14 (T13B) entregada para revisión de Codex el 17/10/2026** (`docs/T13B_REPORTE.md`): R15 (medidor de rendimiento) y R16 (demostración con base común) cerrados; **demostración local activa** en `https://localhost:8443` sobre la copia restaurada `df_demo_20261017221940` (solo 127.0.0.1); paquete de publicación para **una sola autorización** en `docs/T11_PLAN_DESPLIEGUE.md`. R12–R14 aceptados localmente; no se repiten. No hay recursos facturables, imágenes subidas ni datos transferidos; Azure: `Microsoft.App` registrado, `ManagedEnvironmentCount` Brazil South 0/1. Siguiente: aceptación humana por Rogelio con `docs/T13_GUION_ACEPTACION.md` (**pendiente**; no se completa por inferencia); decisión sobre el mensaje único de autorización de nube; T14 final y T15 (entrega 23/10/2026).
 
 ## Hitos aceptados
 
@@ -53,12 +53,18 @@ Después de T12 y su revisión: T11 capacidad/archivo recuperable/HTTPS/almacena
 - Plan Azure corregido: tabla de medidores con fecha/URL, grants compartidos por suscripción, worker no presumido ocioso (medido 0,0097 vCPU), medidor de gestión de entorno anclado a la documentación, rangos conservadores; propuesta principal: modo A, US$ 4–17 estimados, crédito máximo US$ 20, parada > US$ 12. Bicep con share de referencia de solo lectura compila sin errores.
 - Pruebas: regresión T11B 440 aprobadas / 5 omitidas; pruebas nuevas R12 (4), R13 (67/1 omitida), R14 (22 + generación real). No se repitió la suite completa ni el navegador.
 - Pendientes: registrar los demás proveedores (con aprobación; `Microsoft.App` ya registrado y `ManagedEnvironmentCount` Brazil South 0/1), saldo en portal, usuario/credencial de Atlas y lista de IP, `df-ref`, primer push de imagen, T13–T15.
-- Azure (18/10/2026): preflight de solo lectura y registro autorizado únicamente de `Microsoft.App`; resultado en `artifacts/private/t11b/azure_microsoft_app.json`: proveedor ya `Registered` al comenzar la comprobación, `ManagedEnvironmentCount` Brazil South 0/1; sesión cerrada y caché borrada. La causa del 0/0 anterior no queda demostrada. Los demás proveedores siguen sin registrar.
+- Azure (17/10/2026): preflight de solo lectura y registro autorizado únicamente de `Microsoft.App`; resultado en `artifacts/private/t11b/azure_microsoft_app.json`: proveedor ya `Registered` al comenzar la comprobación, `ManagedEnvironmentCount` Brazil South 0/1; sesión cerrada y caché borrada. La causa del 0/0 anterior no queda demostrada. Los demás proveedores siguen sin registrar.
 
-## T13A pruebas locales (18/10/2026, verificado; detalle en `docs/T13A_REPORTE.md`)
+## T13A pruebas locales (17/10/2026, verificado; detalle en `docs/T13A_REPORTE.md`)
 
 - Rendimiento local (stack en contenedores 0,5 vCPU / 1 GiB, base restaurada nueva, 3 consultas, 1 y 5 sesiones, 20 medidas/sesión tras calentamiento): p95 máximo 373 ms (meta < 2 s cumplida en local), 0 errores, pico de la API 91,4 MiB, arranque en frío 6,1 s; estrangulación de CPU observada (150/647 periodos).
 - Chrome sobre la imagen de producción: 22/22 (lector, admin, 375 px); agosto rechazado; generación 10/07 desde la UI y reenvío idéntico sin duplicar; histórica predeterminada intacta.
 - **Defecto corregido:** la imagen de producción no aplicaba el CSS global (carga diferida con `onload` bloqueada por la CSP). Cambios: `frontend/angular.json` (`inlineCritical:false`) y `frontend/src/styles.scss`. Imagen reconstruida; no se repitieron las pruebas unitarias de Angular (cambio de estilos/compilación).
 - Accesibilidad: revisión automatizada sin hallazgos importantes (único contraste bajo: botones deshabilitados, exentos); sin lector de pantalla, zoom 200 % ni objetivos táctiles. A13 (HTTPS/cinco usuarios en nube) y A14 (participación humana) siguen pendientes.
 - Pendientes: decisión/aprobación de publicación; credencial/usuario Atlas por canal privado; registro de los demás proveedores; ejecución humana del guion; T14 final y T15.
+
+## T13B cierres R15/R16 y demostración (17/10/2026, verificado; detalle en `docs/T13B_REPORTE.md`)
+
+- R15: `scripts/t13a_perf.py` con nearest-rank, rechazo de tandas incompletas (código 1), errores por hilo contabilizados, cierre en `finally`, timeout de arranque, TLS verificado por defecto, muestras crudas privadas; 9 regresiones sintéticas aprobadas. Cifras anteriores de T13A = cota conservadora; ensayo corto repetido con el medidor corregido: p95 máx. 298,6 ms, `completa=true`; máximos de 2,06–2,50 s en la primera solicitud de 2 de 5 sesiones (informados aparte).
+- R16: `scripts/demo_local.py` (up/status/create-user/stop/down) sobre el compose; misma URI y base inyectadas a api, worker y creación de usuarios; comprobación por hash sin imprimir secretos; demostración `df-demo` activa (histórica activa, sustituida y final visibles; lector 403 al generar; HTML sin `media=print`/`onload`, CSP intacta, solo loopback). Mantenimiento: PowerShell y compose documentados por separado; sin `down -v` rutinario.
+- Pendientes: ejecución humana del guion; autorización única de nube (alcance, US$ 20, intervención a US$ 12, política posterior a decidir); revisión Codex; T14 final y T15.

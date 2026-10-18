@@ -65,7 +65,7 @@ Limitación de datos: la venta observada puede estar censurada por faltante de s
 
 ### 6.1 Desarrollo T07 (`docs/T07_RESULTADOS.md`)
 
-SKU primaria, universo común, acum14, agregado de 4 folds (n = 11 957):
+SKU primaria, universo común, acum14, agregado de 4 folds (n = 11 957 observaciones SKU-fold, no SKU únicos; T07_RESULTADOS no informa el número de SKU únicos):
 
 | Método | WAPE | Sesgo (pred - obs) | R² |
 |---|---|---|---|
@@ -89,9 +89,9 @@ Hallazgo primario, SKU-almacén primaria, universo común n = 3 401, WAPE acum14
 | acum21 | 0,7512 | 0,7590 |
 | diaria | 1,5048 | 1,5009 |
 
-Otras métricas de promedio_28 en acum14 (SKU primaria): MAE 2,380; RMSE 7,288; R² 0,321; MAPE 0,9599 con cobertura 0,485 de reales > 0.
+Otras métricas de promedio_28 en acum14 (SKU primaria): MAE 2,380; RMSE 7,288; R² 0,321; MAPE 0,9599 con cobertura 0,485. En acum14 la unidad es la entidad SKU-almacén (n = 3 401): el MAPE excluye las entidades cuyo total observado a 14 días es cero, y 0,485 es la fracción de entidades incluidas (no de SKU únicos ni de días). La cobertura de MAPE de la serie diaria (0,097) usa otro denominador: n = 71 421 entidad-días, de los cuales solo el 9,7 % tiene venta observada positiva (MAPE diario de promedio_28 0,7591).
 
-Categoría (promedio_28 = suma de SKU, n = 36), acum14: promedio_28 WAPE 0,1170, RF 0,1166; R² 0,994 en ambos; MAPE 0,4187 y 0,3693 (cobertura 0,889).
+Categoría (promedio_28 = suma de SKU, n = 36), acum14: promedio_28 WAPE 0,1170, RF 0,1166; R² 0,994 en ambos; MAPE 0,4187 y 0,3693 (cobertura 0,889 de las 36 entidades categoría con total observado a 14 días mayor que cero).
 
 Historia corta (357 SKU), acum14: promedio_28 WAPE 1,0618 y R² 0,623; RF WAPE 0,8009 y R² 0,741. Aquí RF supera a promedio_28 en este único bloque; es un resultado secundario, no el hallazgo primario.
 
