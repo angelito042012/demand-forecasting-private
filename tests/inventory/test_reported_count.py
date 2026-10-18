@@ -93,7 +93,7 @@ def test_dry_run_writes_nothing(tmp_path):
 
 def test_new_version_supersedes_and_keeps_previous(tmp_path):
     d1, g1 = build_source(tmp_path, name="a")
-    d2, g2 = build_source(tmp_path, name="b", excel=b"excel sintetico v2",
+    d2, g2 = build_source(tmp_path, name="b", excel_edit=lambda ws: ws.cell(row=9, column=5, value=9),
                           edit=lambda rows: _set(rows, 0, cantidad_libre_reportada="9", cantidad_fisica_total_reportada="9"))
     with temp_db() as db:
         r1 = rc.run(d1, g1, db)
@@ -179,7 +179,7 @@ def test_rejects_inconsistent_total(tmp_path):
 
 def test_rejects_altered_excel_or_hashes(tmp_path):
     d, g = build_source(tmp_path)
-    (d / XLSX).write_bytes(b"alterado")
+    (d / XLSX).write_bytes((d / XLSX).read_bytes() + b"alterado")
     with pytest.raises(rc.ImportRejected) as e:
         rc.prepare(d, g)
     assert e.value.code == "FUENTE_ALTERADA"
@@ -244,7 +244,7 @@ def test_isolation_from_existing_collections(tmp_path):
         before = digest()
         rc.run(d, g, db)
         rc.run(d, g, db)
-        d2, g2 = build_source(tmp_path, name="v2", excel=b"otro excel")
+        d2, g2 = build_source(tmp_path, name="v2", salt="otro")
         rc.run(d2, g2, db)
         assert digest() == before
         assert sorted(db.list_collection_names()) == sorted(

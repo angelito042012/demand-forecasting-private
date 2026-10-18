@@ -117,7 +117,7 @@ def test_snapshot_id_lookup_and_404(env):
 
 def test_versions_listed_and_latest_current_default(env):
     c, db, res, tmp_path = env[0], env[1], env[2], env[4][0]
-    d2, g2 = build_source(tmp_path, name="v2", excel=b"otro excel",
+    d2, g2 = build_source(tmp_path, name="v2", excel_edit=lambda ws: ws.cell(row=9, column=5, value=9),
                           edit=lambda rows: rows[0].update(cantidad_libre_reportada="9", cantidad_fisica_total_reportada="9"))
     r2 = rc.run(d2, g2, db)
     lst = c.get(URL + "/snapshots").json()

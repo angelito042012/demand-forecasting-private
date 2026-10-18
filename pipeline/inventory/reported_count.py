@@ -1,4 +1,4 @@
-"""Importador del conteo fisico reportado (T18 §2-§3). Solo depende de stdlib y pymongo.
+"""Importador del conteo fisico reportado (T18 §2-§3). Depende de stdlib, pymongo y openpyxl (lectura del Excel).
 
     python -m pipeline.inventory.reported_count --count-dir <carpeta v2> --group <productos.csv> --db <base>
         [--sales-history-end 2026-09-30] [--dry-run]
@@ -6,6 +6,11 @@
 Lee la fuente (solo lectura), la valida completa y, solo si todo es correcto, escribe en las colecciones
 `inventory_reported_snapshots` / `inventory_reported_items` (staging -> current). No toca `recommendations`,
 `runs` ni `inventory_snapshot`. Vacio = no informado = null (nunca 0). Las presentaciones no se multiplican.
+
+R18: el CSV es un DERIVADO del Excel revisado; antes de escribir se contrasta cada registro con las celdas del Excel
+(codigo/fila, producto, unidad, presentacion, cantidades, total, observaciones, fecha/hora y almacen) y review.json con la
+cabecera del Excel. Las confirmaciones humanas (almacen 1, sin ventas durante el conteo) no estan en el Excel: se verifican
+aparte en el CSV y en review.json. Una fuente modificada legitimamente requiere su revision y una version nueva.
 """
 from __future__ import annotations
 
@@ -16,8 +21,9 @@ import json
 import os
 import re
 import sys
+import unicodedata
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -39,6 +45,10 @@ REQUIRED_COLUMNS = (
     "fecha_hora_reportada", "zona_horaria", "almacen_nombre_reportado", "almacen_id_confirmado",
     "corte_sin_ventas_confirmado", "naturaleza", "verificacion_independiente", "estado_uso", "archivo_origen",
     "hoja_origen", "fila_origen", "sha256_origen")
+# Disposicion de la plantilla recibida (hoja de conteo): metadatos en C3/G3/C4/G4/C5/G5, encabezado en la fila 8, datos desde la 9.
+EXCEL_LAYOUT_ID = "solicitud_conteo_50_v1"
+EXCEL_HEADER_ROW, EXCEL_FIRST_ROW = 8, 9
+EXCEL_HEADER_TOKENS = ("codigo original", "producto", "unidad en reporte", "representa", "libres", "reservadas", "vendibles", "observaciones")
 DEFAULT_UNKNOWNS = [
     {"code": "BRECHA_OCTUBRE", "detail": "Las ventas y compras disponibles terminan el 30/09; los dias posteriores "
                                          "al corte son desconocidos, no cero."},
@@ -112,6 +122,116 @@ def _parse_when(rows: list[dict]) -> tuple[datetime, str]:
     return local.astimezone(UTC).replace(tzinfo=None), raw
 
 
+def _norm(text) -> str:
+    t = unicodedata.normalize("NFKD", str(text if text is not None else "")).encode("ascii", "ignore").decode()
+    return re.sub(r"\s+", " ", t).strip().lower()
+
+
+def _mismatch(what: str) -> ImportRejected:
+    return ImportRejected("DERIVADO_NO_COINCIDE", f"El CSV derivado no coincide con el Excel revisado: {what}.")
+
+
+def _cell_qty(v, where: str) -> str:
+    """Celda de cantidad del Excel como texto canonico: vacio => ''; entero => '96'. Texto, fraccion o formula no se aceptan."""
+    if v is None or (isinstance(v, str) and v.strip() == ""):
+        return ""
+    if isinstance(v, (bool, str)):
+        raise _mismatch(f"{where} no es un numero entero")
+    if isinstance(v, float) and v.is_integer():
+        v = int(v)
+    if not isinstance(v, int):
+        raise _mismatch(f"{where} no es un numero entero")
+    return str(v)
+
+
+def _cell_text(v) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, str) and v.lstrip().startswith("="):
+        raise _mismatch("hay una formula en una celda de texto")
+    return str(v).strip()
+
+
+def verify_against_excel(xlsx: Path, sheet: str, rows: list[dict], as_of_local: str, wh_name: str, review: dict) -> dict:
+    """Contrasta CADA registro del CSV, la fecha/hora/almacen y review.json con las celdas del Excel (solo lectura).
+    Devuelve los metadatos leidos del Excel; lanza ImportRejected(DERIVADO_NO_COINCIDE) ante cualquier diferencia."""
+    try:
+        from openpyxl import load_workbook
+        wb = load_workbook(xlsx, read_only=True, data_only=False)
+    except Exception:  # noqa: BLE001 - archivo ilegible: no se confia en el derivado
+        raise ImportRejected("FUENTE_ALTERADA", "El Excel de origen no se puede leer como libro .xlsx.") from None
+    try:
+        if sheet not in wb.sheetnames:
+            raise _mismatch("la hoja de origen no existe")
+        grid = [list(r) for r in wb[sheet].iter_rows(values_only=True)]
+    finally:
+        wb.close()
+
+    def cell(r: int, c: int):                      # r, c base 1
+        return grid[r - 1][c - 1] if r - 1 < len(grid) and c - 1 < len(grid[r - 1]) else None
+
+    header = [_norm(cell(EXCEL_HEADER_ROW, c)) for c in range(1, 9)]
+    if not all(tok in h for tok, h in zip(EXCEL_HEADER_TOKENS, header, strict=True)):
+        raise _mismatch("el encabezado de la hoja no corresponde a la plantilla de conteo")
+    # --- metadatos (fecha, hora, almacen, responsable, alcance, movimientos)
+    d, t = cell(3, 3), cell(3, 7)
+    if isinstance(d, datetime):
+        d = d.date()
+    if not isinstance(d, date) or not hasattr(t, "hour"):
+        raise _mismatch("fecha u hora del conteo no son valores de fecha/hora")
+    hh, mm = t.hour, t.minute
+    xl_local = datetime(d.year, d.month, d.day, hh, mm, tzinfo=timezone(LIMA_OFFSET)).isoformat()
+    if xl_local != as_of_local:
+        raise _mismatch("la fecha y hora del CSV no son las del documento")
+    xl_wh = _cell_text(cell(4, 3))
+    if xl_wh != wh_name:
+        raise _mismatch("el almacen del CSV no es el del documento")
+    meta = {"warehouse_name": xl_wh, "responsible": _cell_text(cell(4, 7)), "scope": _cell_text(cell(5, 3)),
+            "movement_statement": _cell_text(cell(5, 7))}
+    rmeta = review.get("metadata")
+    if not isinstance(rmeta, dict):
+        raise _mismatch("review.json no trae los metadatos del documento")
+    for k, v in meta.items():
+        if str(rmeta.get(k, "")).strip() != v:
+            raise _mismatch(f"review.json difiere del documento en {k}")
+    if str(rmeta.get("count_date", ""))[:10] != d.isoformat() or str(rmeta.get("count_time", ""))[:5] != f"{hh:02d}:{mm:02d}":
+        raise _mismatch("review.json difiere del documento en la fecha u hora del conteo")
+    # --- filas de datos: correspondencia exacta registro a registro
+    xl_rows = {r for r in range(EXCEL_FIRST_ROW, len(grid) + 1) if _cell_text(cell(r, 1)) != ""}
+    by_row = {}
+    for rec in rows:
+        try:
+            n = int(rec["fila_origen"])
+        except ValueError:
+            raise ImportRejected("CSV_ESTRUCTURA_INVALIDA", "fila_origen invalida.") from None
+        if n in by_row:
+            raise _mismatch("dos registros citan la misma fila del documento")
+        by_row[n] = rec
+    if set(by_row) != xl_rows:
+        raise _mismatch("las filas del CSV no son exactamente las filas de datos del documento")
+    for n, rec in by_row.items():
+        raw = cell(n, 1)
+        if isinstance(raw, bool) or not isinstance(raw, (str, int)) or _cell_text(raw) != rec["producto_id"]:
+            raise _mismatch(f"el codigo de la fila {n} no coincide")
+        if _cell_text(cell(n, 2)) != (rec["producto"] or "").strip():
+            raise _mismatch(f"el producto de la fila {n} no coincide")
+        if _cell_text(cell(n, 3)) != (rec["unidad_reporte"] or "").strip():
+            raise _mismatch(f"la unidad de la fila {n} no coincide")
+        if _cell_text(cell(n, 4)) != (rec["unidad_descripcion_reportada"] or "").strip():
+            raise _mismatch(f"la presentacion de la fila {n} no coincide")
+        q = [_cell_qty(cell(n, c), f"la cantidad de la fila {n}") for c in (5, 6, 7)]
+        fields = ("cantidad_libre_reportada", "cantidad_reservada_reportada", "cantidad_no_vendible_reportada")
+        for got, field in zip(q, fields, strict=True):
+            if got != (rec[field] or "").strip():
+                raise _mismatch(f"{field} de la fila {n} no coincide")
+        expected_total = str(sum(int(x) for x in q)) if all(x != "" for x in q) else ""
+        if (rec["cantidad_fisica_total_reportada"] or "").strip() != expected_total:
+            raise _mismatch(f"el total de la fila {n} no se deriva de las celdas del documento")
+        if _cell_text(cell(n, 8)) != (rec.get("observaciones") or "").strip():
+            raise _mismatch(f"las observaciones de la fila {n} no coinciden")
+    return {"layout": EXCEL_LAYOUT_ID, "metadata": meta, "rows_verified": len(by_row)}
+
+
 def prepare(count_dir: Path, group_csv: Path, sales_history_end: str = "2026-09-30") -> Prepared:
     try:
         date.fromisoformat(sales_history_end)
@@ -170,6 +290,9 @@ def prepare(count_dir: Path, group_csv: Path, sales_history_end: str = "2026-09-
     if len(wh_names) != 1 or "" in wh_names:
         raise ImportRejected("ALMACEN_NO_CONFIRMADO", "El nombre de almacen es inconsistente o vacio.")
     as_of_utc, as_of_local = _parse_when(rows)
+    uc0 = review.get("user_confirmation")
+    if not isinstance(uc0, dict) or str(uc0.get("warehouse_id", "")).strip() != "1" or uc0.get("no_sales_during_count") is not True:
+        raise ImportRejected("CORTE_NO_CONFIRMADO", "review.json no registra las confirmaciones humanas (almacen 1, sin ventas durante el conteo).")
 
     # --- catalogo del grupo: conjunto exacto de codigos
     group_rows = _read_csv(group_csv, "el catalogo del grupo")
@@ -218,6 +341,8 @@ def prepare(count_dir: Path, group_csv: Path, sales_history_end: str = "2026-09-
                       "categoria": (cat.get("categoria") or "").strip(), "unidad_reporte": unit,
                       "unidad_descripcion": desc, "libre": libre, "reservada": res, "no_vendible": nov,
                       "fisica_total": tot, "source_row": src_row})
+    # R18: ultima barrera antes de escribir: cada registro del derivado debe corresponder a las celdas del Excel revisado
+    excel_check = verify_against_excel(xlsx, next(iter(sheets)), rows, as_of_local, next(iter(wh_names)), review)
     items.sort(key=lambda i: i["producto_id"])
 
     local_dt = datetime.fromisoformat(as_of_local)
@@ -235,7 +360,8 @@ def prepare(count_dir: Path, group_csv: Path, sales_history_end: str = "2026-09-
     header = {
         "snapshot_id": sid, "as_of_utc": as_of_utc, "as_of_local": local_dt.isoformat(), "timezone": TZ_NAME,
         "warehouse": {"id": wh_id, "name": wh_names.pop()}, "nature": NATURE, "independent_verification": False,
-        "source": {"file": xlsx_name, "sheet": sheets.pop(), "sha256": xlsx_sha, "csv_sha256": _sha256_file(csv_path)},
+        "source": {"file": xlsx_name, "sheet": sheets.pop(), "sha256": xlsx_sha, "csv_sha256": _sha256_file(csv_path),
+                   "verified_against_excel": True, "excel_layout": excel_check["layout"], "excel_rows_verified": excel_check["rows_verified"]},
         "confirmations": {"warehouse_id_confirmed": "1", "no_sales_during_count": True,
                           "evidence": str(uc.get("evidence", ""))[:200]},
         "coverage": {"expected": len(catalog), "items": len(items), "group_file": group_csv.name,
