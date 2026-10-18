@@ -104,7 +104,7 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
                 <p class="notice danger" data-testid="incoherent" role="alert">Los valores publicados no cuadran con la fórmula; revise el análisis antes de usarlos.</p>
               }
               <p class="result" data-testid="result-headline">En este ejemplo se sugieren <strong data-testid="order-result">{{ units(r.order_qty) }}</strong>
-                <span class="muted">(hipotético; inventario simulado al cierre del {{ date(r.snapshot_date) }})</span></p>
+                <span class="muted"> (hipotético; inventario simulado al cierre del {{ date(r.snapshot_date) }})</span></p>
               @if (simple(); as sm) {
                 <ol class="steps simple" data-testid="simple-steps">
                   @for (st of sm.steps; track st.n) {
