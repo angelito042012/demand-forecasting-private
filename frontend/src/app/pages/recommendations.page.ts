@@ -168,7 +168,7 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
                   <tr>
                     <td>{{ product(r) }}</td>
                     <td class="num">{{ int(r.on_hand) }}</td><td class="num">{{ int(r.order_qty) }}</td>
-                    <td><button type="button" class="secondary small" (click)="open(r)" [attr.aria-label]="'Entender la sugerencia de ' + product(r)">Entender sugerencia</button></td>
+                    <td><button type="button" class="secondary small" (click)="open(r)" [attr.aria-label]="'Entender sugerencia de ' + product(r)">Entender sugerencia</button></td>
                   </tr>
                 } @else {
                   <tr class="nosnap" data-testid="sin-snapshot">

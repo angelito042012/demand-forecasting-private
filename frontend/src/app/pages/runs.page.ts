@@ -132,7 +132,7 @@ export class RunTech {
   template: `
     @let r = run();
     <article class="card" [class.selected]="consulting()" [attr.data-testid]="'run-card-' + r.run_id">
-      <h3 data-testid="run-name">{{ name() }}</h3>
+      <h2 data-testid="run-name">{{ name() }}</h2>
       <p class="chips">
         <span class="chip" [class.ok]="chip().tone === 'ok'" [class.info]="chip().tone === 'info'" [class.bad]="chip().tone === 'bad'" data-testid="run-status">{{ chip().text }}</span>
         <span class="chip" data-testid="run-kind">{{ kindText() }}</span>
