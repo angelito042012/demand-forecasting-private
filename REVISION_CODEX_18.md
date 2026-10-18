@@ -1,5 +1,17 @@
 # Revisión Codex 18 — inventario informado
 
+## Cierre posterior de R18, 18/10/2026
+
+**R18 cerrado; integración T18 aceptada técnicamente para el alcance local fechado.** Revisados `616b5ef` (código/pruebas) y `c1e6a82` (documentación). El importador abre el Excel en solo lectura y contrasta cada registro, presentación, cantidades, total, observaciones, fecha/hora, almacén y metadatos antes de persistir; las confirmaciones humanas se comprueban aparte. Las fuentes de prueba ahora contienen libros XLSX válidos.
+
+Codex ejecutó **39 pruebas dirigidas aprobadas, 8 fuera de selección**, en 2,14 s: las 17 regresiones R18 y 22 validaciones relacionadas. Incluyen el paquete real intacto (50 registros, 48 con existencia, 2 sin) y copias con datos manipulados rechazadas. Evidencia propia: `artifacts/private/codex_review18r/tests.log` y `tests.xml`. No se repitieron modelos, evaluación, navegador ni pruebas amplias. Revisada evidencia del ejecutor: 16/17 regresiones fallan con la versión anterior; imagen de ensayo rechaza copia manipulada, acepta paquete intacto como `unchanged` y recorrido 22/22. Docker no fue verificado nuevamente en vivo por Codex debido a la limitación de acceso ya registrada.
+
+No se alteraron fuentes, bases o servicios en esta revisión. La ausencia del indicador nuevo en la cabecera ya importada no invalida la verificación ejecutada sobre la misma fuente, ni justifica sobrescribir esa evidencia. La lectura autenticada y el resto de T18 mantienen el alcance examinado en la revisión inicial. **Aceptación humana pendiente**: siguiente paso es la prueba real de Rogelio, seguida del cierre de documentación y entrega conforme al alcance académico. No se abre otra ronda rutinaria de desarrollo.
+
+Hallazgo de preparación de entrega: `INFORME_FINAL_BORRADOR.md`, `MANUAL_USUARIO.md` y `MATRIZ_CIERRE.md` todavía contienen afirmaciones anteriores al conteo recibido (ausencia de inventario real o rotulación de todo inventario como simulado). Deben actualizarse en T14 sin cambiar los resultados congelados ni presentar el conteo de octubre como inventario histórico. El paquete de 14 fuentes sigue preparado por separado, no importado íntegramente ni incorporado a un nuevo estudio. Ventas octubre y pedidos pendientes siguen siendo límites para recomendaciones actuales.
+
+El texto siguiente conserva la revisión inicial y su reproducción; el defecto ya está cerrado por este apartado.
+
 18/10/2026, America/Lima. Entrega examinada: código `464eb0c`, documentación `a9c8b35`. **Resultado: requiere una corrección acotada R18 antes de aceptación técnica.** Aceptación humana sigue pendiente. Claude continúa como ejecutor; Codex no cambió la aplicación, las fuentes, las bases ni los servicios.
 
 ## R18 — vincular el derivado importado con el documento revisado [P2]

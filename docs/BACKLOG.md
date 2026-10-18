@@ -1,5 +1,7 @@
 # Backlog de ejecución
 
+**18/10 — R18 cerrado por Codex:** T18 aceptada técnicamente en alcance local; 39 pruebas propias aprobadas. Próximo: aceptación humana de Rogelio, actualización T14 (informe/manuales/matriz aún anteriores al conteo), preparación de sustentación/video y paquete T15, resolución de publicación conforme al alcance. No ampliar modelos/datos por rutina; 14 fuentes preparadas no equivalen a importación/estudio nuevo. Ver cierre de `REVISION_CODEX_18.md`. Los estados R18 pendientes de abajo son históricos.
+
 **18/10, revisión Codex 18 terminada:** T18 requiere R18 antes de aceptación técnica: verificar correspondencia del CSV importado con el Excel revisado antes de primera carga. Encargo y reproducción en `REVISION_CODEX_18.md`; 22 validaciones propias aprobadas. Claude conserva ejecución; revisión posterior acotada, aceptación humana pendiente, sin nube/modelos/T12. Esta anotación sustituye la revisión todavía pendiente del párrafo siguiente.
 
 **18/10, R18 corregido (commit 616b5ef; docs/T18_REPORTE.md §5); pendiente revisión de Codex solo de ese cambio.** **Etapa 18 entregada (commit 464eb0c; docs/T18_REPORTE.md):** inventario informado integrado en ensayo aislado (puerto 8444); pendiente la prueba humana de Rogelio, la revisión de Codex y las ventas del 01/10 al corte del conteo. Sin nube.

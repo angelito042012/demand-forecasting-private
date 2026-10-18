@@ -1,5 +1,9 @@
 # Historial de entregas anteriores
 
+## Cierre Codex de R18 y T18 local (18/10/2026)
+
+Revisados `616b5ef` y `c1e6a82`; 39 pruebas propias dirigidas aprobadas, 8 fuera de selección, 2,14 s. Contraste de CSV contra Excel y regresiones R18 aceptados; T18 aceptada técnicamente para inventario reportado fechado en local. Evidencia privada `artifacts/private/codex_review18r/`. No se repitió navegador/modelos/T12 ni se operaron servicios. Aceptación humana pendiente. Informe/manual/matriz de cierre requieren actualización por el conteo real recibido; T14/T15 y resolución de publicación siguen pendientes. No se abre otra etapa técnica rutinaria.
+
 ## Revisión Codex 18: T18 con corrección R18 pendiente (18/10/2026)
 
 Revisados `464eb0c` y `a9c8b35`, contrato, evidencia del ejecutor y código. Reproducida sobre copias una validación ausente: cambios coherentes de cantidad/total o fecha en el CSV se aceptan sin modificar el Excel revisado. Encargo preciso en `REVISION_CODEX_18.md`. 22 pruebas propias del validador aprobadas; intento inicial de batería no aprobado por fallo del directorio temporal, registrado aparte. Docker inaccesible por permisos desde esta sesión; no inferir estado detenido ni nueva verificación de aislamiento en vivo. No se modificaron aplicación/fuentes/bases/servicios. Aceptación técnica pendiente R18 y aceptación humana pendiente respuestas reales de Rogelio. Evidencia privada `artifacts/private/codex_review18/`.
