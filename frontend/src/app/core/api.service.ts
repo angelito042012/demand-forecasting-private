@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
-  BacktestDetail, BacktestItem, BacktestView, ForecastItem, GroupBy, Health, ImportDetail, ImportItem, Page,
+  BacktestDetail, BacktestItem, BacktestView, ForecastPage, GroupBy, Health, ImportDetail, ImportItem, Page,
   ImportAccepted, JobType, PublicJob, Recommendation, RecoPage, RunAccepted, RunDetail, RunOptions, RunSummary, SalesSummary, JobStatus,
 } from './models';
 
@@ -44,7 +44,7 @@ export class ApiService {
   }
   runs(page: number, page_size: number) { return this.get<Page<RunSummary>>('/runs', { page, page_size }); }
   runDetail(id: string) { return this.get<RunDetail>(`/runs/${encodeURIComponent(id)}`); }
-  forecasts(q: ForecastQuery) { return this.get<Page<ForecastItem>>('/forecasts', { ...q }); }
+  forecasts(q: ForecastQuery) { return this.get<ForecastPage>('/forecasts', { ...q }); }
   recommendations(q: RecoQuery) { return this.get<RecoPage>('/recommendations', { ...q }); }
   recommendation(sku: string, run_id?: string, almacen = '1') {
     return this.get<Recommendation>(`/recommendations/${encodeURIComponent(sku)}`, { run_id, almacen });

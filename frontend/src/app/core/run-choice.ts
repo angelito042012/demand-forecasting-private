@@ -31,8 +31,10 @@ export class RunChoice {
 export const KIND_LABELS: Record<string, string> = {
   historical_development: 'Histórica de desarrollo (T07)',
   generated_baseline: 'Generada por la aplicación',
+  final_evaluation: 'Evaluación final (T12)',
 };
 export function kindLabel(kind: string | undefined | null): string {
   return kind ? (KIND_LABELS[kind] ?? kind) : '—';
 }
 export const isGenerated = (kind: string | undefined | null) => kind === 'generated_baseline';
+export const isFinal = (kind: string | undefined | null) => kind === 'final_evaluation';

@@ -23,6 +23,17 @@ Page = Annotated[int, Query(ge=1, le=100000)]
 PageSize = Annotated[int, Query(ge=1, le=200)]
 
 LAST_ALLOWED_DATE = date(2026, 7, 31)
+# T11 §1: unica excepcion, solo al CONSULTAR una corrida kind=final_evaluation (nunca para otros tipos).
+FINAL_KIND = "final_evaluation"
+FINAL_FIRST_DATE = date(2026, 8, 1)
+FINAL_LAST_DATE = date(2026, 8, 21)
+FINAL_UNAVAILABLE_REASON = "RECOMENDACION_NO_VALIDADA_PARA_ESTE_ORIGEN"
+FINAL_WARNINGS = [
+    "WAPE no es exactitud: 0,78 significa error absoluto agregado equivalente al 78 % del volumen observado",
+    "Categoría = suma de unidades base heterogéneas",
+    "Un solo bloque de 21 días; sin inferencia de ganador",
+    "Evaluación sobre datos históricos; no pronostica octubre",
+]
 MAX_RANGE_DAYS = 400
 RUN_LABEL = "Corrida histórica de desarrollo al 10/07/2026"
 SIM_LABEL = "Inventario simulado con supuestos; no corresponde al inventario real de la empresa"
@@ -80,6 +91,26 @@ def check_dates(frm: date | None, to: date | None) -> None:
             raise invalid(f"El rango máximo es de {MAX_RANGE_DAYS} días.")
 
 
+def is_final(run: dict | None) -> bool:
+    return bool(run) and run.get("kind") == FINAL_KIND
+
+
+def check_dates_for_run(run: dict, frm: date | None, to: date | None) -> None:
+    """Fechas de consulta ya resuelta la corrida. Para `final_evaluation` se admite hasta 2026-08-21;
+    para cualquier otro tipo rige la barrera general (agosto reservado)."""
+    if not is_final(run):
+        check_dates(frm, to)
+        return
+    for d in (frm, to):
+        if d is not None and d > FINAL_LAST_DATE:
+            raise invalid(f"Para la evaluación final la fecha máxima es {FINAL_LAST_DATE.isoformat()}.")
+    if frm and to:
+        if frm > to:
+            raise invalid("El rango de fechas es inválido (from > to).")
+        if (to - frm).days > MAX_RANGE_DAYS:
+            raise invalid(f"El rango máximo es de {MAX_RANGE_DAYS} días.")
+
+
 def iso_utc(value) -> str | None:
     if value is None:
         return None
@@ -124,7 +155,9 @@ def run_header(db, run: dict) -> dict:
             "generated_at": iso_utc(run.get("generated_at")), "published_at": iso_utc(run.get("published_at")),
             "age_days_at_view": (today_lima() - cutoff).days,
             "is_active": run["run_id"] == active_run_id(db),
-            "superseded_by": run.get("superseded_by"), "quality_issue": run.get("quality_issue")}
+            "superseded_by": run.get("superseded_by"), "quality_issue": run.get("quality_issue"),
+            "kind": run.get("kind"), "target_start": run.get("target_start"), "target_end": run.get("target_end"),
+            "evaluation_period": run.get("evaluation_period"), "warnings": list(FINAL_WARNINGS) if is_final(run) else []}
 
 
 def child_key(run: dict) -> str:

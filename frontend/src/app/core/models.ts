@@ -31,6 +31,23 @@ export interface RunHeader {
   published_at: string;
   age_days_at_view: number;
   is_active: boolean;
+  /** T11: tipo de corrida (historical_development | generated_baseline | final_evaluation). */
+  kind?: string;
+  target_start?: string | null;
+  target_end?: string | null;
+  evaluation_period?: Record<string, unknown> | null;
+  /** Textos obligatorios publicados por la API para la evaluación final (lista vacía en las demás). */
+  warnings?: string[];
+}
+
+/** Resumen público del paquete de la evaluación final T12 (docs/T11_CONTRATO.md §2-§3). */
+export interface FinalPackage {
+  seal_sha256?: string | null;
+  seal_short?: string | null;
+  frozen_selection_sha256?: string | null;
+  phases?: Record<string, string | { estado?: string; [k: string]: unknown }>;
+  corrections?: (string | Record<string, unknown>)[];
+  audit_ok?: boolean | null;
 }
 
 /** Motivo de sustitución de una corrida (la API lo publica cuando una corrección de precisión la reemplaza). */
@@ -61,6 +78,7 @@ export interface RunSummary extends RunHeader, RunQuality {
   counts?: Record<string, number>;
   coverage?: RunDetail['coverage'];
   evaluation_period?: RunDetail['evaluation_period'];
+  final_package?: FinalPackage | null;
 }
 
 export interface RunDetail extends RunHeader, RunQuality {
@@ -72,13 +90,14 @@ export interface RunDetail extends RunHeader, RunQuality {
   provenance?: string;
   disclaimer?: string;
   fingerprint_short?: string;
-  method: { chosen: string; comparator: string; control: string; note?: string };
+  method: { chosen: string; comparator: string; control: string; note?: string; rf_declared_winner?: boolean; category_baseline?: string };
+  final_package?: FinalPackage | null;
   config?: Record<string, unknown>;
   sources?: unknown;
   artifacts?: { name: string; sha256: string; size?: number; size_bytes?: number }[];
   code?: { commit: string };
   counts?: Record<string, number>;
-  coverage?: { skus_pronosticados: number; skus_con_recomendacion: number; skus_sin_snapshot: number; categorias: number; skus_categoria_desconocida?: number };
+  coverage?: { skus_pronosticados?: number; skus_con_recomendacion?: number; skus_sin_snapshot?: number; categorias?: number; skus_categoria_desconocida?: number; [k: string]: unknown };
   evaluation_period?: { start?: string; end?: string } | Record<string, unknown>;
   provenance_notes?: string[] | string;
 }
@@ -134,6 +153,14 @@ export interface ForecastItem {
   observed: number | null;
   evaluable: boolean | null;
   provenance: 'OBSERVED_EXCEL';
+  /** T11: tipo de corrida del hijo (final_evaluation en la evaluación final). */
+  run_kind?: string;
+}
+
+/** Página de pronósticos: el servidor añade la corrida y, para la evaluación final, las advertencias. */
+export interface ForecastPage extends Page<ForecastItem> {
+  run?: (RunHeader & RunQuality) | null;
+  warnings?: string[];
 }
 
 export interface Recommendation {
@@ -183,6 +210,9 @@ export interface RecoPage extends Page<Recommendation> {
   disclaimer?: string;
   nota?: string;
   run?: (RunHeader & RunQuality) | null;
+  /** T11: la evaluación final no tiene recomendaciones; la API indica el motivo y la corrida histórica a consultar. */
+  unavailable_reason?: string;
+  see_run?: string | null;
 }
 
 export interface BacktestItem {
@@ -213,7 +243,7 @@ export interface PredRow {
   unidades_predichas?: number;
   MAE?: number;
   RMSE?: number;
-  WAPE?: number;
+  WAPE?: number | null;
   sesgo_acumulado?: number;
   prop_subpronostico?: number;
   prop_sobrepronostico?: number;
@@ -265,7 +295,21 @@ export interface BacktestAssumptions {
   [k: string]: unknown;
 }
 
+/** Hallazgo primario de la evaluación final (T12): WAPE H14, SKU-almacén, cohorte primaria, universo común. */
+export interface FinalPrimary {
+  WAPE_promedio_28?: number | null;
+  WAPE_rf_distribuido?: number | null;
+  WAPE_cero?: number | null;
+  mejora_relativa?: number | null;
+  sesgo_relativo?: number | null;
+  [k: string]: unknown;
+}
+
 export interface BacktestSelection {
+  chosen?: string;
+  rf_declared_winner?: boolean;
+  primary_criterion?: string;
+  primary?: FinalPrimary;
   vista?: string;
   mejora_relativa?: number;
   cumple_regla?: boolean;
@@ -277,6 +321,7 @@ export interface BacktestSelection {
 }
 
 export interface BacktestDetail {
+  kind?: string;
   run_id?: string;
   backtest_id?: string;
   scenario_id?: string;
@@ -285,7 +330,12 @@ export interface BacktestDetail {
   run?: (RunHeader & RunQuality) | null;
   label?: string;
   folds?: string[] | number;
-  predictive?: { sku?: PredRow[]; categoria?: PredRow[]; nota?: string };
+  predictive?: {
+    sku?: PredRow[]; categoria?: PredRow[]; nota?: string;
+    /** Evaluación final: bloques de predictivo.json que el publicador conserva tal cual (si los incluye). */
+    nuevos_sku?: Record<string, number>; universo?: Record<string, number>;
+    dias_evaluables?: number; dias_no_evaluables?: unknown[]; cobertura?: { sku?: CoverageRow[]; categoria?: CoverageRow[] };
+  };
   selection?: BacktestSelection;
   coverage?: { sku?: CoverageRow[]; categoria?: CoverageRow[] };
   simulation?: SimScenario[];
@@ -314,6 +364,15 @@ export type LoadState<T> =
   | { kind: 'data'; data: T };
 
 export const SIM_NOTICE = 'Inventario simulado con supuestos; no corresponde al inventario real de la empresa';
+export const FINAL_KIND = 'final_evaluation';
+/** Textos obligatorios de la evaluación final (T11 §3). La API los publica en `warnings`; esta copia solo es respaldo. */
+export const FINAL_WARNINGS = [
+  'WAPE no es exactitud: 0,78 significa error absoluto agregado equivalente al 78 % del volumen observado',
+  'Categoría = suma de unidades base heterogéneas',
+  'Un solo bloque de 21 días; sin inferencia de ganador',
+  'Evaluación sobre datos históricos; no pronostica octubre',
+];
+export const FINAL_UNAVAILABLE_REASON = 'RECOMENDACION_NO_VALIDADA_PARA_ESTE_ORIGEN';
 export const RUN_LABEL = 'Corrida histórica de desarrollo al 10/07/2026';
 
 // ---- T10: trabajos, importaciones y generación de corridas (docs/T10_CONTRATO.md §2-§3) ----

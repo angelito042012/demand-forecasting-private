@@ -1,0 +1,109 @@
+# SOLO ENSAYO LOCAL (T11A). No es el despliegue: ver docs/T11_PLAN_DESPLIEGUE.md.
+# Ningun secreto vive en este archivo: se inyectan al arrancar desde el entorno del shell (${VAR:?} falla si faltan).
+# Uso:  docker compose -p df-t11a up -d --build   (ver docs/T11A_EMPAQUETADO.md para las variables)
+name: df-t11a
+
+x-app-env: &app-env
+  APP_ENV: production
+  APP_TIMEZONE: America/Lima
+  MONGODB_URI: ${MONGODB_URI:?defina MONGODB_URI}
+  MONGODB_DATABASE: ${MONGODB_DATABASE:?defina MONGODB_DATABASE}
+  AUTH_SECRET: ${AUTH_SECRET:?defina AUTH_SECRET}
+  ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://localhost:8443}
+  TRUSTED_PROXIES: 172.31.250.2/32
+  DF_UPLOADS_DIR: /data/uploads
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+
+services:
+  mongo:
+    image: ${DF_MONGO_IMAGE:-mongo:8.3.8}
+    command: ["--auth", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?defina MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?defina MONGO_ROOT_PASSWORD}
+      MONGO_APP_DB: ${MONGODB_DATABASE:?defina MONGODB_DATABASE}
+      MONGO_APP_USER: ${MONGO_APP_USER:?defina MONGO_APP_USER}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?defina MONGO_APP_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+      - ./deploy/mongo-init.js:/docker-entrypoint-initdb.d/10-app-user.js:ro
+    networks: [data]            # sin puertos publicados: solo api y worker lo alcanzan
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  api:
+    <<: *hardening
+    build: .
+    image: df-app:t11a-local
+    command: ["api"]
+    environment: *app-env
+    volumes: [df_data:/data]
+    depends_on:
+      mongo: {condition: service_healthy}
+    networks:
+      data: {}
+      edge:                     # el proxy lo alcanza por aqui; el puerto 8000 no se publica
+        ipv4_address: 172.31.250.3
+
+  worker:
+    <<: *hardening
+    image: df-app:t11a-local
+    command: ["worker", "--poll-seconds", "2"]
+    environment: *app-env
+    volumes: [df_data:/data]    # mismo DF_UPLOADS_DIR que la API
+    depends_on:
+      mongo: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; os.kill(1, 0)"]
+      interval: 30s
+    networks: [data]            # sin red edge: no recibe trafico entrante
+
+  scheduler:                    # deshabilitado por defecto: docker compose --profile scheduler up
+    <<: *hardening
+    image: df-app:t11a-local
+    profiles: [scheduler]
+    command: ["scheduler"]
+    environment:
+      <<: *app-env
+      DF_SCHEDULER_ENABLE: ${DF_SCHEDULER_ENABLE:-false}
+    depends_on:
+      mongo: {condition: service_healthy}
+    networks: [data]
+
+  proxy:                        # TLS de ensayo (certificado interno autofirmado de Caddy); solo 127.0.0.1
+    image: ${DF_PROXY_IMAGE:-caddy:2.10-alpine}
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    ports: ["127.0.0.1:${DF_PROXY_PORT:-8443}:8443"]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    depends_on: [api]
+    networks:
+      edge:
+        ipv4_address: 172.31.250.2
+    restart: unless-stopped
+
+networks:
+  data:
+    internal: true              # sin salida a Internet ni al host
+  edge:
+    ipam:
+      config: [{subnet: 172.31.250.0/24, ip_range: 172.31.250.128/25}]   # .2 proxy y .3 api fijos
+
+volumes:
+  mongo_data: {}
+  df_data: {}
+  caddy_data: {}

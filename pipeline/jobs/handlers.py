@@ -9,6 +9,7 @@ Un handler recibe un `JobContext` (sin acceso HTTP) y devuelve el resultado PUBL
 """
 from __future__ import annotations
 
+import os
 import re
 import threading
 from dataclasses import dataclass, field
@@ -22,6 +23,7 @@ from pymongo.errors import (
     WTimeoutError,
 )
 
+from backend.app.config import ConfigurationError
 from pipeline.data import importer, month_lock
 from pipeline.data.importer import import_workbook, read_rows, sha256_file
 from pipeline.data.sources import approved_sources
@@ -260,4 +262,10 @@ HANDLERS = {"import_excel": import_excel, "generate_run": generate_run}
 
 
 def default_uploads_dir(cfg: dict | None = None) -> Path:
+    """Misma variable que la API (backend/app/uploads.py): DF_UPLOADS_DIR; obligatoria con APP_ENV=production."""
+    configured = os.environ.get("DF_UPLOADS_DIR")
+    if configured:
+        return Path(configured)
+    if os.environ.get("APP_ENV") == "production":
+        raise ConfigurationError("Configuracion de produccion invalida: falta DF_UPLOADS_DIR")
     return PROJECT_ROOT / (cfg or load_t10_config())["subidas"]["directorio_privado"]

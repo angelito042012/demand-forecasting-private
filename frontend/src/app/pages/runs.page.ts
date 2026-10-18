@@ -6,23 +6,24 @@ import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { load } from '../core/load';
 import { JobBoard } from '../core/jobs';
-import { isGenerated, kindLabel } from '../core/run-choice';
-import { AppError, Page, RunDetail, RunOptions, RunQuality, RunSummary } from '../core/models';
+import { isFinal, isGenerated, kindLabel } from '../core/run-choice';
+import { AppError, FinalPackage, Page, RunDetail, RunOptions, RunQuality, RunSummary } from '../core/models';
 import { fmtDate, fmtInt } from '../core/format';
 import { StatePanel } from '../ui/state-panel';
 import { Pager } from '../ui/pager';
 import { DataTree } from '../ui/data-tree';
 import { JobsPanel } from '../ui/jobs-panel';
-import { RunBanner, SupersededBanner, isRunInvalid } from '../ui/notices';
+import { FinalWarnings, RunBanner, SupersededBanner, isRunInvalid } from '../ui/notices';
 
 @Component({
   selector: 'app-runs-page',
-  imports: [StatePanel, Pager, DataTree, RunBanner, SupersededBanner, RouterLink, JobsPanel],
+  imports: [StatePanel, Pager, DataTree, RunBanner, SupersededBanner, RouterLink, JobsPanel, FinalWarnings],
   template: `
     <h2>Corridas</h2>
     <p class="notice info">
       Solo se listan corridas ya publicadas. Consultar no reentrena ni simula. Las corridas «generadas por la aplicación» aplican el método
       operativo promedio_28 a la historia aprobada hasta el origen; no reentrenan RF/XGBoost ni tienen backtest propio.
+      La «evaluación final (T12)» es un tipo aparte: compara un pronóstico fijo con agosto ya observado; no es la corrida activa ni sustituye a la histórica.
     </p>
     @if (isAdmin) {
       <section class="gen" aria-labelledby="h-gen" data-testid="gen-section">
@@ -56,7 +57,7 @@ import { RunBanner, SupersededBanner, isRunInvalid } from '../ui/notices';
             <tbody>
               @for (r of d.items; track r.run_id) {
                 <tr>
-                  <td><code>{{ r.run_id }}</code></td><td>{{ r.run_label }}</td><td data-testid="run-kind">{{ kind(r.kind) }}</td>
+                  <td><code>{{ r.run_id }}</code></td><td>{{ r.run_label }}</td><td><span class="badge" [class.final]="isFin(r.kind)" data-testid="run-kind">{{ kind(r.kind) }}</span></td>
                   <td>
                     @if (invalid(r)) { <span class="badge bad" data-testid="run-status">Sustituida</span> }
                     @else { <span class="badge ok" data-testid="run-status">Completada</span> }
@@ -78,7 +79,30 @@ import { RunBanner, SupersededBanner, isRunInvalid } from '../ui/notices';
       <app-state-panel [state]="detail.state()" (retry)="detail.reload()">
         @if (det(); as r) {
           <app-superseded-banner [run]="r" />
-          <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" />
+          <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" [kind]="r.kind" />
+          @if (isFin(r.kind)) {
+            <app-final-warnings [warnings]="r.warnings" />
+            <section class="pkg" data-testid="final-package" aria-labelledby="h-pkg">
+              <h4 id="h-pkg">Paquete de la evaluación final</h4>
+              @if (r.final_package; as p) {
+                <ul class="plain">
+                  <li>Sello del paquete: <code data-testid="pkg-seal">{{ seal(p) }}</code></li>
+                  <li data-testid="pkg-audit">Auditoría separada: <strong>{{ auditText(p) }}</strong></li>
+                </ul>
+                <div class="table-wrap" tabindex="0" role="region" aria-label="Fases del paquete final">
+                  <table data-testid="pkg-phases">
+                    <caption>Fases ({{ phases(p).length }})</caption>
+                    <thead><tr><th scope="col">Fase</th><th scope="col">Estado</th></tr></thead>
+                    <tbody>@for (ph of phases(p); track ph[0]) { <tr><td>{{ ph[0] }}</td><td>{{ ph[1] }}</td></tr> }</tbody>
+                  </table>
+                </div>
+                @if (corrections(p).length) {
+                  <h5>Correcciones técnicas posteriores</h5>
+                  <ul class="plain" data-testid="pkg-corrections">@for (c of corrections(p); track $index) { <li>{{ c }}</li> }</ul>
+                } @else { <p class="muted" data-testid="pkg-no-corrections">Sin correcciones técnicas posteriores publicadas.</p> }
+              } @else { <p class="muted" data-testid="pkg-missing">La API no publicó el resumen del paquete de esta corrida.</p> }
+            </section>
+          }
           <p data-testid="detail-status">Estado: <strong>{{ invalid(r) ? 'Sustituida' : 'Completada' }}</strong> · Tipo: <strong data-testid="detail-kind">{{ kind(r.kind) }}</strong>
             @if (invalid(r)) { · {{ reason(r) }} }
             @if (r.quality_issue?.superseded_by; as nxt) { · <a [routerLink]="['/corridas']" [queryParams]="{ run: nxt }">Abrir la corrida corregida</a> }
@@ -102,11 +126,16 @@ import { RunBanner, SupersededBanner, isRunInvalid } from '../ui/notices';
           <h4>Método</h4>
           <ul class="plain" data-testid="method">
             <li>Método elegido: <strong>{{ r.method.chosen }}</strong> (media móvil de 28 días).</li>
-            @if (r.method.comparator) { <li><strong>{{ r.method.comparator }}</strong>: comparador experimental que no ganó frente al método elegido.</li> }
+            @if (isFin(r.kind) && r.method.comparator) { <li><strong>{{ r.method.comparator }}</strong>: comparador; con un solo bloque no se declara ganador (declarado ganador: {{ r.method.rf_declared_winner === false ? 'no' : 'sin dato' }}).</li> }
+            @else if (r.method.comparator) { <li><strong>{{ r.method.comparator }}</strong>: comparador experimental que no ganó frente al método elegido.</li> }
             @if (r.method.control) { <li>Referencia de control: «{{ r.method.control }}» (pronóstico igual a cero, derivado).</li> }
             @if (r.method.note) { <li>{{ r.method.note }}</li> }
           </ul>
-          @if (r.coverage; as c) {
+          @if (r.coverage && isFin(r.kind)) {
+            <h4>Cobertura de la evaluación final</h4>
+            <ul class="plain" data-testid="coverage">@for (kv of scalars(r.coverage); track kv[0]) { <li>{{ kv[0] }}: <strong>{{ kv[1] }}</strong></li> }</ul>
+            <details class="tech"><summary>Cobertura completa tal como se publicó</summary><app-data-tree [value]="r.coverage" /></details>
+          } @else if (r.coverage; as c) {
             <h4>Cobertura</h4>
             <ul class="plain" data-testid="coverage">
               <li>SKU pronosticados: {{ int(c.skus_pronosticados) }}</li>
@@ -124,6 +153,7 @@ import { RunBanner, SupersededBanner, isRunInvalid } from '../ui/notices';
     }
   `,
   styles: `
+    .pkg { border: 1px solid var(--line); border-radius: 4px; padding: 0.3rem 0.9rem; margin: 0.6rem 0; }
     .gen { border: 1px solid var(--line); border-radius: 4px; padding: 0.5rem 0.9rem; margin: 0.6rem 0; }
     .gen form { display: flex; gap: 1rem; flex-wrap: wrap; align-items: end; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -197,6 +227,19 @@ export class RunsPage {
   invalid = (r: RunQuality) => isRunInvalid(r);
   kind = (k: string | undefined) => kindLabel(k);
   gen = (r: RunDetail) => isGenerated(r.kind);
+  isFin = (k: string | undefined | null) => isFinal(k);
+  seal = (p: FinalPackage) => p.seal_short || (p.seal_sha256 ? p.seal_sha256.slice(0, 12) : 'sin dato');
+  auditText = (p: FinalPackage) => (p.audit_ok === true ? 'aprobada' : p.audit_ok === false ? 'NO aprobada' : 'sin dato');
+  phases(p: FinalPackage): [string, string][] {
+    return Object.entries(p.phases ?? {}).map(([k, v]) => [k, typeof v === 'string' ? v : (v?.estado ?? 'sin dato')]);
+  }
+  corrections(p: FinalPackage): string[] {
+    return (p.corrections ?? []).map((c) => typeof c === 'string' ? c : this.scalars(c).map((kv) => `${kv[0]}: ${kv[1]}`).join(' · '));
+  }
+  /** Pares clave/valor escalares de un objeto publicado (sin rutas ni anidados). */
+  scalars(o: object): [string, string][] {
+    return Object.entries(o).filter(([, v]) => ['string', 'number', 'boolean'].includes(typeof v)).map(([k, v]) => [k, String(v)]);
+  }
   evalPeriod(r: RunDetail): string | null {
     const e = r.evaluation_period as { start?: string; end?: string } | null | undefined;
     return e?.start && e?.end ? `${fmtDate(e.start)} al ${fmtDate(e.end)}` : null;

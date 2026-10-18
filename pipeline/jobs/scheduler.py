@@ -32,6 +32,7 @@ from zoneinfo import ZoneInfo
 from pymongo import ASCENDING
 from pymongo.errors import DuplicateKeyError, PyMongoError
 
+from backend.app.config import ConfigurationError, require_production_env
 from pipeline.data.importer import get_client
 from pipeline.generate.config import load_t10_config
 from pipeline.jobs import queue
@@ -191,6 +192,11 @@ def _parse_now(text: str) -> datetime:
 
 
 def main(argv=None) -> int:
+    try:
+        require_production_env(uploads=False)   # produccion: URI y base explicitas (sin valores por defecto)
+    except ConfigurationError as exc:
+        print(exc, file=sys.stderr)
+        return 2
     cfg = load_t10_config()
     tmp = cfg["temporizador"]
     ap = argparse.ArgumentParser(description="Temporizador opcional de generacion (deshabilitado por defecto)")

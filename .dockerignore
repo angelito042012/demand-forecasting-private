@@ -1,0 +1,18 @@
+# Contexto minimo: nada de datos, secretos, entornos ni historial
+**
+!backend/**
+!pipeline/**
+!config/**
+!requirements.lock.txt
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/angular.json
+!frontend/tsconfig.json
+!frontend/tsconfig.app.json
+!frontend/public/**
+!frontend/src/**
+!deploy/entrypoint.sh
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*

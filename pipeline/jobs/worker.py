@@ -30,6 +30,7 @@ from pathlib import Path
 
 from pymongo.errors import PyMongoError
 
+from backend.app.config import ConfigurationError, require_production_env
 from pipeline.data.importer import get_client
 from pipeline.generate.config import load_t10_config
 from pipeline.jobs import queue
@@ -156,6 +157,11 @@ def run(db, worker_id: str, *, once: bool, poll_seconds: float, cfg: dict, uploa
 
 
 def main(argv=None) -> int:
+    try:
+        require_production_env()      # produccion: URI, base y directorio de subidas explicitos (sin valores por defecto)
+    except ConfigurationError as exc:
+        print(exc, file=sys.stderr)
+        return 2
     cfg = load_t10_config()
     cola = cfg["cola"]
     ap = argparse.ArgumentParser(description="Worker de la cola de trabajos (importacion y generacion)")

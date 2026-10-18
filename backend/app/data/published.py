@@ -9,12 +9,15 @@ from datetime import date
 from backend.app.errors import ApiError, page_response
 
 from .common import (
+    FINAL_UNAVAILABLE_REASON,
     SIM_LABEL,
     active_run_id,
     check_dates,
+    check_dates_for_run,
     check_sort,
     child_key,
     completed_run,
+    is_final,
     iso_utc,
     relabel,
     run_header,
@@ -42,8 +45,20 @@ def _page(coll, query: dict, sort: list, page: int, page_size: int, projection: 
     return list(cur), total
 
 
+def _final_package(run: dict) -> dict | None:
+    """Resumen publico del paquete T12 (sello, fases, auditoria, correcciones); nada de rutas ni binarios."""
+    fp = run.get("final_package")
+    if not isinstance(fp, dict):
+        return None
+    seal = str(fp.get("seal_sha256") or "")
+    return {"seal_sha256": seal or None, "seal_short": seal[:12] or None,
+            "frozen_selection_sha256": fp.get("frozen_selection_sha256"),
+            "phases": fp.get("phases") or {}, "corrections": fp.get("corrections") or [],
+            "audit_ok": fp.get("audit_ok")}
+
+
 def public_run(db, run: dict, *, detail: bool) -> dict:
-    out = {**run_header(db, run), "kind": run.get("kind"),
+    out = {**run_header(db, run), "final_package": _final_package(run),
            "origin": run.get("origin"), "target_start": run.get("target_start"),
            "target_end": run.get("target_end"), "horizon_days": run.get("horizon_days"),
            "evaluation_period": run.get("evaluation_period"), "method": run.get("method"),
@@ -72,9 +87,13 @@ def get_run(db, run_id: str) -> dict:
 
 def list_forecasts(db, *, run_id, level, sku, categoria, cohorte, frm: date | None, to: date | None,
                    sort, page, page_size) -> dict:
-    check_dates(frm, to)
     order = check_sort(sort, FORECAST_SORTS, "target_date")
-    run = completed_run(db, run_id)
+    try:
+        run = completed_run(db, run_id)
+    except ApiError:
+        check_dates(frm, to)   # sin corrida resuelta rige la barrera general (agosto reservado)
+        raise
+    check_dates_for_run(run, frm, to)
     q: dict = {"run_id": child_key(run), "level": level}
     if sku:
         q["sku"] = sku
@@ -89,6 +108,8 @@ def list_forecasts(db, *, run_id, level, sku, categoria, cohorte, frm: date | No
                         {"_id": 0, "schema_version": 0})
     resp = page_response(relabel(docs, run), total, page, page_size)
     resp.update({"run": run_header(db, run), "unit": "unidad base", "provenance": "OBSERVED_EXCEL"})
+    if is_final(run):
+        resp["warnings"] = run_header(db, run)["warnings"]
     return resp
 
 
@@ -99,6 +120,15 @@ def _rec_public(d: dict) -> dict:
 def list_recommendations(db, *, run_id, categoria, sku, status, only_orders: bool, sort, page, page_size) -> dict:
     order = check_sort(sort, REC_SORTS, "sku")
     run = completed_run(db, run_id)
+    if is_final(run):
+        # T11 §2: la evaluacion final no crea pedidos; no se usa el snapshot de otro dia.
+        resp = page_response([], 0, page, page_size)
+        resp.update({"run": run_header(db, run), "validation_status": validation_status(run), **sim_labels(),
+                     "unavailable_reason": FINAL_UNAVAILABLE_REASON,
+                     "see_run": active_run_id(db) or run.get("see_run"),
+                     "nota": "La evaluación final no genera recomendaciones de compra; "
+                             "consulte la demostración histórica."})
+        return resp
     q: dict = {"run_id": child_key(run)}
     if categoria:
         q["categoria"] = categoria
@@ -120,6 +150,8 @@ def list_recommendations(db, *, run_id, categoria, sku, status, only_orders: boo
 
 def get_recommendation(db, sku: str, run_id, almacen: str) -> dict:
     run = completed_run(db, run_id)
+    if is_final(run):
+        raise ApiError(404, "NO_ENCONTRADO", "La evaluación final no genera recomendaciones.")
     doc = db.recommendations.find_one({"run_id": child_key(run), "sku": sku, "almacen": almacen},
                                       {"_id": 0, "schema_version": 0})
     if doc is None:
@@ -133,7 +165,7 @@ def _bt_meta(db, bt: dict, run: dict) -> dict:
     # id publico estable = "bt-<run_id publico>" (el documento guarda el id del intento que lo escribio)
     return {"backtest_id": f"bt-{run['run_id']}", "kind": bt["kind"], "label": bt.get("label"),
             "folds": bt.get("folds"), "created": iso_utc(bt.get("created")), "run_id": run["run_id"],
-            "scenario_id": bt["scenario_id"], "provenance": bt["provenance"], "disclaimer": bt["disclaimer"],
+            "scenario_id": bt.get("scenario_id"), "provenance": bt["provenance"], "disclaimer": bt["disclaimer"],
             "run": run_header(db, run)}
 
 

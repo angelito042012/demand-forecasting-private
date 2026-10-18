@@ -13,6 +13,9 @@ SCHEMA_VERSION = 1
 KIND = "historical_development"
 RUN_LABEL = "Corrida histórica de desarrollo al 10/07/2026"
 GENERATED_KIND = "generated_baseline"
+FINAL_KIND = "final_evaluation"
+LAST_HISTORIC_DATE = "2026-07-31"      # fecha objetivo maxima de las corridas historica y generada
+FINAL_FIRST_DATE, FINAL_LAST_DATE = "2026-08-01", "2026-08-21"   # solo la corrida final_evaluation (T11 §1)
 GENERATED_LABEL = "Corrida de desarrollo generada por la aplicación con origen {origin}"
 PROVENANCE_SIM = "SYNTHETIC_NOT_REAL_INVENTORY"
 PROVENANCE_OBS = "OBSERVED_EXCEL"
@@ -101,6 +104,14 @@ def validate_doc(coll: str, doc: dict) -> None:
             raise SchemaError("runs: una corrida generada no lleva backtests (counts.backtests debe ser 0)")
         if doc["method"].get("chosen") != "promedio_28":
             raise SchemaError("runs: metodo elegido de la corrida generada debe ser promedio_28")
+    if coll == "runs" and doc["kind"] == FINAL_KIND:
+        counts = doc.get("counts")
+        if not isinstance(counts, dict) or counts.get("recommendations") != 0 or counts.get("backtests") != 1:
+            raise SchemaError("runs: la evaluacion final lleva 0 recomendaciones y 1 backtest")
+        if doc["method"].get("chosen") != "promedio_28" or doc["method"].get("rf_declared_winner") is not False:
+            raise SchemaError("runs: la evaluacion final conserva promedio_28 y no declara ganador al RF")
+        if doc["target_end"] > FINAL_LAST_DATE:
+            raise SchemaError("runs: la evaluacion final no pasa de 2026-08-21")
     if coll == "forecasts":
         if doc["level"] not in ("sku", "categoria"):
             raise SchemaError("forecasts: level invalido")
@@ -117,7 +128,10 @@ def validate_doc(coll: str, doc: dict) -> None:
                     raise SchemaError("forecasts: pred no numerica o negativa")
         elif any(not isinstance(v, (int, float)) or v < 0 for v in doc["pred"].values()):
             raise SchemaError("forecasts: pred no numerica o negativa")
-        if doc["target_date"] > "2026-07-31":
+        if doc.get("run_kind") == FINAL_KIND:
+            if not FINAL_FIRST_DATE <= doc["target_date"] <= FINAL_LAST_DATE:
+                raise SchemaError("forecasts: fecha objetivo de la evaluacion final fuera de 2026-08-01..2026-08-21")
+        elif doc["target_date"] > LAST_HISTORIC_DATE:
             raise SchemaError("forecasts: fecha objetivo posterior a 2026-07-31")
     if coll == "recommendations":
         if doc["provenance"] != PROVENANCE_SIM:
@@ -136,3 +150,5 @@ def validate_doc(coll: str, doc: dict) -> None:
             raise SchemaError("recommendations: status invalido")
     if coll == "backtests" and doc["provenance"] != PROVENANCE_SIM:
         raise SchemaError("backtests: provenance invalida")
+    if coll == "backtests" and doc["kind"] == FINAL_KIND and doc["selection"].get("rf_declared_winner") is not False:
+        raise SchemaError("backtests: la evaluacion final no declara ganador al RF")

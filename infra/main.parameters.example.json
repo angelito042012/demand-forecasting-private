@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "brazilsouth" },
+    "prefix": { "value": "dfpub" },
+    "imageTag": { "value": "t11a-REEMPLAZAR" },
+    "deployApps": { "value": false },
+    "workerMode": { "value": "continuous" },
+    "apiMinReplicas": { "value": 1 },
+    "mongodbDatabase": { "value": "demand_forecasting_pub" },
+    "trustedProxies": { "value": "" }
+  }
+}

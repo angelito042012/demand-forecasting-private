@@ -2,7 +2,8 @@ import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { isStaleAge, STALE_DAYS } from '../core/age';
 import { fmtDate } from '../core/format';
-import { RunQuality, SIM_NOTICE } from '../core/models';
+import { FINAL_WARNINGS, RunQuality, SIM_NOTICE } from '../core/models';
+import { kindLabel } from '../core/run-choice';
 
 /** Aviso obligatorio en pantallas con stock, tránsito, costos o pedidos simulados. Los identificadores van plegados. */
 @Component({
@@ -29,6 +30,7 @@ export class SimNotice {
   template: `
     <p class="notice warn" data-testid="run-banner">
       <strong data-testid="run-label">{{ runLabel() }}</strong>
+      @if (kind(); as k) { · tipo: <span class="badge" data-testid="run-kind-badge">{{ kindText(k) }}</span> }
       · corte {{ cutoffText() }} · antigüedad <span data-testid="age">{{ age() }}</span> día(s) al consultar
       @if (stale()) {
         <strong class="stale" data-testid="stale">Corrida antigua (más de {{ staleDays }} días; umbral supuesto de la interfaz)</strong>
@@ -40,9 +42,26 @@ export class RunBanner {
   runLabel = input.required<string>();
   cutoff = input.required<string>();
   age = input.required<number>();
+  /** Tipo de corrida (opcional): se rotula para no confundir histórica, generada y evaluación final. */
+  kind = input<string | null | undefined>(null);
+  kindText = (k: string) => kindLabel(k);
   staleDays = STALE_DAYS;
   stale = computed(() => isStaleAge(this.age()));
   cutoffText = computed(() => fmtDate(this.cutoff()));
+}
+
+/** Advertencias obligatorias de la evaluación final: las publica la API (`warnings`); sin ellas se usa el respaldo del contrato. */
+@Component({
+  selector: 'app-final-warnings',
+  template: `
+    <section class="notice warn" data-testid="final-warnings" aria-label="Advertencias de la evaluación final">
+      <ul class="plain">@for (w of texts(); track w) { <li>{{ w }}</li> }</ul>
+    </section>
+  `,
+})
+export class FinalWarnings {
+  warnings = input<string[] | null | undefined>(null);
+  texts = computed(() => (this.warnings()?.length ? this.warnings()! : FINAL_WARNINGS));
 }
 
 /** Aviso cuando la corrida fue sustituida por una corrección de precisión o no está validada. */

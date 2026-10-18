@@ -1,20 +1,20 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RunChoice, isGenerated, kindLabel } from '../core/run-choice';
+import { RunChoice, isFinal, isGenerated, kindLabel } from '../core/run-choice';
 import { FormsModule } from '@angular/forms';
 import { ApiService, ForecastQuery } from '../core/api.service';
 import { load } from '../core/load';
-import { ForecastItem, Page, RunSummary } from '../core/models';
+import { ForecastPage, Page, RunSummary } from '../core/models';
 import { StatePanel } from '../ui/state-panel';
 import { Pager } from '../ui/pager';
 import { fmtDate, fmtDec } from '../core/format';
 
 export const NA = 'no disponible para esta corrida';
-import { RunBanner, SupersededBanner } from '../ui/notices';
+import { FinalWarnings, RunBanner, SupersededBanner } from '../ui/notices';
 
 @Component({
   selector: 'app-forecasts-page',
-  imports: [StatePanel, Pager, FormsModule, RunBanner, SupersededBanner],
+  imports: [StatePanel, Pager, FormsModule, RunBanner, SupersededBanner, FinalWarnings],
   template: `
     <h2>Pronósticos</h2>
     @if (runs().length) {
@@ -29,21 +29,32 @@ import { RunBanner, SupersededBanner } from '../ui/notices';
     }
     @if (shownRun(); as r) {
       <app-superseded-banner [run]="r" />
-      <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" />
+      <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" [kind]="r.kind" />
       @if (r.origin || r.target_start) {
         <p data-testid="run-dates">Origen: <strong>{{ d(r.origin ?? r.cutoff) }}</strong>@if (r.target_start) { · fechas objetivo: <strong>{{ d(r.target_start) }} al {{ d(r.target_end) }}</strong> }</p>
       }
     }
+    @if (final()) {
+      <app-final-warnings [warnings]="shownRun()?.warnings" />
+      <p class="notice sim" data-testid="final-note">
+        Evaluación final: cada fila compara el pronóstico fijado el 31/07/2026 con la venta observada ya ocurrida (01/08 al 21/08/2026). Hay dos cohortes:
+        «primaria» e «historia_corta». Un día sin ningún registro en el archivo se rotula «no evaluable»; no es una venta cero.
+        Los SKU nuevos (primera venta posterior al 31/07) no son filas: se resumen en la cobertura de la comparación.
+      </p>
+    }
     <p class="notice info" data-testid="forecast-note">
       Cantidades en unidad base. Método elegido: promedio_28.
-      @if (generated()) {
+      @if (final()) {
+        «rf_categoria_distribuido» es el comparador y «cero» el control; con un solo bloque no se declara ganador. Las ventas observadas pueden estar limitadas por stock.
+        En el nivel categoría, el pronóstico es la suma de los pronósticos SKU (unidades base heterogéneas).
+      } @else if (generated()) {
         Corrida generada por la aplicación: no hay ventas observadas posteriores al origen, por eso «observado» y «evaluable» figuran «{{ na }}» (no son cero).
         El comparador RF solo aparece si la corrida lo publica.
       } @else {
         Los valores «observado» existen solo porque la corrida es un backtest histórico (ventas observadas en Excel; pueden estar limitadas por stock).
         «rf_categoria_distribuido» es un comparador experimental que no ganó.
       }
-      «cero» es solo una referencia de control. Los pronósticos no incluyen agosto.
+      «cero» es solo una referencia de control. @if (!final()) { Los pronósticos no incluyen agosto. }
     </p>
     <form class="filters" (ngSubmit)="apply()" aria-label="Filtros de pronósticos">
       <label>Nivel
@@ -51,9 +62,10 @@ import { RunBanner, SupersededBanner } from '../ui/notices';
       </label>
       <label>SKU <input name="sku" [(ngModel)]="f.sku" /></label>
       <label>Categoría <input name="cat" [(ngModel)]="f.categoria" /></label>
-      <label>Cohorte <input name="coh" [(ngModel)]="f.cohorte" /></label>
-      <label>Desde <input type="date" name="from" [(ngModel)]="f.from" max="2026-07-31" /></label>
-      <label>Hasta <input type="date" name="to" [(ngModel)]="f.to" max="2026-07-31" /></label>
+      <label>Cohorte <input name="coh" [(ngModel)]="f.cohorte" list="cohortes" /></label>
+      <datalist id="cohortes"><option value="primaria"></option><option value="historia_corta"></option></datalist>
+      <label>Desde <input type="date" name="from" [(ngModel)]="f.from" [attr.min]="final() ? '2026-08-01' : null" [attr.max]="maxDate()" data-testid="f-from" /></label>
+      <label>Hasta <input type="date" name="to" [(ngModel)]="f.to" [attr.min]="final() ? '2026-08-01' : null" [attr.max]="maxDate()" data-testid="f-to" /></label>
       <label>Orden
         <select name="sort" [(ngModel)]="f.sort">
           <option value="target_date">Fecha objetivo ↑</option><option value="-target_date">Fecha objetivo ↓</option>
@@ -79,7 +91,7 @@ import { RunBanner, SupersededBanner } from '../ui/notices';
               <tr>
                 <td>{{ x.entity_id }}</td><td>{{ x.categoria ?? '—' }}</td><td>{{ x.cohorte ?? '—' }}</td><td>{{ x.target_date }}</td><td class="num">{{ x.h }}</td>
                 <td class="num">{{ dec(x.pred.promedio_28) }}</td>@if (hasRf()) { <td class="num">{{ x.pred.rf_categoria_distribuido === null ? na : dec(x.pred.rf_categoria_distribuido) }}</td> }<td class="num">{{ dec(x.pred.cero) }}</td>
-                <td class="num" data-testid="observed">{{ x.observed === null || x.observed === undefined ? na : dec(x.observed) }}</td><td data-testid="evaluable">{{ x.evaluable === null || x.evaluable === undefined ? na : x.evaluable ? 'Sí' : 'No' }}</td>
+                <td class="num" data-testid="observed">{{ observedText(x) }}</td><td data-testid="evaluable">{{ x.evaluable === null || x.evaluable === undefined ? na : x.evaluable ? 'Sí' : 'No' }}</td>
               </tr>
             }
           </tbody>
@@ -106,7 +118,7 @@ export class ForecastsPage {
   private pageSize = 50;
   private q = signal<ForecastQuery>({ level: 'sku', page: 1, page_size: this.pageSize, sort: 'target_date' });
 
-  l = load<Page<ForecastItem>>(() => this.api.forecasts({ ...this.q(), run_id: this.choice.id() ?? undefined }), (d) => d.items.length === 0);
+  l = load<ForecastPage>(() => this.api.forecasts({ ...this.q(), run_id: this.choice.id() ?? undefined }), (d) => d.items.length === 0);
   data = computed(() => { const s = this.l.state(); return s.kind === 'data' ? s.data : null; });
   insufficient = computed(() => !this.generated() && (this.data()?.items ?? []).some((x) => x.evaluable === false || (x.evaluable === null && x.observed !== null)));
   /** El comparador RF solo se muestra si alguna fila trae valores. */
@@ -120,6 +132,15 @@ export class ForecastsPage {
     return (id ? rs.find((r) => r.run_id === id) : rs.find((r) => r.is_active)) ?? null;
   });
   generated = computed(() => isGenerated(this.shownRun()?.kind));
+  final = computed(() => isFinal(this.shownRun()?.kind));
+  /** Última fecha objetivo admitida: 21/08/2026 solo para la evaluación final; 31/07/2026 en las demás (agosto reservado). */
+  maxDate = computed(() => (this.final() ? '2026-08-21' : '2026-07-31'));
+
+  /** Observado: un día sin registros de la evaluación final se rotula «no evaluable» (nunca como cero). */
+  observedText(x: { observed?: number | null; evaluable?: boolean | null }): string {
+    if (x.evaluable === false) return 'no evaluable';
+    return x.observed === null || x.observed === undefined ? this.na : this.dec(x.observed);
+  }
 
   private build(page: number): ForecastQuery {
     const t = (v: string) => v.trim() || undefined;

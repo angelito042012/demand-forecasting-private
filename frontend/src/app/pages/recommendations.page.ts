@@ -1,10 +1,10 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { RunChoice } from '../core/run-choice';
+import { RunChoice, kindLabel } from '../core/run-choice';
 import { FormsModule } from '@angular/forms';
 import { ApiService, RecoQuery } from '../core/api.service';
 import { load } from '../core/load';
-import { RecoPage, Recommendation } from '../core/models';
+import { FINAL_UNAVAILABLE_REASON, RecoPage, Recommendation } from '../core/models';
 import { calcSteps } from '../core/reco-calc';
 import { DASH, fmtDate, fmtInt, fmtPen } from '../core/format';
 import { StatePanel } from '../ui/state-panel';
@@ -19,7 +19,20 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
     <app-sim-notice [scenarioId]="scenarioId()" />
     @if (run(); as r) {
       <app-superseded-banner [run]="r" />
-      <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" />
+      <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" [kind]="r.kind" />
+    }
+    @if (unavailable(); as u) {
+      <section class="notice warn" data-testid="reco-unavailable" role="note" aria-labelledby="h-na">
+        <h3 id="h-na">Esta corrida no tiene recomendaciones de compra</h3>
+        <p>
+          La corrida elegida es <strong>{{ kindText(run()?.kind) }}</strong>. Motivo publicado: <code data-testid="reco-reason-code">{{ u }}</code> —
+          {{ reasonText(u) }} No se muestran existencias, pedidos ni valores de ningún otro día en su lugar.
+        </p>
+        @if (seeRun(); as sr) {
+          <p><a [routerLink]="['/recomendaciones']" [queryParams]="{ run: sr }" data-testid="see-run">Ver la demostración histórica de recomendaciones</a>
+            (<code>{{ sr }}</code>; inventario simulado, no es un pedido real).</p>
+        } @else { <p class="muted" data-testid="no-see-run">La API no indicó una corrida histórica alternativa.</p> }
+      </section>
     }
     @if (first(); as x) {
       <p data-testid="reco-header">Origen del pronóstico: <strong>{{ date(x.origin) }}</strong> · fechas objetivo: <strong>{{ date(x.forecast_from) }} al {{ date(x.forecast_to) }}</strong> ·
@@ -28,10 +41,13 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
         @if (choice.id()) { (corrida elegida en la dirección: <code>{{ choice.id() }}</code>) } @else { (corrida activa) }
       </p>
     }
+    @if (!unavailable()) {
     <p class="notice info">
       Sugerencia hipotética calculada sobre la corrida seleccionada (histórica de desarrollo o generada por la aplicación); no es un pedido ejecutado ni una compra real.
       Cantidades en «unidad base»; costos supuestos en PEN. La demanda usada es la venta observada, que puede estar limitada por stock.
     </p>
+    }
+    @if (!unavailable()) {
     <form class="filters" (ngSubmit)="apply()" aria-label="Filtros de recomendaciones">
       <label>SKU <input name="sku" [(ngModel)]="f.sku" /></label>
       <label>Categoría <input name="cat" [(ngModel)]="f.categoria" /></label>
@@ -49,8 +65,10 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
       </label>
       <button type="submit">Filtrar</button>
     </form>
+    }
     <app-state-panel [state]="l.state()" emptyText="Sin recomendaciones para estos filtros." (retry)="l.reload()">
       @if (data(); as d) {
+       @if (!d.unavailable_reason) {
         <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla de recomendaciones">
           <table data-testid="reco-table">
             <thead>
@@ -82,6 +100,7 @@ import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
           </table>
         </div>
         <app-pager [page]="d.page" [pageSize]="d.page_size" [total]="d.total" [hasMore]="d.has_more" (go)="go($event)" />
+       }
       }
     </app-state-panel>
 
@@ -142,12 +161,19 @@ export class RecommendationsPage {
   f = { sku: '', categoria: '', status: '' as '' | 'ok' | 'sin_snapshot', only_orders: false, sort: 'sku' };
   private pageSize = 50;
   private q = signal<RecoQuery>({ page: 1, page_size: this.pageSize, sort: 'sku' });
-  l = load<RecoPage>(() => this.api.recommendations({ ...this.q(), run_id: this.choice.id() ?? undefined }), (d) => d.items.length === 0);
+  l = load<RecoPage>(() => this.api.recommendations({ ...this.q(), run_id: this.choice.id() ?? undefined }), (d) => d.items.length === 0 && !d.unavailable_reason);
   data = computed(() => { const s = this.l.state(); return s.kind === 'data' ? s.data : null; });
   first = computed(() => this.data()?.items[0] ?? null);
   dayMonth = (v: string | null | undefined) => fmtDate(v).slice(0, 5);
   scenarioId = computed(() => this.data()?.items[0]?.scenario_id ?? null);
   run = computed(() => this.data()?.run ?? null);
+  /** Motivo de no disponibilidad (evaluación final): la API devuelve 200 con items vacío y este código. */
+  unavailable = computed(() => this.data()?.unavailable_reason ?? null);
+  seeRun = computed(() => this.data()?.see_run ?? null);
+  kindText = (k: string | undefined) => kindLabel(k);
+  reasonText = (code: string) => code === FINAL_UNAVAILABLE_REASON
+    ? 'la recomendación no está validada para este origen (31/07/2026): la evaluación final compara pronósticos con ventas observadas y no genera pedidos.'
+    : 'la API indicó que no hay recomendaciones disponibles para esta corrida.';
   int = (v: unknown) => fmtInt(v);
   pen = (v: unknown) => fmtPen(v);
   date = (v: string | null | undefined) => fmtDate(v);

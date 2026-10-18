@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, map, of, tap, throwError } from 'rxjs';
-import { RunChoice } from '../core/run-choice';
+import { RunChoice, isFinal } from '../core/run-choice';
 import { ApiService } from '../core/api.service';
 import { load } from '../core/load';
 import { BacktestDetail, BacktestItem, Cohorte, Page, PredRow } from '../core/models';
@@ -11,7 +11,8 @@ import {
 } from '../core/backtest';
 import { DASH, fmtDate, fmtInt, fmtPct, fmtPen, fmtPp, fmtDec } from '../core/format';
 import { StatePanel } from '../ui/state-panel';
-import { RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
+import { FinalWarnings, RunBanner, SimNotice, SupersededBanner } from '../ui/notices';
+import { FinalEvaluation } from './final-evaluation';
 
 const EVAL_START = '2026-06-01';
 const EVAL_END = '2026-07-31';
@@ -24,13 +25,15 @@ function addDays(iso: string, n: number): string {
 
 @Component({
   selector: 'app-comparison-page',
-  imports: [StatePanel, SimNotice, RunBanner, SupersededBanner, RouterLink],
+  imports: [StatePanel, SimNotice, RunBanner, SupersededBanner, RouterLink, FinalEvaluation, FinalWarnings],
   template: `
     <h2>Comparación de métodos y políticas</h2>
+    @if (!final()) {
     <p>
       Resultados históricos de desarrollo, calculados sobre meses ya conocidos. No son una prueba final: agosto sigue reservado.
     </p>
-    @if (chosen()) {
+    }
+    @if (chosen() && !final()) {
       <dl class="periods" data-testid="periods">
         <dt>Origen</dt><dd data-testid="p-origin">{{ originText() }}</dd>
         <dt>Fechas objetivo</dt><dd data-testid="p-target">{{ targetText() }}</dd>
@@ -40,9 +43,11 @@ function addDays(iso: string, n: number): string {
     }
     <app-sim-notice [scenarioId]="scenario()" />
     @if (run(); as r) {
-      <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" />
+      <app-run-banner [runLabel]="r.run_label" [cutoff]="r.cutoff" [age]="r.age_days_at_view" [kind]="r.kind" />
       <app-superseded-banner [run]="r" />
     }
+    @if (final()) { <app-final-warnings [warnings]="run()?.warnings" /> }
+    @if (!final()) {
     <section class="notice info" data-testid="limits" aria-labelledby="h-leer">
       <h3 id="h-leer">Cómo leer esta pantalla</h3>
       <ul class="plain">
@@ -56,18 +61,19 @@ function addDays(iso: string, n: number): string {
         <li>Se muestran todos los resultados, también los desfavorables y el control «cero»; los selectores solo cambian qué parte se ve.</li>
       </ul>
     </section>
+    }
 
     <app-state-panel [state]="list.state()" [emptyText]="choice.id() ? 'Sin backtest para esta corrida.' : 'No hay backtests publicados.'" (retry)="list.reload()">
       @if (items().length > 1) {
         <label>Backtest
           <select data-testid="bt-select" aria-label="Backtest" (change)="pick($any($event.target).value)">
             @for (b of items(); track b.backtest_id) {
-              <option [value]="b.backtest_id" [selected]="b.backtest_id === chosen()">{{ b.label }}</option>
+              <option [value]="b.backtest_id" [selected]="b.backtest_id === chosen()">{{ b.label }} · {{ kindText(b.kind) }}</option>
             }
           </select>
         </label>
       } @else if (items()[0]; as b) {
-        <p class="muted" data-testid="bt-label">{{ b.label }}</p>
+        <p class="muted" data-testid="bt-label">{{ b.label }} · {{ kindText(b.kind) }}</p>
       }
     </app-state-panel>
 
@@ -82,6 +88,7 @@ function addDays(iso: string, n: number): string {
         @if (det(); as d) {
           @if (d.disclaimer) { <p class="notice warn" data-testid="disclaimer">{{ d.disclaimer }}</p> }
 
+          @if (final()) { <app-final-evaluation [d]="d" /> } @else {
           <section aria-labelledby="h-sim">
             <h3 id="h-sim">Simulación de reposición: tres políticas</h3>
             <p>
@@ -276,6 +283,7 @@ function addDays(iso: string, n: number): string {
             </ul>
             @if (d.predictive?.nota; as n) { <p class="muted">{{ n }}</p> }
           </section>
+          }
         }
       </app-state-panel>
     }
@@ -310,11 +318,14 @@ export class ComparisonPage {
       catchError((e: { status?: number }) => (this.choice.id() && e?.status === 404 ? of([] as BacktestItem[]) : throwError(() => e))),
       tap((items) => { if (!items.length && this.choice.id()) this.findHistorical(); }),
       // Selecciona el primer backtest al llegar la lista.
-      tap((items) => { if (items.length && !this.chosen()) { this.chosen.set(items[0].backtest_id); queueMicrotask(() => this.detail.reload()); } }),
+      tap((items) => { if (items.length && !this.chosen()) { this.chosen.set([...items].sort((a, b) => +isFinal(a.kind) - +isFinal(b.kind))[0].backtest_id); queueMicrotask(() => this.detail.reload()); } }),
     ),
     (d) => d.length === 0,
   );
-  items = computed(() => { const s = this.list.state(); return s.kind === 'data' ? s.data : []; });
+  /** La evaluación final va al final de la lista: por defecto se abre el backtest T07 de la corrida histórica. */
+  items = computed(() => { const s = this.list.state(); return s.kind === 'data' ? [...s.data].sort((a, b) => +isFinal(a.kind) - +isFinal(b.kind)) : []; });
+  final = computed(() => isFinal(this.det()?.kind));
+  kindText = (k: string | undefined) => (isFinal(k) ? 'Evaluación final (T12)' : k ? 'Backtest de desarrollo (T07)' : '');
   // Siempre se pide la vista completa; los selectores solo filtran lo que se muestra.
   detail = load<BacktestDetail>(() => this.api.backtest(this.chosen()!, 'all'), (d) => Object.keys(d).length === 0, false);
   det = computed(() => { const s = this.detail.state(); return s.kind === 'data' ? s.data : null; });
