@@ -36,7 +36,7 @@ Fecha: 17/10/2026 (America/Lima). **No se creó ningún recurso en Azure, no se 
 
 ## 6. Pendientes
 
-- **Cuota de Container Apps (0/0):** registrar proveedores (requiere aprobación) y reconsultar; si sigue en 0, reabrir el plan con la contingencia. Saldo del crédito: verificación puntual en el portal.
+- **Cuota de Container Apps:** resuelta para un entorno tras registrar `Microsoft.App` (Brazil South 0/1; ver plan). Quedan por registrar, con aprobación, los otros proveedores. Saldo del crédito: verificación puntual en el portal.
 - Verificaciones que solo se resuelven al crear el primer recurso (acotadas en el plan): medidor de gestión de entorno, rango del ingress para `TRUSTED_PROXIES`, IP de egreso hacia Atlas.
 - Usuario de aplicación mínimo en Atlas, credencial rotada y lista de IP; usuario administrador de la base de publicación; copia del paquete de referencia al share `df-ref`; primer `docker push`. Todo en la fase de despliegue autorizada.
 - T13 (aceptación/rendimiento), T14/T15 (informe, manual, video, entrega). No se declara publicación HTTPS ni aceptación humana.
