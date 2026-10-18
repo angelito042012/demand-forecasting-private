@@ -1,8 +1,24 @@
 # T11 Plan de despliegue (propuesta, NO ejecutada)
 
-Fecha: 17/10/2026. Estado: **propuesta para aprobación**. No se ha creado ningún recurso en la nube, no se ha iniciado sesión en Azure ni en Atlas, no se ha subido ninguna imagen a un registro y no se ha transferido ningún dato fuera de este equipo. Todo lo desplegable fue construido y probado solo en Docker local (ver `docs/T11A_EMPAQUETADO.md`). Los datos son históricos (marzo–agosto 2026); el inventario es simulado.
+Fecha: 17/10/2026; corregido en T11B el 17–18/10/2026. Estado: **propuesta para aprobación**. No se ha creado ningún recurso en la nube, no se ha iniciado sesión en Azure ni en Atlas, no se ha subido ninguna imagen a un registro y no se ha transferido ningún dato fuera de este equipo. Todo lo desplegable fue construido y probado solo en Docker local (ver `docs/T11A_EMPAQUETADO.md`). Los datos son históricos (marzo–agosto 2026); el inventario es simulado.
 
 Convención: **[V]** = verificado en fuente oficial (URL y fecha 17/10/2026); **[NV]** = no verificado, con el método para verificarlo; **[S]** = supuesto de este plan.
+
+## Propuesta principal (T11B)
+
+| Elemento | Propuesta |
+|---|---|
+| Recursos | Un grupo de recursos nuevo `rg-demand-forecasting-pub`; Container Apps Environment **de solo perfil Consumption** (sin endpoints privados, mantenimiento planificado, VNet, NAT ni perfiles Dedicated); 1 Container App `api` (ingress HTTPS, min 1 / max 1) y 1 Container App `worker` continuo (min 1 / max 1), ambas con la **misma imagen**, 0,5 vCPU / 1 GiB; ACR Basic; Storage Standard LRS con shares `df-data` (subidas, lectura/escritura) y `df-ref` (paquete de referencia, solo lectura, solo worker); Log Analytics con tope diario; identidad administrada con AcrPull. Atlas Free (existente) con usuario de aplicación mínimo. `infra/main.bicep` (compila sin errores). |
+| Región | Brazil South (cercana a Atlas São Paulo). **Condicionada** a que el preflight de solo lectura confirme que la suscripción la permite; si no, la permitida más cercana (el costo se recalcula con `scripts/cost_model.py --region`). |
+| Modo | A (worker continuo) hasta el 23/10 para evitar demoras en la defensa; después modo C (API a cero + job cada 5 min, demora máxima ≈ 5 min + arranque) o desmontaje. |
+| Recursos probados | Generación real 10/07 H21 por API→job→worker en la imagen con 0,5 vCPU / 1 GiB: 22,2 s, pico 406 MiB, sin OOM (`docs/T11B_GENERACION_CONTENEDOR.md`). Smoke de contenedores 29/29 (T11A). |
+| Costo estimado hasta el 23/10 | US$ 4 – 17 (modo A, según idle real; §9.4) más, solo si se cobrara un medidor de gestión de entorno no esperado, hasta US$ 28,8 (§9.3). |
+| **Crédito máximo solicitado** | **US$ 20 hasta el 23/10/2026.** |
+| Condición de parada | Más de US$ 12 acumulados en Cost Management o cualquier medidor no previsto ⇒ pasar a modo C o eliminar el grupo de recursos el mismo día. El primer recurso es el entorno vacío para detectar temprano el medidor de gestión (pérdida acotada ≈ US$ 0,2/h). |
+| Después del curso | 24/10: modo C (≈ US$ 7 – 12/mes) o desmontaje tras exportar el bundle y Mongo; Atlas Free se conserva (US$ 0). |
+| Controles reales de gasto | Presupuesto y alertas **no cortan** el gasto; los controles son: 1 réplica máxima por app, tope diario de logs, un solo grupo de recursos eliminable de una vez, revisión de Cost Management a las 24 h y luego a diario, y sin pago por uso (la suscripción de estudiantes se detiene al agotar el crédito). |
+
+**Estado del preflight de Azure (T11B): PENDIENTE.** La herramienta (CLI oficial en contenedor aislado, sesión en `artifacts/private/t11b/azure_cfg`, solo lectura) está lista y se intentó el inicio de sesión por *device code* tres veces; el código venció sin que se completara en el navegador. Nada se consultó, nada se creó ni se registró en Azure. Para completarlo, el propio usuario ejecuta en esta sesión `! .venv\Scripts\python.exe -m scripts.azure_preflight --login --cfg artifacts/private/t11b/azure_cfg --out artifacts/private/t11b/azure_preflight.json` y completa el código en su navegador (sin contraseñas ni tokens por chat). Lo que ese preflight cierra: estado y oferta de la suscripción, regiones permitidas por política, proveedores (solo `show`), cuotas de `Microsoft.App` y Storage en la región, permisos efectivos y roles propios, y si ya existe un grupo de recursos para un `what-if`. Lo que solo puede confirmarse creando el primer recurso: el medidor de gestión de entorno (9.3), el rango de salida del ingress para `TRUSTED_PROXIES` y las IP de egreso hacia Atlas (§7–8); su riesgo está acotado arriba.
 
 ## 1. Arquitectura propuesta
 
@@ -38,6 +54,7 @@ Grupo de recursos nuevo `rg-demand-forecasting-pub` (lo crea el usuario o el int
 | File share | `df-data` | SMB, TransactionOptimized, cuota 5 GiB, soft delete 7 d |
 | Container Registry | `dfpubacr<hash>` | Basic, sin usuario admin, sin pull anónimo |
 | Identidad administrada | `dfpub-id` | rol AcrPull sobre el registro |
+| File share de referencia | `df-ref` | SMB, 1 GiB; contiene el paquete de referencia de runtime (CSV/NPZ T07 + manifiesto con anclajes, 7,6 MiB); montado **solo lectura** en `/reference` únicamente en worker/job (`DF_RUNTIME_REFERENCE_DIR=/reference`); la API no lo monta ni lo sirve |
 | Container Apps Environment | `dfpub-env` | perfil Consumption, logs a `dfpub-logs`, sin VNet |
 | Container App API | `dfpub-api` | 0,5 vCPU / 1 GiB, min 1 / max 1 réplica, ingress externo 8000, solo HTTPS, sondeos a `/api/v1/health` |
 | Container App worker | `dfpub-worker` | 0,5 vCPU / 1 GiB, min 1 / max 1 (modo `continuous`) |
@@ -65,12 +82,12 @@ El worker es un consumidor por sondeo de la colección `jobs` de Mongo: reclama 
 
 | Opción | Demora máxima hasta iniciar un trabajo | Costo (ver §9) | Riesgos |
 |---|---|---|---|
-| A. Worker continuo (réplica mínima 1), API min 1 | ~ el sondeo (segundos) | ~US$22–23/mes de cómputo si está ocioso | simple; costo fijo |
-| B. API min 0 + **Job programado** `worker --once` cada 5 min | ≤ 5 min + arranque (~15–30 s) | ~US$7/mes de cómputo (supuestos §9) | la demora es visible para el usuario tras subir; una ejecución larga puede solaparse con la siguiente: es seguro porque el reclamo es atómico y el lease impide doble procesamiento |
+| A. Worker continuo (réplica mínima 1), API min 1 | ~ el sondeo (segundos) | US$ 27–30/mes si el worker queda ocioso; hasta ≈ US$ 83/mes si está siempre activo (§9.4) | simple; costo fijo |
+| B. API min 0 + **Job programado** `worker --once` cada 5 min | ≤ 5 min + arranque (~15–30 s) | US$ 17–48/mes con API min 1; US$ 7–12/mes con API min 0 (§9.4) | la demora es visible para el usuario tras subir; una ejecución larga puede solaparse con la siguiente: es seguro porque el reclamo es atómico y el lease impide doble procesamiento |
 | C. Job con escalador KEDA (Mongo) por evento | segundos | similar a B | configuración más compleja y credenciales extra en el escalador; no se elige |
 | D. VM / App Service | n.a. | VM B1s ~ costo fijo mayor y administración del SO | más superficie operativa; innecesario |
 
-**Elección propuesta:** A hasta el 23/10/2026 (defensa: sin demora ni arranque en frío; costo ~US$3–5 para 6 días) y cambio a B (`workerMode=scheduled`, `apiMinReplicas=0`) si el sistema queda encendido después. El scheduler (generación periódica) sigue **deshabilitado**; cualquier uso exige `DF_SCHEDULER_ENABLE=true`. Una importación o generación larga no se pierde si el contenedor se reemplaza: el lease vence y otro worker retoma (semántica T10).
+**Elección propuesta:** A hasta el 23/10/2026 (defensa: sin demora ni arranque en frío; costo US$ 4–17 para 6 días según el estado real de idle, §9.4) y cambio a B (`workerMode=scheduled`, `apiMinReplicas=0`) si el sistema queda encendido después. El scheduler (generación periódica) sigue **deshabilitado**; cualquier uso exige `DF_SCHEDULER_ENABLE=true`. Una importación o generación larga no se pierde si el contenedor se reemplaza: el lease vence y otro worker retoma (semántica T10).
 
 ## 7. Atlas Free
 
@@ -86,34 +103,70 @@ HTTPS con el dominio y certificado administrados de la plataforma (`https://dfpu
 
 Cargo «Dedicated Plan Management»: la documentación indica que los endpoints privados y el mantenimiento planificado generan un cargo de gestión incluso en Consumption **[V]** (https://learn.microsoft.com/en-us/azure/container-apps/billing). La API de precios muestra medidores «Environment Management Hour / Private Endpoint / Planned Maintenance» a US$0,2/h con vigencia desde 2026-09-01 (US$0,2 × 720 h ≈ US$144/mes, que consumiría el crédito). Este plan **no** usa endpoints privados ni mantenimiento planificado y no debe habilitarlos; **[NV]** confirmar en la calculadora de precios y en Cost Management tras el primer recurso que el entorno Consumption no genera ese medidor.
 
-## 9. Costo (precios minoristas USD, región `brazilsouth`)
+## 9. Costo (USD, región `brazilsouth`; modelo reproducible `scripts/cost_model.py`)
 
-Fuente de tarifas: Azure Retail Prices API, `https://prices.azure.com/api/retail/prices?currencyCode=USD&$filter=serviceName eq '<servicio>' and armRegionName eq 'brazilsouth'`, consultada el 17/10/2026 (la herramienta de lectura resumió el JSON; reverificar en la calculadora oficial antes de aprobar). Cuotas gratuitas mensuales por suscripción de Container Apps Consumption: 180 000 vCPU-s, 360 000 GiB-s, 2 M peticiones **[V]** (https://azure.microsoft.com/en-us/pricing/details/container-apps/ y la página de facturación, 17/10/2026; la página de precios muestra marcadores sin cifras, por eso se usó la API).
+**Reproducción:** `python -m scripts.azure_prices --region brazilsouth --out artifacts/private/t11b/azure_prices.json` (API pública `https://prices.azure.com/api/retail/prices`, consultada el 18/10/2026 00:37 UTC; precios de lista, sin autenticación) y `python -m scripts.cost_model --days 6`. Las tarifas de la cuenta Azure for Students pueden diferir: se contrastan en la calculadora antes de aprobar.
 
-| Concepto | Tarifa | Fuente/fecha |
+### 9.1 Tarifas y medidores usados
+
+| Medidor | Tarifa | Fuente / vigencia |
 |---|---|---|
-| vCPU activa | 0,000024 US$/s | Retail API 17/10/2026 |
+| Container Apps Consumption — vCPU activa | 0,000024 US$/s | Retail API, vigente desde 2022-06-01 |
 | vCPU en reposo (idle) | 0,000003 US$/s | ídem |
 | Memoria activa e idle | 0,000003 US$/GiB-s | ídem |
-| Peticiones | 0,40 US$/millón (2 M gratis) | ídem |
-| Registro Basic | 0,1666 US$/día (≈5,00/mes) | Retail API Container Registry |
-| Azure Files Standard LRS (datos) | 0,08175 US$/GB-mes; escritura/lista 0,015 por 10 K; lectura 0,0015 por 10 K | Retail API Storage |
-| Log Analytics | primeros 5 GB sin cargo; luego 4,6 US$/GB; retención adicional 0,2 US$/GB-mes | Retail API Log Analytics |
-| Atlas Free | US$0 | docs de MongoDB 17/10/2026 |
-| Salida de datos Azure, NAT, IP pública | no incluidos; **[NV]** primeros GB de salida mensual gratuitos según la lista de precios de ancho de banda (verificar) | — |
+| Peticiones HTTP (solo externas) | 0,40 US$/millón | ídem |
+| **Grants gratuitos Consumption** | 180 000 vCPU-s, 360 000 GiB-s y 2 M peticiones **por suscripción y mes** | https://learn.microsoft.com/en-us/azure/container-apps/billing (ms.date 2025-12-09, consultada 18/10/2026) |
+| Jobs en Consumption | siempre tarifa activa; sin idle | ídem |
+| Container Registry Basic | 0,1666 US$/día (≈ 5,00/mes); datos almacenados 0,10 US$/GB-mes | Retail API |
+| Azure Files Standard LRS | 0,08175 US$/GB-mes; escritura/lista 0,015 y lectura 0,0015 US$ por 10 K operaciones | Retail API (Files) |
+| Log Analytics ingestión | primeros 5 GB/mes sin cargo; luego 4,6 US$/GB; retención adicional 0,2 US$/GB-mes | Retail API (tramo 0 → 5 GB a 0,0) |
+| Salida a Internet | primeros 100 GB/mes sin cargo; luego 0,12 US$/GB | Retail API (tramo 0 → 100 GB a 0,0) |
+| Atlas Free | US$ 0 (512 MB, 100 ops/s, 10 GB/semana) | https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/ |
+| Medidores «Environment Management Hour», «Environment Private Endpoint», «Environment Planned Maintenance Hour» | 0,2 US$/h | Retail API, vigentes desde 2026-09-01 (ver 9.3) |
 
-Cómputo (0,5 vCPU / 1 GiB por contenedor; se muestran el valor sin cuotas gratuitas y con ellas valoradas al mínimo, «ocioso» = todo el tiempo en reposo; «activo» = límite superior):
+### 9.2 Fórmula
+
+Por contenedor de 0,5 vCPU / 1 GiB encendido `T` segundos con fracción activa `f`: `vCPU-s = 0,5·T` y `GiB-s = 1·T`, de los cuales `f` se factura a tarifa activa y `(1−f)` a tarifa idle. Los **grants se restan una sola vez del total de la suscripción** (API + worker + jobs), no una vez por aplicación; como la documentación no precisa a qué medidor se imputan, el modelo da el rango entre «grants aplicados a lo activo» (mínimo) y «sin grants» (máximo). Jobs: `ejecuciones = días·24·60/5`, `segundos activos = ejecuciones·30` a tarifa activa. Fijos: `ACR = 0,1666·días`, `Files = 0,08175·GB·días/30` (0,5 GB), logs sobre los 5 GB gratuitos (1 GB/30 d previstos ⇒ 0), egreso dentro de los 100 GB gratuitos, Atlas 0.
+
+**Un worker que sondea Mongo no se presume ocioso.** Medición local del worker de la imagen esperando trabajos (120 s, 0,5 vCPU, contra Mongo local sin TLS; `artifacts/private/t11b/idle/worker_ocioso.json`): CPU media **0,0097 vCPU** (umbral de idle `< 0,01`; margen insuficiente), red 174 B/s recibidos y 331 B/s enviados (umbral `< 1000 B/s`). Con TLS, DNS SRV y monitores de topología de Atlas el consumo será mayor; por eso el plan usa `f` ∈ {0, 0,25, 1} para el worker y no afirma el estado idle hasta medirlo en Azure (métricas de Container Apps tras el primer despliegue).
+
+### 9.3 Cargo de gestión de entorno (decisión anclada a la documentación)
+
+La página de facturación (https://learn.microsoft.com/en-us/azure/container-apps/billing) dice textualmente que «features such as private endpoints and planned maintenance are subject to a **Dedicated Plan Management** charge regardless of whether you use the Consumption or Dedicated plans», y que con perfiles Dedicated hay una cuota fija de gestión; para un entorno de **solo perfil Consumption, sin endpoints privados ni mantenimiento planificado**, la página no describe ningún cargo de gestión. Los tres medidores de 0,2 US$/h aparecen en la lista de precios con vigencia desde 2026-09-01, pero ninguno se asocia explícitamente en la documentación con un entorno Consumption sin esas funciones. Decisión: **no se presupuesta como cargo seguro ni se descarta**: el entorno propuesto no habilita endpoints privados, mantenimiento planificado ni perfiles Dedicated (comprobable en el Bicep y en el recurso creado); si apareciera el medidor, su peor caso es 0,2·24·6 = **US$ 28,8** hasta el 23/10 (≈ US$ 144/mes), que superaría el límite pedido. Control: el primer recurso que se crea es el **entorno vacío** (sin apps); se revisa en Cost Management en cuanto aparezca el costo (la facturación puede tardar horas) y, si el medidor se cobra, se elimina el grupo de recursos antes de subir nada (pérdida acotada a horas de gestión, ≈ US$ 0,2/h).
+
+### 9.4 Escenarios (6 días de operación hasta el 23/10; mes de 30 días)
+
+Modo A = API min 1 + worker continuo; B = API min 1 + job `worker --once` cada 5 min (30 s por ejecución, **demora máxima visible de 5 min** más el arranque); C = API min 0 (2 h activas/día) + job cada 5 min. `fa` = fracción activa de la API (0,05–1); `fw` = fracción activa del worker (0–1). Totales = cómputo + ACR + Files + logs.
 
 | Escenario | 6 días hasta el 23/10 | Mes de 30 días |
 |---|---|---|
-| A: API min 1 + worker continuo, ocioso | US$3,05–4,67 | US$21,71–23,33 |
-| A: límite superior, todo activo | US$13,93–15,55 | US$76,14–77,76 |
-| B: API min 1 + job cada 5 min (30 s/ejecución) | US$1,49–3,11 | US$13,93–15,55 |
-| C: API min 0 (2 h activas/día) + job cada 5 min | US$1,00–1,43 | US$5,51–7,13 |
+| A, `fa`=0,05, `fw`=0 | US$ 4,06 – 5,95 | US$ 26,75 – 29,73 |
+| A, `fa`=1, `fw`=0,25 | US$ 7,08 – 12,48 | US$ 56,99 – 62,39 |
+| **A, peor caso (`fa`=1, `fw`=1)** | **US$ 11,16 – 16,56** | US$ 77,40 – 82,80 |
+| B, `fa`=0,05 … 1 | US$ 1,96 – 9,56 | US$ 16,55 – 47,81 |
+| C | US$ 1,01 – 2,44 | US$ 6,77 – 12,17 |
 
-Costo total propuesto hasta el 23/10/2026 (escenario A, ocioso con tráfico de defensa leve): cómputo US$3–5 + registro ≈US$1,0 (6 d) + archivos < US$0,5 + logs US$0 (bajo el tope gratuito, **[NV]**) + Atlas US$0 ⇒ **≈ US$5–7**, con techo prudente de **US$20** si el tráfico fuera todo activo (límite superior A + registro + archivos). Mensual si queda encendido: **A ≈ US$28–30** (cómputo 21,7–23,3 + registro 5,0 + archivos ≈0,5 + logs ≤ 4,6 si superara el gratuito); **C ≈ US$11–13**. Todo se descuenta del crédito (US$100 hasta el 17/10/2027, sin pago por uso). **Presupuestos y alertas no cortan el gasto**: la mitigación real es el tope de réplicas (max 1), el tope de logs, y revisar Cost Management a diario; el desmontaje (§11) es la única forma de detener el cargo.
+Con 5 días en lugar de 6 el escenario A baja a US$ 3,11 – 13,80 (peor caso).
 
-Mantenimiento fijo no verificado: el costo de egress, de snapshots del share y de operaciones SMB; con las cargas de este proyecto (decenas de MB) se estima despreciable **[S]**.
+### 9.5 Conceptos no determinables (valores conservadores)
+
+| Concepto | Supuesto conservador | Rango |
+|---|---|---|
+| Operaciones y snapshots de Azure Files | < 0,1 GB de datos activos, < 100 K operaciones/mes, snapshots incrementales de pocos MB | < US$ 0,5 |
+| Egreso a Internet | respuestas del frontend/API de decenas de MB | US$ 0 (dentro de 100 GB) |
+| Log Analytics | 1 GB/mes previsto, tope diario 0,2 GB | US$ 0 (≤ 5 GB); máx. US$ 4,6/mes si se superara el gratuito |
+| Peticiones | < 2 M | US$ 0 |
+| Medidor de gestión de entorno | ver 9.3 | US$ 0 – 28,8 hasta el 23/10 |
+| IP, NAT, VNet, endpoints privados | no se crean | US$ 0 |
+
+### 9.6 Costo hasta el 23/10 y política posterior
+
+- **Estimado (modo A):** US$ 4 – 17 según el comportamiento real de idle del worker y la API; más, **solo si** el medidor de gestión de entorno se cobrara, hasta US$ 28,8 adicionales (no esperado; ver 9.3).
+- **Crédito máximo solicitado hasta el 23/10: US$ 20** (cubre el peor caso A con holgura, sin el medidor de gestión). **Condición de parada:** si Cost Management muestra más de US$ 12 acumulados o aparece cualquier medidor no previsto, se pasa a modo C o se elimina el grupo de recursos el mismo día (`az group delete`; los datos viven en Atlas y en el bundle local).
+- **Controles reales:** presupuesto y alertas **no cortan el gasto**; el control efectivo es operativo: (1) 1 réplica máxima en cada app, (2) tope diario de logs, (3) un único grupo de recursos para poder eliminarlo de una vez, (4) revisión de Cost Management a las 24 h del primer recurso y diaria, (5) sin pago por uso: la suscripción de estudiantes se detiene al agotar el crédito.
+- **Después del curso:** el 24/10 pasar a modo C (≈ US$ 7 – 12/mes) o desmontar (`az group delete`) tras exportar la copia (bundle + Mongo, ver `docs/T11B_ACTA_RECUPERACION_INTEGRAL.md`); Atlas Free se conserva sin costo (se pausa a los 30 días sin conexiones).
+
+> T11B: la plantilla `infra/main.bicep` fue actualizada (share `df-ref` de solo lectura para worker/job, recursos 0,5 vCPU / 1 GiB probados: la generación real 10/07 H21 en contenedor tuvo un pico de memoria de ≈ 406 MiB y 22 s, sin OOM) y vuelve a compilar sin errores ni advertencias con Bicep 0.48.1.
 
 ## 10. Validación estática de la infraestructura
 
@@ -142,8 +195,8 @@ Sin tocar el entorno Python del proyecto, dos opciones: (a) contenedor oficial `
 
 ## 13. Accesos mínimos que faltan y decisiones que el usuario debe aprobar
 
-**Accesos faltantes:** (1) inicio de sesión de solo lectura en Azure (device code) para §12; (2) permiso Contributor + UAA sobre un grupo de recursos nuevo; (3) creación en Atlas de un usuario de aplicación mínimo sobre `demand_forecasting_pub` y entrega de su URI por canal privado; (4) lista de acceso IP en Atlas con el/los rangos de egreso (acción del usuario en Atlas); (5) medida del tamaño de la base de publicación (agente de datos) para completar §7.
+**Accesos faltantes:** (1) completar el inicio de sesión de solo lectura en Azure (device code, comando en la «Propuesta principal») para §12; (2) permiso Contributor + UAA sobre un grupo de recursos nuevo; (3) creación en Atlas de un usuario de aplicación mínimo sobre `demand_forecasting_pub` y entrega de su URI por canal privado; (4) lista de acceso IP en Atlas con el/los rangos de egreso (acción del usuario en Atlas); (5) medida del tamaño de la base de publicación (agente de datos) para completar §7.
 
-**Decisiones a aprobar:** (a) crear los recursos de §2 en la región propuesta (o la permitida más cercana); (b) costo máximo autorizado (propuesta: US$20 hasta el 23/10 y US$35/mes si queda encendido); (c) escenario A hasta el 23/10 y paso a C después, o apagar/desmontar el 24/10; (d) política de acceso en Atlas: solo egreso de Azure vs apertura temporal con caducidad vs pagar NAT/VNet; (e) subir la imagen a ACR (primer `docker push`); (f) aceptar el riesgo de límite de login compartido hasta fijar `TRUSTED_PROXIES`; (g) restaurar datos en Atlas solo desde la política de `docs/T11_CONTRATO.md` §4 (sin usuarios, sesiones ni jobs).
+**Decisiones a aprobar:** (a) crear los recursos de §2 en la región propuesta (o la permitida más cercana); (b) costo máximo autorizado (propuesta: US$20 hasta el 23/10; después modo C ≈ US$7–12/mes o desmontaje); (c) escenario A hasta el 23/10 y paso a C después, o apagar/desmontar el 24/10; (d) política de acceso en Atlas: solo egreso de Azure vs apertura temporal con caducidad vs pagar NAT/VNet; (e) subir la imagen a ACR (primer `docker push`); (f) aceptar el riesgo de límite de login compartido hasta fijar `TRUSTED_PROXIES`; (g) restaurar datos en Atlas solo desde la política de `docs/T11_CONTRATO.md` §4 (sin usuarios, sesiones ni jobs).
 
 Nada de lo anterior se ha ejecutado; cualquier resultado de despliegue en la nube es **pendiente**.

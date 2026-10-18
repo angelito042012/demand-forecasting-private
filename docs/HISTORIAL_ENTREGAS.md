@@ -315,3 +315,8 @@ R11 cerrado (siete fases, reconciliación sin recomputar). Paquete final T12 int
 ## Revisión Codex12: T11A local y cierres previos a nube
 
 17/10, entrega989fa6c. Codex83pruebas aprobadas sin omitidas y restauraciónMongo real sobre copia temporal,0problemas/213,469MB; no evaluaciónreal ni Docker/Chrome repetidos. R12fallotardío de manifiesto deja completa=true; R13recuperación privada solo listada; R14referenciaGit no portable y generaciónen imagen sin comprobar. Encargo ETAPA_12_CLAUDE.md,T11B, incluye correcciones y preflight/costo sololectura; no recursos/cargos/transferencias. ResultadosT12 válidos; falta despliegue yT13–T15 antes23/10.
+
+
+## T11B (17/10/2026): R12–R14 y preflight de nube
+
+R12 (cierre atómico del reporte), R13 (bundle privado y recuperación integral comprobada: `mongo_ok`, `artefactos_ok`, `recuperacion_integral_ok`), R14 (referencia de runtime sin Git y generación real 10/07 H21 en contenedor: 22,2 s, 406 MiB, sin OOM). Plan de costo corregido con propuesta principal (crédito máximo US$ 20). Preflight autenticado de Azure **pendiente** (login no completado). Regresión 440 aprobadas/5 omitidas. Sin recursos externos, sin transferencia de datos, sin despliegue. Detalle en `docs/T11B_REPORTE.md`.

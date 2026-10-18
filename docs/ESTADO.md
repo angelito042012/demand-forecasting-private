@@ -4,7 +4,7 @@ Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex 
 
 ## Siguiente encargo
 
-**T11A/989fa6c revisada; siguiente ETAPA_12_CLAUDE.md (T11B), REVISION_CODEX_12.md.** Integración final local y restauración Mongo verificadas. Antes de publicar: R12 fallo tardío puede dejar estado completo; R13 backup enumera18artefactos sin copiarlos/restaurarlos; R14 referencia depende de Git ausente en imagen y generación en contenedor sin probar. Codex83pruebas aprobadas y restauración real Mongo213,47MB/0problemas. T11B cierra estos puntos y preflight/costo Azure en solo lectura; sin recursos/cargos/transferencia de datos. No se inició despliegue. Datos/modelos/T12 científica no se rehacen.
+**T11B entregada para revisión de Codex** (`docs/T11B_REPORTE.md`): R12–R14 cerrados, recuperación integral de archivos privados comprobada, generación real en contenedor verificada y plan de costo corregido con propuesta principal concreta. **El preflight autenticado de Azure quedó PENDIENTE: el inicio de sesión (device code, tres intentos) no se completó; no se consultó ni creó nada en Azure.** No hay recursos facturables, subida de imágenes, transferencia de datos ni despliegue. Siguiente: completar el login de solo lectura (`! .venv\Scripts\python.exe -m scripts.azure_preflight --login --cfg artifacts/private/t11b/azure_cfg --out artifacts/private/t11b/azure_preflight.json`), revisión Codex y la autorización del plan (crédito máximo US$ 20 hasta el 23/10); después T13 y T14/T15.
 
 ## Hitos aceptados
 
@@ -70,3 +70,12 @@ T11A no es despliegue: exige imagen(s), configuración producción, almacén dur
 R12:P2,falta controlar error después de _end al escribir manifiesto final. R13:P2,18artefactos listados pero0incluidos en respaldo; recuperaciónMongo no equivale a recuperaciónintegral. R14:demostrar generaciónreal con1GiB y referenciaaprobada portable sinGit/.git; montaje de NPZsolo no basta. No quitar verificaciones ni meterdatos en imagenpública.
 
 Revisar costo usando activos/idle y cuota gratuita compartida, medir memoria/tiempo y consultar suscripción/regiones/cuotas sololectura con autenticacióninteractiva propia. No hay costo máximo acordado todavía; estimaciones5–7/20USDno son cotizaciónfinal. No crearrecursos/roles/grupos, consumircrédito ni transferirdatos. Después de propuesta corregida se pide autorización concreta. Falta despliegueHTTPS/Atlas, rendimiento/aceptaciónT13 e informe/manual/video/entregaT14–T15 antes23/10.
+
+## T11B cierres locales y preflight (17/10/2026, verificado)
+
+- R12: cierre del reporte atómico y bajo control de error (acc9251); fallo tardío ⇒ `reporte=error`, `completa=false`, manifiesto previo invalidado; 2 regresiones fallaban antes.
+- R13: bundle privado verificable + `export-all`/`restore-all` con mantenimiento impuesto; export 40,6 s, restauración del bundle 7,8 s (43/43 hashes), Mongo 18,9 s (10/10); `mongo_ok`, `artefactos_ok` y `recuperacion_integral_ok` = true, por separado.
+- R14: paquete de referencia de runtime sin Git (19 archivos, 7,6 MiB, anclado a los hashes aprobados versionados) y generación real 10/07 H21 por API→job→worker en la imagen (0,5 vCPU / 1 GiB): 22,2 s, pico 406 MiB, sin OOM, recomendaciones idénticas a la histórica auditada, idempotente y sin duplicados tras `docker kill`.
+- Plan Azure corregido: tabla de medidores con fecha/URL, grants compartidos por suscripción, worker no presumido ocioso (medido 0,0097 vCPU), medidor de gestión de entorno anclado a la documentación, rangos conservadores; propuesta principal: modo A, US$ 4–17 estimados, crédito máximo US$ 20, parada > US$ 12. Bicep con share de referencia de solo lectura compila sin errores.
+- Pruebas: regresión T11B 440 aprobadas / 5 omitidas; pruebas nuevas R12 (4), R13 (67/1 omitida), R14 (22 + generación real). No se repitió la suite completa ni el navegador.
+- Pendientes: preflight de Azure (login), usuario/credencial de Atlas y lista de IP, `df-ref`, primer push de imagen, T13–T15.
