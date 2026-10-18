@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-**UX01 entregado (docs/UX01_REPORTE.md); pendiente la nueva prueba de comprensión de Rogelio y la revisión de Codex.** R12–R16 aceptados localmente; no repetir. A13 (nube) y A14 (participación humana) pendientes; T14 debe reflejar las pantallas finales; T15 hasta el 23/10. Publicación en nube solo con autorización explícita.
+**UX01R entregado (docs/UX01R_REPORTE.md; R17 cerrado, Evaluación simplificada); pendiente la nueva prueba de comprensión de Rogelio y la revisión de Codex.** R12–R16 aceptados localmente; no repetir. A13 (nube) y A14 (participación humana) pendientes; T14 debe reflejar las pantallas finales; T15 hasta el 23/10. Publicación en nube solo con autorización explícita.
 
 Estado al 17/10: R12-R14 aceptados localmente; R15/R16 cerrados (T13B); demostración local activa en https://localhost:8443; publicación en nube pendiente de una única autorización (docs/T11_PLAN_DESPLIEGUE.md); aceptación humana (A14) y A13 pendientes; T14 final y T15 hasta el 23/10.
 

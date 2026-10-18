@@ -352,3 +352,7 @@ Revisar costo usando activos/idle y cuota gratuita compartida, medir memoria/tie
 ## UX01 (17/10/2026)
 
 Rediseño comprensible entregado (commits hasta 269a9cd); ver `docs/UX01_REPORTE.md`. Observación de Rogelio «No comprendió el uso en su primera visita»: abierta hasta nueva prueba humana.
+
+## UX01R (17/10/2026)
+
+Cierre de R17 y Evaluacion simplificada (commit f95092f); ver `docs/UX01R_REPORTE.md`.

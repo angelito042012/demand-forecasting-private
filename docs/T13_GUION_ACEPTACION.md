@@ -4,11 +4,11 @@
 
 **Observación abierta de Rogelio (primera visita, interfaz anterior):** «No comprendió el uso en su primera visita». Se registra como observación de usabilidad que motivó el rediseño UX01; **no es una aceptación ni un defecto de cálculo demostrado**. Sigue abierta hasta que Rogelio vuelva a probar con la interfaz nueva (bloque «Prueba de comprensión (UX01)»).
 
-- **Versión del sistema:** commit `269a9cd` (rama master); imagen `df-app:ux01-269a9cd`. Interfaz rediseñada (UX01). Fecha del guion: 17/10/2026 (America/Lima).
+- **Versión del sistema:** commit `f95092f` (rama master); imagen `df-app:ux01r-f95092f`. Interfaz rediseñada (UX01). Fecha del guion: 17/10/2026 (America/Lima).
 - **Entorno a probar:** demostración local `df-demo` sobre una **copia restaurada** (no es la base v1/v2 ni la publicación original). **URL: `https://localhost:8443`** (solo este equipo; certificado autofirmado: el navegador avisará, elija «Avanzado» → «Continuar»). **Base de ensayo activa:** `df_demo_20261017221940` (compruébela con `status`, abajo). Publicación en la nube: [PENDIENTE: no existe publicación]; este guion no acredita pruebas en nube.
 - Fecha y hora de ejecución: ____________ Ejecutó: Rogelio ____________ (nombre/firma solo cuando se ejecute).
 - **Usuarios (sin compartir contraseñas por chat):** existen `demo_admin` y `demo_lector`, con contraseñas generadas guardadas **solo** en `artifacts/private/t13b/demo_credenciales.txt` (ábralo en su equipo; fuera de Git). Para usar su propia contraseña: `.venv\Scripts\python.exe -m scripts.demo_local create-user --username <su_usuario> --role admin` (la pide por consola y no la muestra). No anote contraseñas aquí.
-- **Comprobar antes de empezar:** `.venv\Scripts\python.exe -m scripts.demo_local status` debe decir «misma base en api y worker … True» y listar tres corridas (histórica activa, histórica sustituida y evaluación final). Si la imagen en ejecución no es `df-app:ux01-269a9cd`, avise antes de seguir.
+- **Comprobar antes de empezar:** `.venv\Scripts\python.exe -m scripts.demo_local status` debe decir «misma base en api y worker … True» y mostrar, como mínimo, la corrida histórica activa (puntero `hist-20260710-4ea348836e35`), la histórica sustituida (`hist-20260710-52b01cd999dd`) y la evaluación final (`final-20260731-d587255d87fb`); puede haber además análisis creados por pruebas (no se exige un número fijo de corridas). Si la imagen en ejecución no es `df-app:ux01r-f95092f`, avise antes de seguir.
 
 ## Prueba de comprensión (UX01)
 
@@ -54,10 +54,10 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 | 13 | Pulsar **Comparar métodos / ver detalles** | Aparecen identificador, tipo de historial, día de la previsión, modelo experimental y control «siempre cero» | |
 | 14 | Elegir el análisis creado en la aplicación (si existe) | Aviso: aún no hay ventas registradas para comparar; «no disponible…» no es cero | |
 | **D. Interpretar el error (WAPE)** | | | |
-| 15 | Abrir «Evaluación de resultados» (ejemplo de julio) | «Cifras clave del alcance elegido» con error absoluto del promedio de 28 días y del modelo experimental | |
+| 15 | Abrir «Evaluación de resultados» (ejemplo de julio) | Vista breve: una explicación del error del promedio de 28 días y del modelo experimental, un aviso, y el botón «Ver cómo se evaluó» (el detalle académico llega cerrado) | |
 | 16 | Cambiar «Nivel» a «Categoría» | El error baja mucho respecto de producto | |
 | 17 | Responder: ¿un error de 87 % significa 87 % de acierto? | No. Es error acumulado equivalente al 87 % del volumen vendido; menor es mejor (también en «Ayuda») | |
-| 18 | Abrir «Ver detalle completo: todos los métodos y métricas» | MAPE con cobertura y ceros excluidos; R² puede decir «no evaluable» | |
+| 18 | Pulsar «Ver cómo se evaluó» (detalle académico) | Se abre el detalle: tabla con todos los métodos, MAPE con cobertura y ceros excluidos; R² puede decir «no evaluable» | |
 | **E. Reposición simulada y su explicación** | | | |
 | 19 | Abrir «Reposición simulada» | Aviso «Inventario simulado con supuestos; no corresponde al inventario real de la empresa»; línea con «inventario simulado al cierre del 10/07/2026»; vista «Con sugerencia de reposición» activa | |
 | 20 | En un producto pulsar **Entender sugerencia** | «En este ejemplo se sugieren N unidades (hipotético…)» y tres pasos: con qué se cuenta, qué se busca cubrir, de dónde sale la cantidad | |
@@ -68,7 +68,7 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 | **F. Evaluación de agosto sin pedidos** | | | |
 | 25 | Elegir la evaluación de agosto y abrir «Reposición simulada» | «Este análisis no genera pedidos»; sin existencias ni pedidos; botón para abrir el ejemplo con reposición simulada | |
 | 26 | Abrir «Ventas previstas» con la evaluación | Fechas 01/08 a 21/08/2026; nota de evaluación; «no evaluable» no es cero | |
-| 27 | Abrir «Evaluación de resultados» con la evaluación | Un solo bloque de 21 días; advertencias visibles; no se declara ganador | |
+| 27 | Abrir «Evaluación de resultados» con la evaluación de agosto | Vista breve con «Métrica del 01 al 14 de agosto» y «Bloque de prueba disponible del 01 al 21 de agosto» (etiquetas distintas); al abrir «Ver cómo se evaluó» aparecen las advertencias completas (un solo bloque de 21 días, WAPE no es exactitud) y no se declara ganador | |
 | **G. Ayuda y límites** | | | |
 | 28 | Abrir «Ayuda» | Primeros pasos, «Qué no hace esta aplicación», «Cómo leer el error absoluto (WAPE)» y glosario | |
 | **H. Administrador (opcional, caso mínimo ya probado)** | | | |

@@ -8,4 +8,5 @@ Vigente: implementar interfaz comprensible por tareas, primera visita guiada y l
 
 Preservar originales/v1/v2/pub, resultados congelados y puntero historico; inventario siempre simulado. Agentes por ambitos y un integrador. Entrega final 23/10/2026 (America/Lima).
 
-UX01 entregado (docs/UX01_REPORTE.md; demo https://localhost:8443, imagen df-app:ux01-269a9cd). Espera la nueva prueba de comprension de Rogelio y la revision de Codex; no publicar sin autorizacion explicita.
+UX01 entregado (docs/UX01_REPORTE.md; demo https://localhost:8443, imagen df-app:ux01r-f95092f). Espera la nueva prueba de comprension de Rogelio y la revision de Codex; no publicar sin autorizacion explicita.
+UX01R entregado (docs/UX01R_REPORTE.md): R17 cerrado y Evaluacion simplificada.
