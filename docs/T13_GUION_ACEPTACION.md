@@ -2,7 +2,7 @@
 
 **Estado de la aceptación humana: PENDIENTE.** Este documento no está firmado ni acredita participantes, conformidad de asesor o de la MYPE, ni actas. Lo completará Rogelio al ejecutarlo.
 
-- **Versión del sistema:** commit `@@COMMIT@@` (rama master); imagen `df-app:t11a-local` (`sha256:59c92de892aa`, construida con la corrección de estilos de producción). Fecha del guion: 17/10/2026 (America/Lima).
+- **Versión del sistema:** commit `8412ca0` (rama master); imagen `df-app:t11a-local` (`sha256:59c92de892aa`, construida con la corrección de estilos de producción). Fecha del guion: 17/10/2026 (America/Lima).
 - **Entorno a probar:** demostración local `df-demo` sobre una **copia restaurada** (no es la base v1/v2 ni la publicación original). **URL: `https://localhost:8443`** (solo este equipo, 127.0.0.1; certificado autofirmado: el navegador avisará, elija «Avanzado» → «Continuar»). **Base de ensayo activa:** `df_demo_20261017221940` (compruébela con `status`, abajo). Publicación en la nube: [PENDIENTE: no existe publicación]; este guion no acredita pruebas en nube.
 - Fecha y hora de ejecución: ____________ Ejecutó: Rogelio ____________ (nombre/firma solo cuando se ejecute).
 - **Usuarios (sin compartir contraseñas por chat):** ya existen `demo_admin` y `demo_lector`, con contraseñas generadas guardadas **solo** en `artifacts/private/t13b/demo_credenciales.txt` (ábralo en su equipo; fuera de Git). Para usar su propia contraseña: `.venv\Scripts\python.exe -m scripts.demo_local create-user --username <su_usuario> --role admin` (la pide dos veces por consola y no la muestra). No anote contraseñas aquí.
