@@ -305,3 +305,8 @@ Ejecutada una vez por fases: verificación de la congelación, preparación y se
 ## Revisión Codex11: resultados T12 validados y preparación T11A
 
 17/10, entrega3f40176. Codex16pruebas sintéticas aprobadas sin omitidas,69,49s; ruff limpio. Auditoría propia recalcula WAPE H14 y reconstruye reales desde CSV mínimo, verifica9hashes/sello previo y27balances sin repetir evaluación real. R11 administrativo: audit/reporte no actualizan fases, estado completa=false; cerrar primero en ETAPA_11_CLAUDE.md sin repetir cálculos. Método promedio_28 permanece; no mejora RF ni impacto real demostrado. Siguiente T11A: integración final, contenedores, base nueva/capacidad, copia-restauración y plan de costo/accesos antes de despliegue. No cambios a artefactos finales ni DB original en esta revisión; evidencia en codex_review11_* privado.
+
+
+## T11A (17/10/2026): preparación local del despliegue
+
+R11 cerrado (siete fases, reconciliación sin recomputar). Paquete final T12 integrado localmente (publicador, API, UI; tres tipos de corrida separados). Base de publicación `demand_forecasting_pub` con capacidad medida (213,90 MB, 41,8 % de 512 MB), copia/restauración verificadas, contenedores con smoke 29/29 y plan Azure/Atlas con costos. pytest 511 aprobadas/7 omitidas, vitest 127, E2E Chrome 20/20. Sin recursos externos, sin transferencia de datos y sin despliegue. Detalle en `docs/T11A_REPORTE.md`.

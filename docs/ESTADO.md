@@ -4,7 +4,7 @@ Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex 
 
 ## Siguiente encargo
 
-**Resultados científicos T12/3f40176 validados por Codex en REVISION_CODEX_11.md. Encargo siguiente: ETAPA_11_CLAUDE.md (T11A)**: cerrar R11 (audit/reporte sin checkpoints), integrar paquete final en web local y base nueva de publicación, contenedores, capacidad y copia/restauración probadas, plan concreto de nube/costo/permisos. No repetir prepare/evaluate ni re-seleccionar. T12 calculada una vez; su cierre administrativo sigue pendiente. No se inició despliegue ni se autorizó gasto de bolsillo.
+**T11A entregada para revisión de Codex** (`docs/T11A_REPORTE.md`): R11 cerrado, paquete final T12 integrado localmente, base de publicación con capacidad medida, copia/restauración comprobada, contenedores y plan de despliegue/costos. **No se creó ningún recurso externo, no se consumió crédito, no se transfirió ningún dato y no hay despliegue.** Pendiente: revisión Codex; después la autorización concreta del plan (`docs/T11_PLAN_DESPLIEGUE.md`: recursos, región, costo máximo, pasos) antes de aprovisionar; T13 aceptación y T14/T15 informe/manual/video antes del 23/10.
 
 ## Hitos aceptados
 
@@ -52,3 +52,13 @@ Después de T12 y su revisión: T11 capacidad/archivo recuperable/HTTPS/almacena
 R11 P2: siete fases definidas, pero audit/report no actualizan estado ni sus errores. Corregir/reconciliar solo esas operaciones, con registro posterior y hashes de cálculo intactos. Integración local y plan de capacidad independientes pueden avanzar; cierre total de T12 tras R11. No migrar la base completa: forecasts267,06MB, recomendaciones66,43MB y ventas81,79MB antes de índices. Preparar base nueva con datos/fuentes y corridas pertinentes, archivo recuperable del resto, sin sesiones/usuarios/jobs demo, sin borrar v1/v2 ni evidencias.
 
 T11A no es despliegue: exige imagen(s), configuración producción, almacén durable, prueba de copia/restauración y plan de recursos/región/costo hasta23/10 y mensual. Cuentas ya creadas; acceso secreto por canal privado. Sin crear recursos/cargos, consumir crédito sin techo concreto acordado ni transferir datos en esta preparación. T13–T15 y publicación HTTPS real siguen pendientes.
+
+## T11A preparación del despliegue (17/10/2026, verificado)
+
+- R11: auditoría y reporte registran sus fases; `estado.json` del paquete real reconciliado (siete fases, `completa=true`) con corrección técnica posterior (commit base 71656c2) y hashes originales intactos. 6 regresiones (4 fallaban antes).
+- Integración local de la evaluación final (`final_evaluation`, `final-20260731-d587255d87fb`): contrato `docs/T11_CONTRATO.md`; API/UI separan histórica T07, generada y final; fechas hasta 21/08 solo para esa corrida; recomendaciones no disponibles con motivo. Publicada en la base nueva `demand_forecasting_pub` (v1/v2 intactas).
+- Capacidad medida tras restaurar: **213,90 MB datos+índices = 41,8 % de 512 MB**; ≈2 corridas generadas más hasta el 60 %. Copia 18,9 s, restauración 17,9 s (24,1 s con verificación), verificación 10/10.
+- Contenedores: imagen única 991 MB, compose de ensayo, smoke 29/29; producción con secretos obligatorios, mismo origen, proxy de confianza explícito.
+- Pruebas: `pytest tests` 511 aprobadas / 7 omitidas; vitest 127 y build; E2E Chrome 20/20 con el paquete final real sobre copia restaurada.
+- Plan Azure (Container Apps + Files + ACR Basic + Atlas Free) ≈ US$5–7 hasta el 23/10, ≈ US$28–30/mes encendido; cifras de API pública de precios, varias **no verificadas** (egress, snapshots, medidor de gestión de entorno, regiones de Azure for Students, IPs de egreso hacia Atlas).
+- Pendientes: aprobación del plan; crear admin de la base de publicación por canal seguro; conexión a Atlas (sin credencial); generación dentro del contenedor no probada; aceptación humana.
