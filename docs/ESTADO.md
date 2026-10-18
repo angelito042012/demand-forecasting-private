@@ -4,7 +4,7 @@ Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex 
 
 ## Siguiente encargo
 
-**T11B entregada para revisión de Codex** (`docs/T11B_REPORTE.md`): R12–R14 cerrados, recuperación integral de archivos privados comprobada, generación real en contenedor verificada y plan de costo corregido con propuesta principal concreta. **El preflight autenticado de Azure quedó PENDIENTE: el inicio de sesión (device code, tres intentos) no se completó; no se consultó ni creó nada en Azure.** No hay recursos facturables, subida de imágenes, transferencia de datos ni despliegue. Siguiente: completar el login de solo lectura (`! .venv\Scripts\python.exe -m scripts.azure_preflight --login --cfg artifacts/private/t11b/azure_cfg --out artifacts/private/t11b/azure_preflight.json`), revisión Codex y la autorización del plan (crédito máximo US$ 20 hasta el 23/10); después T13 y T14/T15.
+**T11B entregada para revisión de Codex** (`docs/T11B_REPORTE.md`): R12–R14 cerrados, recuperación integral de archivos privados comprobada, generación real en contenedor verificada y plan de costo corregido con propuesta principal concreta. **Preflight de Azure completado el 18/10/2026 (solo lectura; sesión cerrada): Brazil South permitida, `spendingLimit=On`, Owner + UAA, proveedores sin registrar y cuota `ManagedEnvironmentCount` 0/0 (riesgo a resolver antes del despliegue).** No hay recursos facturables, subida de imágenes, transferencia de datos ni despliegue. Siguiente: revisión Codex y la autorización del plan (incluida la aprobación de registrar proveedores y reconsultar la cuota) (crédito máximo US$ 20 hasta el 23/10); después T13 y T14/T15.
 
 ## Hitos aceptados
 
@@ -78,4 +78,4 @@ Revisar costo usando activos/idle y cuota gratuita compartida, medir memoria/tie
 - R14: paquete de referencia de runtime sin Git (19 archivos, 7,6 MiB, anclado a los hashes aprobados versionados) y generación real 10/07 H21 por API→job→worker en la imagen (0,5 vCPU / 1 GiB): 22,2 s, pico 406 MiB, sin OOM, recomendaciones idénticas a la histórica auditada, idempotente y sin duplicados tras `docker kill`.
 - Plan Azure corregido: tabla de medidores con fecha/URL, grants compartidos por suscripción, worker no presumido ocioso (medido 0,0097 vCPU), medidor de gestión de entorno anclado a la documentación, rangos conservadores; propuesta principal: modo A, US$ 4–17 estimados, crédito máximo US$ 20, parada > US$ 12. Bicep con share de referencia de solo lectura compila sin errores.
 - Pruebas: regresión T11B 440 aprobadas / 5 omitidas; pruebas nuevas R12 (4), R13 (67/1 omitida), R14 (22 + generación real). No se repitió la suite completa ni el navegador.
-- Pendientes: preflight de Azure (login), usuario/credencial de Atlas y lista de IP, `df-ref`, primer push de imagen, T13–T15.
+- Pendientes: cuota de Container Apps 0/0 (registrar proveedores y reconsultar), saldo en portal, usuario/credencial de Atlas y lista de IP, `df-ref`, primer push de imagen, T13–T15.
