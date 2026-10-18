@@ -1,12 +1,11 @@
 # Retomar sin repetir trabajo
 
-Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. **REVISION_CODEX_17.md acepta UX01R/R17 localmente** (48 pruebas dirigidas propias). ETAPA_17 ya ejecutada: no repetir ni reiniciar el diseño. La próxima puerta es la respuesta real de Rogelio a la prueba de comprensión; no inferir aceptación. Publicación ETAPA_15 no autorizada y condicional. Mantener demo activa, usuarios/volúmenes/base y límites de datos; no hacer nuevas consultas Azure por rutina.
+Cierre del 17/10/2026. Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md (instrucciones exactas para encender la demo), docs/PROTOCOLO_TRABAJO.md y docs/UX01R_REPORTE.md.
 
-R12–R16 están aceptados localmente (REVISION_CODEX_13/15): no repetir. No repetir T06/T07/T12 real, el registro de Microsoft.App ni el preflight de Azure (Microsoft.App Registered; ManagedEnvironmentCount Brazil South 0/1).
+Estado: UX01 y UX01R entregados (rediseño comprensible; R17 cerrado; Evaluación simplificada); ultimo codigo f95092f. R12-R16 aceptados localmente: no repetir. No repetir T06/T07/T12 real, el registro de Microsoft.App ni el preflight de Azure (Microsoft.App Registered; ManagedEnvironmentCount Brazil South 0/1).
 
-Vigente: implementar interfaz comprensible por tareas, primera visita guiada y lenguaje sencillo, sin ocultar fechas, inventario simulado ni resultados adversos. Rogelio comunicó que no entiende el uso; aceptación humana pendiente con esa observación. Demo df-demo activa en https://localhost:8443, base común restaurada; preservar volúmenes/credenciales. La publicación condicional de ETAPA_15 está diferida: no crear recursos facturables ni transferir datos; el mensaje de autorización propuesto no fue enviado.
+Pendiente y bloqueado por personas: (1) la prueba humana de comprension de Rogelio (observacion abierta: «No comprendio el uso en su primera visita»; guion en docs/T13_GUION_ACEPTACION.md; no completar por inferencia); (2) revision de Codex de UX01R; (3) autorizacion de publicacion en Azure: NO existe; no crear recursos, subir imagenes, transferir datos ni pedir accesos hasta recibir el mensaje explicito de autorizacion descrito en docs/T11_PLAN_DESPLIEGUE.md.
 
-Preservar originales/v1/v2/pub, resultados congelados y puntero historico; inventario siempre simulado. Agentes por ambitos y un integrador. Entrega final 23/10/2026 (America/Lima).
+Servicios: la demo (compose df-demo) y df-mongo-dev estan DETENIDOS con todos sus volumenes, bases y credenciales conservados. Encender: docker start df-mongo-dev (si se necesita) y `.venv\Scripts\python.exe -m scripts.demo_local up` (sin --build), luego `... demo_local status`; URL https://localhost:8443; usuarios demo_lector / demo_admin con claves solo en artifacts/private/t13b/demo_credenciales.txt. Parar: `demo_local stop`. Nunca down -v ni limpiezas de Docker; no tocar contenedores ajenos ni v1/v2/pub.
 
-UX01 entregado (docs/UX01_REPORTE.md; demo https://localhost:8443, imagen df-app:ux01r-f95092f). Espera la nueva prueba de comprension de Rogelio y la revision de Codex; no publicar sin autorizacion explicita.
-UX01R entregado (docs/UX01R_REPORTE.md): R17 cerrado y Evaluacion simplificada.
+Preservar originales, resultados congelados y puntero historico; inventario siempre simulado y rotulado. Agentes por ambitos y un integrador. Entrega final 23/10/2026 (America/Lima).
