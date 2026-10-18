@@ -160,3 +160,83 @@ def test_reconcile_registers_a_posterior_correction_without_touching_original_ph
         assert after["fases"][f] == before["fases"][f]
     manifest = json.loads((docs / "T12_MANIFIESTO.json").read_text(encoding="utf-8"))
     assert manifest["correcciones"][0]["motivo"].startswith("R11")
+
+
+# ------------------------------------------------------------------------------------------------ R12
+def _manifest_contradicts_state(docs: Path, state: dict) -> bool:
+    """True si el manifiesto publicado afirma un reporte completo/valido que el estado no respalda."""
+    p = docs / "T12_MANIFIESTO.json"
+    if not p.exists():
+        return False
+    m = json.loads(p.read_text(encoding="utf-8"))
+    if m.get("valido") is False:
+        return False
+    claims_done = m.get("fases", {}).get("reporte", {}).get("estado") == "completa"
+    state_done = state["fases"].get("reporte", {}).get("estado") == "completa" and state["completa"] is True
+    return claims_done != state_done or (m.get("fases", {}).get("reporte", {}).get("estado") == "en_curso")
+
+
+@pytest.mark.parametrize("fault", ["build_manifest", "serialize_manifest"])
+def test_r12_late_failure_after_the_first_report_and_after_end_never_leaves_a_complete_package(world, tmp_path, monkeypatch, fault):
+    out = fresh(world, tmp_path)
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    assert run_audit(out)["ok"]
+    real = report.build_manifest
+
+    def late(o, man, state, aud):
+        if state["fases"]["reporte"]["estado"] == "completa":          # solo en el cierre, DESPUES de _end
+            if fault == "build_manifest":
+                raise OSError("falla al construir el manifiesto")
+            circular: dict = {}
+            circular["yo"] = circular                                   # json.dumps lanza ValueError
+            return circular
+        return real(o, man, state, aud)
+    monkeypatch.setattr(report, "build_manifest", late)
+    with pytest.raises((OSError, TypeError, ValueError)):
+        write_report(out, docs=docs)
+    st = json.loads((out / "estado.json").read_text(encoding="utf-8"))
+    assert st["completa"] is False and st["fases"]["reporte"]["estado"] == "error"
+    assert not _manifest_contradicts_state(docs, st)
+    # recuperacion sin recomputar nada
+    monkeypatch.undo()
+    guard_no_recompute(monkeypatch)
+    write_report(out, docs=docs)
+    st = json.loads((out / "estado.json").read_text(encoding="utf-8"))
+    assert st["completa"] is True and st["fases"]["reporte"]["intentos"] == 2
+    m = json.loads((docs / "T12_MANIFIESTO.json").read_text(encoding="utf-8"))
+    assert m["fases"]["reporte"]["estado"] == "completa" and not _manifest_contradicts_state(docs, st)
+
+
+def test_r12_failure_while_completing_the_state_is_recorded_and_a_previous_complete_manifest_is_invalidated(world, tmp_path, monkeypatch):
+    out = fresh(world, tmp_path)
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    run_audit(out)
+    write_report(out, docs=docs)                                        # reporte completo y manifiesto valido previos
+    st0 = json.loads((out / "estado.json").read_text(encoding="utf-8"))
+    assert st0["completa"] is True
+    monkeypatch.setattr(runner.StateFile, "_save", lambda self: (_ for _ in ()).throw(OSError("disco lleno")) if
+                        self.state["fases"].get("reporte", {}).get("estado") == "completa" else
+                        runner._write_json(self.state_path, self.state))
+    with pytest.raises(OSError):
+        write_report(out, docs=docs)
+    monkeypatch.undo()
+    st = json.loads((out / "estado.json").read_text(encoding="utf-8"))
+    # el estado en disco no puede decir completa=true con un reporte fallido; el manifiesto previo no puede seguir afirmandolo
+    assert not (st["completa"] is True and st["fases"]["reporte"]["estado"] != "completa")
+    assert not _manifest_contradicts_state(docs, st) or st["completa"] is False
+
+
+def test_r12_an_unreadable_audit_or_preparation_at_close_is_a_reporting_error(world, tmp_path, monkeypatch):
+    out = fresh(world, tmp_path)
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    run_audit(out)
+    (out / "preparacion" / "manifiesto_preparacion.json").write_text("{corrupto", encoding="utf-8")
+    with pytest.raises(json.JSONDecodeError):
+        write_report(out, docs=docs)
+    st = json.loads((out / "estado.json").read_text(encoding="utf-8"))
+    assert st["completa"] is False and st["fases"]["reporte"]["estado"] == "error"
+    assert not (docs / "T12_MANIFIESTO.json").exists() or json.loads(
+        (docs / "T12_MANIFIESTO.json").read_text(encoding="utf-8")).get("valido") is False

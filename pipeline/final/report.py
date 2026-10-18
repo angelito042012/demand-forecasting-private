@@ -167,39 +167,64 @@ def build_manifest(out: Path, man: dict, state: dict, aud: dict) -> dict:
             "nota": "Los artefactos con datos y modelos permanecen en artifacts/private/final (fuera de Git)."}
 
 
+def _write_text_atomic(path: Path, text: str) -> None:
+    """Escritura atomica: archivo temporal en el mismo directorio y reemplazo."""
+    path = Path(path)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
+
+
+def _dump(obj) -> str:
+    return json.dumps(obj, ensure_ascii=False, indent=1, default=str) + "\n"
+
+
+def _invalidate_manifest(docs: Path, exc: BaseException) -> None:
+    """Un manifiesto previo no puede seguir afirmando un reporte completo si este intento fallo: se marca no valido
+    (mejor esfuerzo; el estado de verdad es `estado.json`)."""
+    p = Path(docs) / "T12_MANIFIESTO.json"
+    try:
+        if p.exists():
+            m = json.loads(p.read_text(encoding="utf-8"))
+            m["valido"] = False
+            m.setdefault("fases", {}).setdefault("reporte", {})["estado"] = "error"
+            m["error_reporte"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+            _write_text_atomic(p, _dump(m))
+    except Exception:  # noqa: BLE001, S110 - best effort; no oculta la excepcion original
+        pass
+
+
 def write_report(out: Path, docs: Path = ROOT / "docs") -> dict:
-    """Fase `reporte`: exige la auditoria aprobada; registra inicio/fin/error. Sin auditoria valida no hay reporte valido."""
-    out = Path(out)
+    """Fase `reporte`: exige la auditoria aprobada; TODO el cierre (relectura, resultados, metricas, manifiesto y estado)
+    esta bajo control de error. Un fallo en cualquier punto, incluso despues de marcar la fase, deja `reporte=error`,
+    `completa=false` y un manifiesto previo marcado no valido; nunca un paquete completo con manifiesto contradictorio."""
+    out, docs = Path(out), Path(docs)
     store = StateFile(out)
     store._begin("reporte")
     try:
         if not store.done("auditoria") or not json.loads((out / "auditoria.json").read_text(encoding="utf-8")).get("ok"):
             raise FinalGateError("el reporte exige la auditoria completa y aprobada")
-        manifest = _write_report(out, docs)
+        pred = json.loads((out / "predictivo.json").read_text(encoding="utf-8"))
+        sim = json.loads((out / "simulacion.json").read_text(encoding="utf-8"))
+        man = json.loads((out / "preparacion" / "manifiesto_preparacion.json").read_text(encoding="utf-8"))
+        aud = json.loads((out / "auditoria.json").read_text(encoding="utf-8"))
+        cfg = json.loads((ROOT / "config" / "seleccion_congelada.json").read_text(encoding="utf-8"))
+        text = render(pred, sim, man, store.state, aud, cfg)
+        metrics = {"predictivo": pred, "simulacion": sim, "hallazgo_primario": primary_reading(pred, {"sesgo_relativo_maximo_abs": 0.25}),
+                   "auditoria_resumen": {"ok": aud["ok"], "combinaciones": aud["simulacion"]["combinaciones"]}, "etiqueta": core.LABEL}
+        _write_text_atomic(docs / "T12_RESULTADOS.md", text)
+        _write_text_atomic(docs / "T12_METRICAS.json", _dump(metrics))
+        store._end("reporte", resultados_sha256=sha_bytes(docs / "T12_RESULTADOS.md"),
+                   metricas_sha256=sha_bytes(docs / "T12_METRICAS.json"))
+        # el manifiesto versionado refleja el estado final (siete fases) y se escribe al final, de forma atomica
+        manifest = build_manifest(out, man, store.state, aud)
+        manifest["correcciones"] = store.state.get("correcciones", [])
+        manifest["valido"] = True
+        _write_text_atomic(docs / "T12_MANIFIESTO.json", _dump(manifest))
+        return manifest
     except BaseException as exc:
-        store._fail("reporte", exc)
+        try:
+            store._fail("reporte", exc)
+        finally:
+            _invalidate_manifest(docs, exc)
         raise
-    store._end("reporte", resultados_sha256=sha_bytes(docs / "T12_RESULTADOS.md"), metricas_sha256=sha_bytes(docs / "T12_METRICAS.json"))
-    # el manifiesto versionado refleja el estado final (siete fases); su hash no forma parte del checkpoint
-    man = json.loads((out / "preparacion" / "manifiesto_preparacion.json").read_text(encoding="utf-8"))
-    aud = json.loads((out / "auditoria.json").read_text(encoding="utf-8"))
-    manifest = build_manifest(out, man, store.state, aud)
-    manifest["correcciones"] = store.state.get("correcciones", [])
-    (docs / "T12_MANIFIESTO.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1, default=str) + "\n", encoding="utf-8")
-    return manifest
-
-
-def _write_report(out: Path, docs: Path) -> dict:
-    pred = json.loads((out / "predictivo.json").read_text(encoding="utf-8"))
-    sim = json.loads((out / "simulacion.json").read_text(encoding="utf-8"))
-    man = json.loads((out / "preparacion" / "manifiesto_preparacion.json").read_text(encoding="utf-8"))
-    state = json.loads((out / "estado.json").read_text(encoding="utf-8"))
-    aud = json.loads((out / "auditoria.json").read_text(encoding="utf-8"))
-    cfg = json.loads((ROOT / "config" / "seleccion_congelada.json").read_text(encoding="utf-8"))
-    (docs / "T12_RESULTADOS.md").write_text(render(pred, sim, man, state, aud, cfg), encoding="utf-8")
-    metrics = {"predictivo": pred, "simulacion": sim, "hallazgo_primario": primary_reading(pred, {"sesgo_relativo_maximo_abs": 0.25}),
-               "auditoria_resumen": {"ok": aud["ok"], "combinaciones": aud["simulacion"]["combinaciones"]}, "etiqueta": core.LABEL}
-    (docs / "T12_METRICAS.json").write_text(json.dumps(metrics, ensure_ascii=False, indent=1, default=str) + "\n", encoding="utf-8")
-    manifest = build_manifest(out, man, state, aud)
-    (docs / "T12_MANIFIESTO.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1, default=str) + "\n", encoding="utf-8")
-    return manifest
