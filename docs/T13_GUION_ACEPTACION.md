@@ -84,3 +84,20 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 - ¿Quedó resuelta la observación «No comprendió el uso en su primera visita»? (Sí / No / Parcial; con evidencia de la Prueba de comprensión): ______________________
 - Aceptación humana: **PENDIENTE** (cambiar solo tras la ejecución real y con la anotación de quien corresponda).
 - Pendientes ajenos a este guion: validación en nube, cinco usuarios en nube y participación humana adicional (A13/A14 según la matriz de cierre).
+
+## Prueba de la versión de ensayo con «Inventario informado» (etapa 18)
+
+- **Dirección:** `https://localhost:8444` (ensayo; la demo anterior sigue en `https://localhost:8443` y no tiene esta pantalla). Usuarios `ens_lector` y `ens_admin`; contraseñas solo en `artifacts/private/t13b/ens18_credenciales.txt` (no las copie a ningún documento). Imagen `df-app:t18-464eb0c`; base `df_ens18_20261018172811`. Aceptación humana: **PENDIENTE**.
+- Las tres tareas de comprensión del bloque «Prueba de comprensión (UX01)» se repiten en esta versión (mismos pasos), y se añaden las siguientes. Complete la columna de resultado real solo con lo que usted observe.
+
+| N.º | Paso | Resultado esperado | Resultado real / observación |
+|---|---|---|---|
+| I1 | En Inicio, buscar la tarjeta «Consultar el inventario informado» y pulsar «Ver inventario informado» | Se abre «Inventario informado por la empresa» | |
+| I2 | Leer la franja del conteo | «Conteo del 18/10/2026, 17:00 (hora de Lima) · Almacén Principal (almacén 1)» y «informado por la empresa; no verificado de forma independiente»; no dice «simulado» | |
+| I3 | Leer el aviso amarillo | El inventario es del 18/10; el histórico de ventas termina el 30 de septiembre; faltan las ventas posteriores (no son cero); por eso no hay recomendación actualizada; pedidos por recibir no informados | |
+| I4 | Contar las filas y mirar el resumen | 50 productos · 48 con existencia · 2 sin existencia | |
+| I5 | Pulsar «Sin existencia» | 2 productos con disponible 0 y la marca «Sin existencia» | |
+| I6 | Buscar un producto por código o nombre (por ejemplo, un código de su lista) y leer su presentación | Aparece su cantidad en la presentación indicada (p. ej. caja de 12 o pack de 2: la cantidad no se multiplicó) | |
+| I7 | Abrir «Detalles del conteo» | Archivo, huella corta, versión, desconocidos declarados | |
+| I8 | Ir a «Reposición simulada» | Sigue siendo el ejemplo histórico con el aviso de inventario simulado; **no** usa el conteo del 18/10 | |
+| I9 | Explicar con sus palabras: ¿por qué no aparece una recomendación de compra para hoy? | Faltan las ventas del 01 al 18/10 y los pedidos por recibir; no se supone cero | |

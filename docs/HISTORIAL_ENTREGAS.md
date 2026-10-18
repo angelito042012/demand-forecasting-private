@@ -364,3 +364,7 @@ Por encargo directo de Rogelio: originales conservados, 106.525 filas clasificad
 ## Conteo de los 50 productos recibido (18/10/2026, Codex)
 
 Revisión documental completa de los 50 códigos, unidades y cantidades. Corte 18/10 17:00 Lima, almacén 1 y sin ventas confirmado por Rogelio. Copia inmutable/CSV/huella y verificación en carpeta privada `conteo_recibido_20261018_v2`; informe `REVISION_CONTEO_50_20261018.md`. Preparado ETAPA_18_CLAUDE.md para integrar inventario fechado en ensayo local. No se cambió aplicación, bases, servicios, modelos ni nube. Sigue faltando cobertura reciente de ventas y pedidos pendientes para reposición actual.
+
+## Etapa 18 (18/10/2026)
+
+Inventario informado integrado en entorno de ensayo aislado (commit 464eb0c); ver `docs/T18_REPORTE.md`. Revisión Codex17 aceptó UX01R/R17 localmente.
