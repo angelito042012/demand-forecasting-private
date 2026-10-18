@@ -1,5 +1,7 @@
 # Backlog de ejecución
 
+**Nueva prioridad uno, 18/10 — T19:** ETAPA_19_CLAUDE.md preparado para implementar integración de 14 fuentes, previsión de noviembre y compra única para cubrir el mes (elección humana confirmada), 50 productos y plazos supuestos de 7/14 días. Incluye proyección desde conteo, consumo previo, fechas y faltantes; ensayo aislado en 8445. Implementación pendiente de Claude. Sin nuevos modelos/selección ni reejecución de T12; nube sin autorización. La prueba humana y los entregables finales permanecen, pero el cierre documental no sustituye T19.
+
 **18/10 — R18 cerrado por Codex:** T18 aceptada técnicamente en alcance local; 39 pruebas propias aprobadas. Próximo: aceptación humana de Rogelio, actualización T14 (informe/manuales/matriz aún anteriores al conteo), preparación de sustentación/video y paquete T15, resolución de publicación conforme al alcance. No ampliar modelos/datos por rutina; 14 fuentes preparadas no equivalen a importación/estudio nuevo. Ver cierre de `REVISION_CODEX_18.md`. Los estados R18 pendientes de abajo son históricos.
 
 **18/10, revisión Codex 18 terminada:** T18 requiere R18 antes de aceptación técnica: verificar correspondencia del CSV importado con el Excel revisado antes de primera carga. Encargo y reproducción en `REVISION_CODEX_18.md`; 22 validaciones propias aprobadas. Claude conserva ejecución; revisión posterior acotada, aceptación humana pendiente, sin nube/modelos/T12. Esta anotación sustituye la revisión todavía pendiente del párrafo siguiente.

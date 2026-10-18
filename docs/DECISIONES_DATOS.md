@@ -1,5 +1,9 @@
 # Decisiones acordadas antes de iniciar Claude
 
+## Autorización posterior, 18/10/2026 — planificación de noviembre
+
+Rogelio prioriza programar la conexión ventas recientes → previsión de noviembre → existencias → compra propuesta. Autoriza supuestos y escenarios para datos faltantes, con plazos de ejemplo 7/14 días. Confirmó una compra para cubrir todo noviembre, no un calendario semanal. Encargo ETAPA_19_CLAUDE.md: integrar las 14 fuentes preparadas por contrato separado, `promedio_28`, grupo de 50 con conteo, modo de planificación futuro separado del histórico. Proyectar consumo posterior al conteo y previo al mes; ausencia de ventas de octubre o pedidos por recibir no equivale a cero observado. Un supuesto cero debe identificarse como tal. El conteo real sigue reportado y fechado; saldos retrospectivos no se vuelven reales. Se permite evaluación descriptiva nueva de horizonte mensual, sin alterar T12 ni prometer mejora. No nube ni compras operativas. Las prohibiciones antiguas de integrar por inferencia ya no bloquean este alcance explícito.
+
 Actualización del 16/10/2026. Estas decisiones sustituyen las preguntas pendientes sobre los cuatro puntos respondidos por el usuario. No modifican los Excel originales.
 
 ## Notas de crédito

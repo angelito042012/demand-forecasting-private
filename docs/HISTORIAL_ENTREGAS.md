@@ -1,5 +1,9 @@
 # Historial de entregas anteriores
 
+## Encargo T19 autorizado: noviembre y compra por escenarios (18/10/2026)
+
+Rogelio priorizó conectar las 14 fuentes, previsión futura y reposición; eligió una compra para cubrir todo noviembre. Codex preparó ETAPA_19_CLAUDE.md con integración trazable, nuevo modo de planificación separado, 50 productos/conteo fechado, consumo previo al mes, escenarios7/14 y reserva supuesta, faltantes/recepciones y origen de cada dato visibles. Incluye validación mensual descriptiva sin reabrir T12. No se implementó app ni se alteraron datos/bases/servicios/nube al redactarlo. Claude mantiene ejecución; aceptación técnica/humana deT19 pendientes. Esta prioridad supera la espera anterior de integración y la recomendación de concentrarse únicamente en documentación.
+
 ## Cierre Codex de R18 y T18 local (18/10/2026)
 
 Revisados `616b5ef` y `c1e6a82`; 39 pruebas propias dirigidas aprobadas, 8 fuera de selección, 2,14 s. Contraste de CSV contra Excel y regresiones R18 aceptados; T18 aceptada técnicamente para inventario reportado fechado en local. Evidencia privada `artifacts/private/codex_review18r/`. No se repitió navegador/modelos/T12 ni se operaron servicios. Aceptación humana pendiente. Informe/manual/matriz de cierre requieren actualización por el conteo real recibido; T14/T15 y resolución de publicación siguen pendientes. No se abre otra etapa técnica rutinaria.

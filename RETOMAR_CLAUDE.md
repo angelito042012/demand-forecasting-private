@@ -1,5 +1,7 @@
 # Retomar sin repetir trabajo
 
+**Prioridad posterior 18/10:** Rogelio autorizó ETAPA_19_CLAUDE.md y eligió una propuesta de compra para todo noviembre. El encargo conecta los 14 Excel preparados con previsión mensual y stock del conteo, proyecta días intermedios y compara supuestos de entrega 7/14, en ensayo ens19/8445. No está implementado al emitirlo. R18 cerrado; no repetir T12 ni alterar su congelación, no nube. Claude mantiene ejecución, Codex revisión. La aceptación de uso sigue pendiente, pero no bloquea esta prioridad de implementación.
+
 Lee CLAUDE.md, AGENTS.md, docs/ESTADO.md, docs/TRASPASO.md y docs/T18_REPORTE.md. Etapa 18 entregada (18/10/2026, commit 464eb0c): inventario informado (conteo 18/10/2026 17:00, almacen 1, 50 productos) integrado en un ENTORNO DE ENSAYO aislado.
 
 No repetir: R12-R17 (UX01/UX01R aceptados por Codex), T06/T07/T12, Azure (Microsoft.App Registered; ManagedEnvironmentCount Brazil South 0/1), ni la revision del conteo (docs/REVISION_CONTEO_50_20261018.md; usar artifacts/private/conteo_recibido_20261018_v2/; no regenerar la plantilla ni tocar el Excel recibido).
