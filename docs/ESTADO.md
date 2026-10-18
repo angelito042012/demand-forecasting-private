@@ -4,6 +4,10 @@ Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex 
 
 ## Siguiente encargo
 
+**Actualización de revisión Codex16:** UX01 de272ca78 revisado;35pruebasAPI y81pruebasUX existentes aprobadas. Una regresión propia adicional reproduceR17: el fallo503 de/runs genera otra petición sin acción humana; el error no es visible en la barra. Siguiente **ETAPA_17_CLAUDE.md**: corregirlo y terminar jerarquía de Evaluación/precisiones de texto, conservando el diseño. No repetir ciencia ni Azure. Demo sigue disponible para prueba de Rogelio; aceptación humana pendiente, publicación sin autorización. Evidencia en REVISION_CODEX_16.md.
+
+### Antecedente del encargo UX01 inicial
+
 **UX01 entregado para revisión de Codex y nueva prueba de Rogelio (17/10/2026; `docs/UX01_REPORTE.md`, `docs/UX01_DECISIONES.md`).** Rediseño completo en Angular: inicio guiado, navegación por tareas (Inicio, Ventas previstas, Reposición simulada, Mis análisis; «Más»: Ventas registradas, Evaluación de resultados, Datos cargados, Ayuda; Administración: Cargar datos, Crear análisis, Estado del sistema), lenguaje sencillo y detalles técnicos plegados; se conservan métodos, resultados, permisos, fechas y advertencias. Una extensión mínima de la API (`no_orders`). Pruebas: frontend 212/212 + build de producción, backend 167/167, **E2E 51/51 en la imagen real** (1366, 375 y zoom 200 %). **Demo actualizada y encendida** en `https://localhost:8443` (imagen `df-app:ux01-269a9cd`, misma base `df_demo_20261017221940`; recargar con Ctrl+F5 e ingresar de nuevo).
 
 **Observación de Rogelio (abierta): «No comprendió el uso en su primera visita».** No es un defecto de cálculo demostrado ni una aceptación; la aceptación humana sigue **pendiente** hasta que vuelva a probar con `docs/T13_GUION_ACEPTACION.md` («Prueba de comprensión (UX01)»). R12–R16 aceptados localmente; no repetir. **No existe autorización de publicación, gasto ni transferencia a nube**; ETAPA_15 sigue diferida hasta la nueva prueba de comprensión y la revisión de Codex. Cuentas/cuota Azure ya resueltas, no repetir.

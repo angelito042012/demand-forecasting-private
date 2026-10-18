@@ -1,6 +1,6 @@
 # Retomar sin repetir trabajo
 
-Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente **ETAPA_16_CLAUDE.md** y **docs/UX01_BRIEF.md**: rediseño UX01 antes de publicar, solicitado por Rogelio tras su primera visita.
+Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. Encargo vigente **ETAPA_17_CLAUDE.md**, **REVISION_CODEX_16.md** y **docs/UX01_BRIEF.md**: cierre breve UX01 (R17, Evaluación y precisiones de lenguaje). El rediseño ya fue implementado, no reiniciarlo. La nueva aceptación de comprensión por Rogelio sigue pendiente y la publicación no fue autorizada.
 
 R12–R16 están aceptados localmente (REVISION_CODEX_13/15): no repetir. No repetir T06/T07/T12 real, el registro de Microsoft.App ni el preflight de Azure (Microsoft.App Registered; ManagedEnvironmentCount Brazil South 0/1).
 
