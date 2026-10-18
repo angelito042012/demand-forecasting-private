@@ -356,3 +356,7 @@ Rediseño comprensible entregado (commits hasta 269a9cd); ver `docs/UX01_REPORTE
 ## UX01R (17/10/2026)
 
 Cierre de R17 y Evaluacion simplificada (commit f95092f); ver `docs/UX01R_REPORTE.md`.
+
+## Preparación académica de 14 fuentes (18/10/2026, Codex)
+
+Por encargo directo de Rogelio: originales conservados, 106.525 filas clasificadas y conciliadas, grupo de 50 productos con corte julio, cuatro Excel y CSV privados. Saldo calculado retrospectivo bajo supuestos, separado de datos observados y prohibido como entrada predictiva. Siete pruebas dirigidas y verificación de exportaciones/10.700 balances diarios correctas. No se importó, entrenó, alteró T12 ni desplegó. Ver `docs/PREPARACION_DATOS_ACADEMICA_V1.md`.

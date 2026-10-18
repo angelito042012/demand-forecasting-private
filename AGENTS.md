@@ -1,5 +1,7 @@
 # Instrucciones compartidas para Codex en este proyecto
 
+Prioridad posterior, 18/10: el usuario encargó directamente a Codex la preparación de los 14 Excel. Ya entregada en `docs/PREPARACION_DATOS_ACADEMICA_V1.md`; leerla antes de retomar. Originales intactos, grupo de 50 y saldo calculado bajo supuestos en paquete privado. No presentar cantidades generadas como conteos físicos. No usar el saldo retrospectivo para entrenamiento/backtests. Esta preparación no autoriza importación, repetir T12 ni publicar. Las autoridades UX posteriores siguen aceptadas; sus pasos humanos quedan pendientes.
+
 Leer docs/PROTOCOLO_TRABAJO.md, docs/ESTADO.md, docs/TRASPASO.md, CLAUDE.md y docs/DECISIONES_DATOS.md antes de editar. Las decisiones más recientes del usuario prevalecen sobre registros históricos. No asumir que una sesión perdida borró los archivos.
 
 El usuario designa Claude Code como ejecutor habitual y Codex como director/revisor. Cuando avise que Claude agotó su uso y pida continuar, Codex asume implementación, pruebas, datos, infraestructura y despliegue del encargo vigente, con las mismas reglas de aceptación. Al volver a Claude, actualizar el traspaso; no editar simultáneamente el mismo trabajo desde dos ejecutores principales. No hay conmutación automática ni garantía de un límite diario fijo.

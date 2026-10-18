@@ -1,5 +1,7 @@
 # Dirección del proyecto
 
+**Actualización prioritaria 18/10:** Codex preparó, por encargo explícito de Rogelio, las 14 fuentes marzo–septiembre. Leer `docs/PREPARACION_DATOS_ACADEMICA_V1.md`, ESTADO y TRASPASO. El paquete privado `artifacts/private/datos_preparados_v1/` es una versión separada, todavía no importada: universo normalizado y grupo de 50 con balances retrospectivos bajo supuestos. No inferir stock real, no entrenar con balances ni reabrir T12. No iniciar implementación/cargas hasta el siguiente encargo. UX01R/R17 ya aceptados en REVISION_CODEX_17; la autoridad ETAPA_16 mencionada abajo es histórica. Nube y aceptación humana siguen pendientes.
+
 Para recuperar una sesión, leer RETOMAR_CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. El usuario asigna a Claude ejecución integral y a Codex dirección/revisión; puede rotar el ejecutor cuando avise de límites. No repetir el inicio ni R01–R03 ya aceptados. Guardar traspaso por unidad de trabajo; un solo ejecutor principal activo.
 
 Construir el sistema descrito en docs/ANALISIS_Y_PLAN.md y docs/CONTRATOS.md para entrega el 23/10/2026, zona America/Lima. Leer docs/ESTADO.md y docs/BACKLOG.md al retomar. Existe una implementación parcial revisada; la aplicación completa sigue pendiente.

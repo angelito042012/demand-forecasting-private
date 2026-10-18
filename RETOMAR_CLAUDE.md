@@ -1,5 +1,7 @@
 # Retomar sin repetir trabajo
 
+**Prioridad vigente 18/10:** leer primero `docs/PREPARACION_DATOS_ACADEMICA_V1.md`. Codex terminó la preparación autorizada de 14 fuentes: cuatro Excel de trabajo, CSV completos y un grupo de 50 productos; originales preservados. Los saldos son calculados retrospectivos, no contados. No importarlos ni usarlos para entrenar o backtests. Esperar el encargo de integración/revisión del usuario. UX01R/R17 ya fue aceptado por Codex; solo continúa pendiente la aceptación humana. Las instrucciones de encendido siguientes no son una orden automática de iniciar servicios.
+
 Cierre del 17/10/2026. Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md (instrucciones exactas para encender la demo), docs/PROTOCOLO_TRABAJO.md y docs/UX01R_REPORTE.md.
 
 Estado: UX01 y UX01R entregados (rediseño comprensible; R17 cerrado; Evaluación simplificada); ultimo codigo f95092f. R12-R16 aceptados localmente: no repetir. No repetir T06/T07/T12 real, el registro de Microsoft.App ni el preflight de Azure (Microsoft.App Registered; ManagedEnvironmentCount Brazil South 0/1).
