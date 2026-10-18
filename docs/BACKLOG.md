@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-**Prioridad vigente: UX01, ETAPA_16_CLAUDE.md y docs/UX01_BRIEF.md.** Rogelio no comprende la interfaz al entrar por primera vez y pide rediseñarla antes de publicar. R12–R16 aceptados localmente (REVISION_CODEX_15); no repetir. T13 aceptación humana pendiente con esta observación; T14 debe reflejar las pantallas nuevas; T11 publicación sin autorización y T15 final pendientes. Los estados anteriores siguientes son antecedentes y no reabren tareas cerradas.
+**UX01 entregado (docs/UX01_REPORTE.md); pendiente la nueva prueba de comprensión de Rogelio y la revisión de Codex.** R12–R16 aceptados localmente; no repetir. A13 (nube) y A14 (participación humana) pendientes; T14 debe reflejar las pantallas finales; T15 hasta el 23/10. Publicación en nube solo con autorización explícita.
 
 Estado al 17/10: R12-R14 aceptados localmente; R15/R16 cerrados (T13B); demostración local activa en https://localhost:8443; publicación en nube pendiente de una única autorización (docs/T11_PLAN_DESPLIEGUE.md); aceptación humana (A14) y A13 pendientes; T14 final y T15 hasta el 23/10.
 

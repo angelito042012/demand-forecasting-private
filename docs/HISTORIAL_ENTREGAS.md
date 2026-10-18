@@ -348,3 +348,7 @@ T11A no es despliegue: exige imagen(s), configuración producción, almacén dur
 R12:P2,falta controlar error después de _end al escribir manifiesto final. R13:P2,18artefactos listados pero0incluidos en respaldo; recuperaciónMongo no equivale a recuperaciónintegral. R14:demostrar generaciónreal con1GiB y referenciaaprobada portable sinGit/.git; montaje de NPZsolo no basta. No quitar verificaciones ni meterdatos en imagenpública.
 
 Revisar costo usando activos/idle y cuota gratuita compartida, medir memoria/tiempo y consultar suscripción/regiones/cuotas sololectura con autenticacióninteractiva propia. No hay costo máximo acordado todavía; estimaciones5–7/20USDno son cotizaciónfinal. No crearrecursos/roles/grupos, consumircrédito ni transferirdatos. Después de propuesta corregida se pide autorización concreta. Falta despliegueHTTPS/Atlas, rendimiento/aceptaciónT13 e informe/manual/video/entregaT14–T15 antes23/10.
+
+## UX01 (17/10/2026)
+
+Rediseño comprensible entregado (commits hasta 269a9cd); ver `docs/UX01_REPORTE.md`. Observación de Rogelio «No comprendió el uso en su primera visita»: abierta hasta nueva prueba humana.

@@ -1,104 +1,138 @@
-# Manual de usuario (borrador)
+# Manual de usuario (borrador, interfaz UX01)
 
-Estado: borrador T14A, versión de código de referencia `28a5f49` (17/10/2026). Describe las pantallas tal como existen en `frontend/src`. No hay publicación: **URL pública: [PENDIENTE: no existe publicación]**. Hoy el sistema solo se ejecuta en el equipo local (ver `docs/GUIA_LOCAL.md` y `docs/MANUAL_OPERACION.md`).
+Estado: borrador. Versión de la interfaz: commit `269a9cd` (imagen `df-app:ux01-269a9cd`), tras el rediseño UX01 (17/10/2026). Describe las pantallas tal como existen en `frontend/src`. No hay publicación: **URL pública: [PENDIENTE: no existe publicación]**. Hoy el sistema solo se ejecuta en el equipo local (ver `docs/GUIA_LOCAL.md` y `docs/MANUAL_OPERACION.md`). La comprensión de la interfaz por una persona real sigue siendo una observación abierta (ver `docs/UX01_DECISIONES.md`).
 
 ## 1. Qué es y qué no es
 
-Sistema de pronóstico de demanda y recomendaciones de reposición para una MYPE, construido con **datos históricos de marzo a agosto de 2026**. No pronostica octubre ni ejecuta compras. Todo lo que ve sobre stock, tránsito, costos y pedidos viene de un **inventario simulado**.
+Es una aplicación para **consultar cuántas unidades se estimó vender de cada producto** y **entender cómo se calcularía una sugerencia de reposición**, con datos históricos de ventas de marzo a agosto de 2026 de una MYPE. Es un ejemplo de trabajo: no pronostica ventas de hoy ni de octubre.
 
-Aviso que aparece en pantalla: **«Inventario simulado con supuestos; no corresponde al inventario real de la empresa».**
+Todo lo que ve sobre disponible, por recibir, costos y pedidos viene de un **inventario simulado**. Aviso exacto que aparece junto a esos resultados: **«Inventario simulado con supuestos; no corresponde al inventario real de la empresa».** En todas las pantallas se ve además la franja: «Ejemplo con datos históricos de 2026. El inventario es simulado; no representa las existencias actuales».
+
+**Qué NO hace** (también en *Ayuda → Qué no hace esta aplicación*):
+- No es su inventario real.
+- No ejecuta compras ni envía pedidos a proveedores: las cantidades sugeridas son un escenario para entender el cálculo.
+- No pronostica las ventas de hoy ni de los próximos días.
+- Consultar nunca crea trabajos ni cambia datos; solo el administrador carga archivos o crea análisis.
+- No muestra nombres comerciales de productos (los archivos no los traen autorizados): se ve «Producto 1010004 · Higiene capilar» (código y categoría).
 
 ## 2. Acceder
 
-1. Abra la dirección que le indique el administrador (demostración local: `https://localhost:8443`; en desarrollo `http://localhost:4200`).
-2. En la pantalla **Acceso** escriba *Usuario* y *Contraseña* y pulse **Ingresar**.
-3. No existe registro público: la cuenta la crea el administrador por línea de comandos. Si olvidó la contraseña, pídale otra al administrador.
-4. Mensajes: «Usuario o contraseña incorrectos.» Tras 5 fallos seguidos del mismo usuario desde el mismo equipo (o 20 desde un mismo equipo) el acceso se bloquea unos 15 minutos.
+1. Abra la dirección que le indique el administrador (demostración local: `https://localhost:8443`; el certificado es autofirmado y el navegador avisará: «Avanzado» → «Continuar»; en desarrollo `http://localhost:4200`).
+2. En **Acceso** escriba *Usuario* y *Contraseña* y pulse **Ingresar**.
+3. No existe registro público: la cuenta la crea el administrador por línea de comandos. Si olvidó la contraseña, pídale otra.
+4. Mensaje de error: «Usuario o contraseña incorrectos.» Tras 5 fallos seguidos del mismo usuario desde el mismo equipo (o 20 desde un mismo equipo) el acceso se bloquea unos 15 minutos.
 5. La sesión dura como máximo 8 horas y se cierra tras 1 hora sin actividad. Para salir pulse **Salir** (arriba a la derecha, junto a su usuario y rol).
 
-Roles: **lector** (solo consulta) y **admin** (además carga archivos y genera corridas). El menú y los botones de escritura que no le corresponden no aparecen; el servidor rechaza igualmente cualquier escritura de un lector.
+Roles: **lector** (solo consulta) y **admin** (además carga archivos y crea análisis). El menú y los botones que no le corresponden no aparecen; el servidor rechaza igualmente cualquier escritura de un lector.
 
-Teclado: el enlace «Saltar al contenido» aparece con la tecla Tab al inicio de cada página.
+Teclado: el enlace «Saltar al contenido» aparece con Tab al inicio de la página. En pantallas estrechas el menú está en el botón **Menú**.
 
-## 3. Menú principal
+## 3. El menú
 
-Resumen · Importaciones · Corridas · Pronósticos · Recomendaciones · Comparación · Sistema.
+- **Principal:** Inicio · Ventas previstas · Reposición simulada · Mis análisis.
+- **Más:** Ventas registradas · Evaluación de resultados · Datos cargados (solo lector) · Ayuda.
+- **Administración** (solo admin): Cargar datos · Crear análisis · Estado del sistema.
 
-### 3.1 Resumen (ventas y calidad de datos)
-Ventas observadas del Excel (desde 01/06 hasta 31/07/2026 por defecto). Filtros *Desde*, *Hasta*, *Agrupar por* (Mes, Día, Categoría) y *Categoría*; pulse **Consultar**. Debajo: **Notas de crédito** (informadas aparte, no restadas; no se infiere devolución física) y **Días excluidos del análisis**. Agosto no se entrega aquí.
+Al cambiar de pantalla el análisis que eligió se conserva.
 
-### 3.2 Corridas: histórica, generada y final
-Una *corrida* es un conjunto publicado de pronósticos. Hay tres tipos y nunca se sustituyen entre sí (columna **Tipo**):
+## 4. Conceptos que verá en pantalla
 
-| Tipo en pantalla | Qué es | Qué hacer con ella |
-|---|---|---|
-| **Histórica de desarrollo (T07)** | Backtest de desarrollo con origen (fecha de corte) 10/07/2026; es la corrida **activa** por defecto. Ese 10/07 es el corte de esta corrida, no de todas | Úsela para ver pronósticos, recomendaciones simuladas y la comparación de métodos |
-| **Generada por la aplicación** | `promedio_28` calculado por la aplicación para un origen elegido por el administrador (horizonte 21 días); no tiene ventas observadas posteriores ni backtest propio. Puede traer recomendaciones si existe un snapshot válido de inventario simulado para su fecha de corte; si no, se rotulan «Sin inventario simulado» | Es una demostración de generación; no activa la corrida por defecto. Lea siempre la fecha del snapshot simulado que muestra la pantalla de Recomendaciones |
-| **Evaluación final (T12)** | Pronóstico fijado el 31/07/2026 comparado con las ventas ya observadas del 01 al 21/08/2026 (un solo bloque) | Sirve para evaluar, **no genera recomendaciones ni pedidos** |
+| Texto en pantalla | Qué significa |
+|---|---|
+| **Análisis** | Un conjunto de resultados que puede consultar: el ejemplo histórico, los que se crean en la aplicación y la evaluación de agosto |
+| **Ventas utilizadas hasta** | Última fecha de ventas registradas que usó el cálculo; nada posterior influyó. Junto a ella figura «hace N días; datos históricos, no las ventas de hoy» |
+| **Período estimado** | Fechas para las que se estimaron ventas (por ejemplo, del 11/07/2026 al 31/07/2026) |
+| **Ejemplo de julio** | Análisis histórico con ventas utilizadas hasta el 10/07/2026: compara estimaciones con ventas ya registradas y permite explorar la reposición simulada |
+| **Análisis creado con ventas hasta el …** | Creado por el administrador desde la aplicación; no tiene todavía ventas registradas para comparar |
+| **Evaluación de agosto** | Compara estimaciones fijadas el 31/07 con las ventas registradas del 01 al 21/08/2026; **no genera pedidos** |
+| **Promedio de los últimos 28 días** | Método elegido para estimar las ventas diarias |
+| **Modelo experimental** | Un segundo método (bosque aleatorio) solo para comparar; no resultó mejor y no se usa para decidir |
+| **Por recibir (simulado)** | Unidades que, en el escenario simulado, ya fueron pedidas y aún no llegan |
 
-Pulse **Ver detalle** para ver estado (Completada / Sustituida), fechas (origen, fechas objetivo, período de evaluación), método, cobertura y enlaces «Ver pronósticos / recomendaciones / comparación de esta corrida». Cada corrida muestra su **antigüedad** al consultar; si supera 7 días aparece «Corrida antigua». Una corrida **Sustituida** (corrección de precisión) muestra un aviso rojo: no use sus pedidos y abra la corrida corregida con el enlace.
+### «En uso por defecto» frente a «Seleccionado para consultar»
 
-### 3.3 Pronósticos
-Elija la **Corrida** en el selector (la elección se conserva al ir a Recomendaciones y Comparación mediante el parámetro `run` de la dirección). Filtre por *Nivel* (SKU o Categoría), SKU, Categoría, Cohorte, fechas y *Orden*; pulse **Filtrar**. Columnas: `promedio_28 (elegido)` es el método operativo (promedio móvil de 28 días); `RF distribuido (comparador)` es un modelo experimental que no mejora el hallazgo principal; `cero (control)` es solo una referencia. «Observado» existe solo en la histórica y en la final; en la generada figura «no disponible para esta corrida» (no es cero). En la final, un día sin ningún registro se rotula «no evaluable».
+- **En uso por defecto:** el análisis que la aplicación abre cuando usted no elige otro. Lo decide el servidor y **no cambia** por lo que usted haga.
+- **Seleccionado para consultar:** el análisis que usted eligió en esta sesión para mirarlo (botón **Elegir este análisis** en *Mis análisis*, o el selector «Análisis» en *Ventas previstas*). Solo cambia lo que usted ve.
+- También pueden aparecer **Disponible** (existe, no está elegido) y **Versión reemplazada** (ver 5.6). En una tarjeta, «Estás consultando este análisis» indica cuál está abierto.
 
-### 3.4 Recomendaciones y su explicación paso a paso
-1. Abra **Recomendaciones**. Siempre se ve el aviso de inventario simulado. Arriba figura el origen del pronóstico, las fechas objetivo y la fecha del inventario simulado.
-2. Filtre por SKU, Categoría, Estado (*Con inventario simulado* / *Sin inventario simulado*), *Solo con pedido* y *Orden*; pulse **Filtrar**.
-3. En una fila con inventario pulse **Ver cálculo**. Se muestran, numerados: (1) stock simulado, (2) en tránsito, (3) posición = stock + tránsito, (4) demanda media diaria (promedio de 28 días), (5) pronóstico de 14 días, (6) stock de seguridad (7 días de demanda media), (7) objetivo = pronóstico + seguridad redondeado hacia arriba, (8) **pedido sugerido = máx(0, objetivo − posición)**, y (9) valor supuesto del pedido en PEN. «Detalle técnico» muestra los valores exactos publicados.
-4. Si una fila dice «Sin inventario simulado al…», **Ver motivo** explica por qué; el sistema no supone stock cero ni calcula pedido.
-5. Si el cálculo mostrado no cuadra con la fórmula aparece el aviso «Los valores publicados no cuadran con la fórmula»; no use ese pedido.
-6. Si elige una corrida de **evaluación final**, la pantalla indica «Esta corrida no tiene recomendaciones de compra» y ofrece un enlace a la demostración histórica. Es el comportamiento correcto.
+## 5. Recorridos
 
-El pedido es **hipotético**: no es una compra ejecutada ni una instrucción. Cantidades en «unidad base»; costos supuestos en PEN.
+### 5.1 Inicio
+Título «Explora las ventas previstas y una simulación de reposición». Debajo, la **barra de análisis** (nombre, estado, «Ventas utilizadas hasta», período estimado, **Cambiar de análisis**, y «Detalles técnicos del análisis» plegado). Tres tarjetas: **Ver previsión**, **Explorar reposición simulada**, **Ver mis análisis**. Una cifra resume cuántos productos tienen sugerencia de reposición en el ejemplo (en la captura de ensayo: 582), con la aclaración «inventario simulado; no son existencias reales». Con la evaluación de agosto elegida no hay pedidos y lo dice. El bloque «Cómo empezar» tiene tres pasos; **Entendido, cerrar** lo oculta y se recupera desde **Ayuda**.
 
-### 3.5 Comparación
-Backtests y simulación. Para la histórica: selector **Backtest**, y dos bloques.
-- *Simulación de reposición: tres políticas* (referencia fija, `promedio_28`, RF) para el escenario elegido (plazo L, seguridad S, cohorte). Más servicio suele venir con más stock y más compras: no es ganancia neta.
-- *Precisión de los pronósticos (backtest)*: WAPE, MAE, RMSE, sesgo, sub/sobrepronóstico, MAPE y R² con selectores de nivel, cohorte, horizonte y pliegue (fold).
-Para la evaluación final se muestra la comparación del único bloque con sus advertencias.
+### 5.2 Ventas previstas
+1. Entre por **Ventas previstas** (o **Ver previsión** en Inicio o en una tarjeta de *Mis análisis*).
+2. Arriba lea las fechas: «Ventas utilizadas hasta … · fechas estimadas: … al …».
+3. Busque un producto escribiendo su *Código del producto* (o una *Categoría*, o fechas *Desde/Hasta*) y pulse **Buscar**. «Ver por» cambia entre **Producto** y **Categoría**. «Más filtros» trae tipo de historial y orden. El selector «Análisis» cambia de análisis.
+4. La tabla muestra: Producto, Fecha, **Cantidad estimada (unidades base)** y, si el análisis tiene ventas registradas, **Vendido (registrado)**. La cantidad estimada es la venta diaria que calcula el promedio de los últimos 28 días.
+5. **Comparar métodos / ver detalles** agrega identificador, tipo de historial, día de la previsión, modelo experimental (si existe), control «siempre cero» y «Evaluable». «Cómo leer esta tabla» (plegado) explica las columnas.
+6. «no evaluable» o «no disponible para esta corrida» **no son cero**: son un dato ausente. En un análisis creado en la aplicación aún no hay ventas registradas para comparar.
+7. Agosto está reservado: solo la evaluación de agosto muestra fechas hasta el 21/08/2026.
 
-### 3.6 Sistema
-Estado general (operativo/degradado), base de datos y versión de la API.
+### 5.3 Reposición simulada
+1. Entre por **Reposición simulada**. Verá el aviso «Inventario simulado con supuestos; no corresponde al inventario real de la empresa», la barra de análisis y una línea con las fechas («Ventas utilizadas hasta …, período a cubrir …, inventario simulado al cierre del …»).
+2. La **Vista** tiene tres botones: **Con sugerencia de reposición** (inicial), **Sin necesidad de reponer en el ejemplo** y **Sin datos de inventario**. Filtre por *Código del producto* o *Categoría* y pulse **Buscar**. El total mostrado viene del servidor.
+3. La tabla tiene: Producto, Disponible simulado (unidades), Cantidad sugerida (unidades base) y el botón **Entender sugerencia**.
+4. Al pulsar **Entender sugerencia** se abre el detalle: «En este ejemplo se sugieren N unidades (hipotético; inventario simulado al cierre del …)» y **tres pasos**:
+   1. *Con qué se cuenta*: disponible simulado + por recibir (simulado) = suma de lo que se tiene o está por llegar.
+   2. *Qué se busca cubrir*: ventas previstas para 14 días + reserva de seguridad de 7 días de ventas, redondeado hacia arriba = objetivo.
+   3. *De dónde sale la cantidad*: objetivo − lo que se tiene o está por llegar; si el resultado fuera negativo se sugiere 0.
+5. **Ver cálculo completo y supuestos** despliega los nueve pasos con la misma aritmética (stock, en tránsito, posición, demanda media diaria, pronóstico, seguridad, objetivo, pedido sugerido = máx(0, objetivo − posición), valor supuesto en PEN con el costo unitario supuesto), las verificaciones «coherente», las fechas, el plazo de entrega y «Detalle técnico y valores exactos publicados». Si algo no cuadra aparece «Los valores publicados no cuadran con la fórmula»: no use esa cifra.
+6. En la vista **Sin datos de inventario**, la fila dice «Sin datos de inventario al …» y **Ver qué falta** explica qué información falta. La aplicación no supone stock cero ni calcula cantidad.
+7. **Cerrar detalle** vuelve a la lista. La sugerencia es hipotética: no es una compra ni una instrucción.
+8. Si elige la evaluación de agosto aparece «Este análisis no genera pedidos» y un botón para abrir el ejemplo con reposición simulada. Es el comportamiento correcto.
 
-## 4. Cargar y generar (solo administrador)
+### 5.4 Mis análisis
+Una tarjeta por análisis: nombre, estado («En uso por defecto», «Seleccionado para consultar», «Disponible», «Versión reemplazada»), tipo («Ejemplo histórico», «Creado en la aplicación», «Evaluación»), para qué sirve, «Ventas utilizadas hasta» y «Período estimado». Botones: **Ver previsión**, **Ver reposición** (no existe en la evaluación), **Ver evaluación**, **Elegir este análisis**. «Detalles técnicos» (plegado) trae identificador, fases, cobertura y documento publicado. **Ver versiones anteriores (N)** muestra los análisis reemplazados por una corrección: se conservan para consulta, **no use sus sugerencias**. El administrador ve además **Crear un análisis nuevo**.
 
-**Importaciones → Cargar un archivo Excel**
-1. Elija un `.xlsx` mensual (marzo a julio de 2026, hasta 25 MiB). El navegador solo avisa de forma temprana (extensión, tamaño); el servidor decide.
-2. Pulse **Subir y procesar**. El procesamiento ocurre en segundo plano (worker); puede recargar la página sin perder el trabajo. Siga el estado en **Trabajos de importación recientes** (En cola, En ejecución, Completado, Fallido) y use **Ver detalle de la importación**.
-3. Reenviar el mismo archivo no duplica: aparece «Este archivo ya había sido enviado» o «Sin cambios». Otro archivo para un mes ya aprobado se rechaza con un motivo; agosto se rechaza. La sustitución de una fuente aprobada no se hace desde la pantalla (ver `docs/REMEDIACION_FUENTES.md`).
+### 5.5 Evaluación de resultados (menú «Más»)
+Responde «¿Qué tan cerca estuvieron las estimaciones de las ventas registradas?». Para el ejemplo de julio: «Estimaciones frente a ventas registradas» (cifras clave por método con error absoluto, sesgo y cobertura; selectores de nivel, tipo de historial, período estimado y bloque de evaluación) y «Comparación de reposición simulada» (tres políticas, escenario de plazo L y seguridad S). **Ver detalle completo** despliega todas las métricas (WAPE, MAE, RMSE, sesgo, MAPE, R²). Para la evaluación de agosto: un solo bloque de 21 días, con advertencias; no se declara ganador. Los botones «Estimaciones frente a ventas registradas» y «Comparación de reposición simulada» saltan a cada sección. Si el análisis no tiene comparación (por ejemplo, uno creado en la aplicación) la pantalla lo dice y ofrece **Ir a «Mis análisis»**.
 
-**Corridas → Generar una corrida de desarrollo**
-1. Elija el *Origen (fecha de corte)* entre los límites que indica la pantalla (01/06 a 10/07/2026). Horizonte (21 días) y método (`promedio_28`) son fijos.
-2. Pulse **Generar** y siga el trabajo en «Trabajos de generación recientes»; al terminar use «Ver la corrida generada».
-3. La corrida generada no cambia la corrida por defecto. Si el origen es distinto del 10/07 puede no haber comparador RF; las recomendaciones dependen de que exista un snapshot de inventario simulado válido para ese origen (si no, la fila indica «Sin inventario simulado»).
+### 5.6 Versión reemplazada
+Una versión corregida reemplaza a la anterior. Aviso rojo: «Esta versión fue reemplazada. No uses sus sugerencias», con enlace «Ver el análisis corregido» y el motivo plegado.
 
-El lector verá «Esta pantalla es de solo lectura para su rol».
+### 5.7 Ventas registradas (Más)
+Ventas reales ya cargadas (por defecto 01/06 a 31/07/2026): *Desde*, *Hasta*, *Agrupar por* (Mes, Día, Categoría), *Categoría* y **Consultar**. Las **notas de crédito** se informan aparte (no se restan; no se infiere devolución física) y se listan los **días excluidos del análisis**. No se entrega agosto en esta vista.
 
-## 5. Cómo interpretar los límites
+### 5.8 Ayuda (Más)
+Primeros pasos (con **Volver a mostrar «Cómo empezar» en Inicio**), «Qué no hace esta aplicación», «Cómo leer el error absoluto (WAPE)» y el glosario con el término técnico entre paréntesis.
 
-- **WAPE no es precisión porcentual.** WAPE = error absoluto total / unidades observadas. Un WAPE de 0,78 significa que el error absoluto acumulado equivale al 78 % del volumen observado; no «78 % de acierto». Menor es mejor. Un valor sobre 100 % es posible. Los WAPE por SKU son altos (la demanda es intermitente); por categoría son mucho menores porque los errores se compensan.
-- **MAPE** solo se calcula con ventas reales positivas; se muestra su cobertura y los ceros excluidos. **R²** puede ser «no evaluable» (indefinido) y no debe leerse como porcentaje de acierto.
-- **Inventario simulado:** stock, tránsito, costos y plazos son supuestos del simulador (procedencia `SYNTHETIC_NOT_REAL_INVENTORY`). No corresponde al inventario real de la empresa ni demuestra una mejora real.
-- **Antigüedad:** cada corrida usa el snapshot de inventario simulado de su propia fecha de corte (para la histórica predeterminada, el cierre del 10/07/2026; en una generada, la fecha que muestre la pantalla) y la corrida tiene su corte; mire siempre «antigüedad N día(s) al consultar» antes de interpretar.
-- **Ventas posiblemente censuradas:** la demanda es la venta observada, que puede estar limitada por falta de stock; los faltantes reales se desconocen.
-- **Evaluación final sin recomendaciones:** compara pronósticos con agosto observado; no crea pedidos. Es un solo bloque de 21 días: no permite declarar ganador.
-- Los folds de desarrollo se solapan: el agregado no es una evaluación independiente. Se muestran también los resultados desfavorables y el control «cero».
-- Notas de crédito se informan aparte; no se infiere devolución física.
+### 5.9 Administración (solo administrador)
+- **Cargar datos:** 1. Elegir archivo (un `.xlsx` mensual, marzo a julio de 2026, hasta 25 MiB; agosto se rechaza) y **Subir y procesar**; 2. Revisar el resultado en los trabajos recientes (esperando turno, en curso, terminado, no se pudo completar) y **Ver detalle**; 3. Consultar las ventas registradas o la previsión. Reenviar el mismo archivo no duplica («Este archivo ya había sido enviado»). Cargar no crea análisis. El lector ve en su lugar **Datos cargados**, de solo lectura.
+- **Crear análisis:** elija «Ventas utilizadas hasta (fecha)» dentro del rango que indica la pantalla; período estimado (21 días siguientes) y método (promedio de los últimos 28 días) son fijos; pulse **Crear análisis**. Al terminar: «Listo: el análisis se creó», con **Ver previsión** y **Ver en Mis análisis**. No reentrena modelos. Un lector ve «Solo el administrador puede crear análisis».
+- **Estado del sistema:** funcionando / con fallas, base de datos y versión; **Volver a comprobar**.
 
-## 6. Resolución de problemas
+## 6. Cómo leer el error (WAPE)
+
+- El error absoluto (WAPE) es la suma de los errores dividida entre las unidades vendidas. **Menor es mejor.**
+- **No es porcentaje de acierto.** Un WAPE de 0,78 equivale a un error acumulado de alrededor del 78 % del volumen vendido; no significa 78 % de acierto. Puede superar 100 %.
+- Por producto el error es alto (la demanda es intermitente); por categoría es mucho menor porque los errores se compensan, pero una categoría suma unidades de productos distintos.
+- «no evaluable» (por ejemplo MAPE o R² indefinidos) no es cero. MAPE solo se calcula con ventas positivas y muestra su cobertura.
+
+## 7. Límites que conviene recordar
+
+- **Inventario simulado:** disponible, por recibir, costos y plazos son supuestos del simulador. No corresponde al inventario real ni demuestra una mejora real.
+- **Ventas posiblemente limitadas por stock:** la demanda es la venta registrada, que puede estar limitada por falta de existencias; los faltantes reales se desconocen.
+- **Evaluación sin pedidos:** la evaluación de agosto compara estimaciones con ventas registradas; no crea pedidos. Es un solo bloque de 21 días: no permite declarar ganador.
+- Los bloques de evaluación de desarrollo se solapan: el agregado no es una evaluación independiente. Se muestran también los resultados desfavorables y el control «cero».
+- Más servicio viene con más stock y más compras: no es ganancia neta.
+- Notas de crédito aparte; no se infiere devolución física.
+- Los datos son históricos: «Ventas utilizadas hasta … (hace N días)» no son las ventas de hoy.
+
+## 8. Resolución de problemas
 
 | Síntoma | Qué hacer |
 |---|---|
-| No puedo ingresar | Revise usuario y contraseña; tras 5 fallos espere unos 15 minutos; pida al administrador una cuenta nueva o restablecida |
+| No puedo ingresar | Revise usuario y contraseña; tras 5 fallos espere unos 15 minutos; pida una cuenta nueva al administrador |
 | «Sesión expirada» | Vuelva a ingresar (límite 8 h o 1 h sin actividad) |
-| Pantalla con error de API / «Reintentar» | Pulse el botón; si persiste, revise **Sistema** y avise al administrador (API o base caída) |
-| No veo Importaciones/Generar | Su rol es lector; solo el administrador carga y genera |
-| La carga se rechaza | Lea el motivo: extensión, tamaño (>25 MiB), fechas fuera de marzo–julio, mes con fuente ya aprobada |
-| El trabajo queda «En cola» | El worker puede no estar activo; avise al administrador |
-| Recomendaciones vacías en una corrida | Si es evaluación final, es esperado; en una generada, puede faltar snapshot simulado para su origen (ver 3.4) |
-| Aviso rojo de corrida sustituida | No use sus pedidos; abra la corrida corregida |
-| Fechas de agosto no disponibles | Agosto está reservado; solo la evaluación final lo muestra, hasta el 21/08 |
+| Pantalla con error / «Reintentar» | Pulse el botón; si persiste, avise al administrador (**Estado del sistema**) |
+| No veo Cargar datos ni Crear análisis | Su rol es lector; solo el administrador los usa |
+| La carga se rechaza | Lea el motivo: extensión, tamaño (>25 MiB), fechas fuera de marzo–julio, mes ya aprobado |
+| El trabajo queda «Esperando turno» | El procesador puede no estar activo; avise al administrador |
+| La lista de reposición está vacía | Pruebe otra **Vista** o quite filtros; en la evaluación de agosto es esperado; en un análisis creado puede faltar inventario simulado para su fecha |
+| Aviso rojo de versión reemplazada | No use esas sugerencias; abra el análisis corregido |
+| Fechas de agosto no disponibles | Agosto está reservado; solo la evaluación de agosto lo muestra, hasta el 21/08 |
 
-## 7. Alcance de este manual
+## 9. Alcance de este manual
 
-No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTPS externo y aceptación por usuarios reales están pendientes; este manual no los afirma.
+No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTPS externo y la aceptación humana están pendientes; este manual no los afirma. Las contraseñas de las cuentas de ensayo no se escriben aquí.
