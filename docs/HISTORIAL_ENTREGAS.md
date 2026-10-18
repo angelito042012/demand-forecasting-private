@@ -360,3 +360,7 @@ Cierre de R17 y Evaluacion simplificada (commit f95092f); ver `docs/UX01R_REPORT
 ## Preparación académica de 14 fuentes (18/10/2026, Codex)
 
 Por encargo directo de Rogelio: originales conservados, 106.525 filas clasificadas y conciliadas, grupo de 50 productos con corte julio, cuatro Excel y CSV privados. Saldo calculado retrospectivo bajo supuestos, separado de datos observados y prohibido como entrada predictiva. Siete pruebas dirigidas y verificación de exportaciones/10.700 balances diarios correctas. No se importó, entrenó, alteró T12 ni desplegó. Ver `docs/PREPARACION_DATOS_ACADEMICA_V1.md`.
+
+## Conteo de los 50 productos recibido (18/10/2026, Codex)
+
+Revisión documental completa de los 50 códigos, unidades y cantidades. Corte 18/10 17:00 Lima, almacén 1 y sin ventas confirmado por Rogelio. Copia inmutable/CSV/huella y verificación en carpeta privada `conteo_recibido_20261018_v2`; informe `REVISION_CONTEO_50_20261018.md`. Preparado ETAPA_18_CLAUDE.md para integrar inventario fechado en ensayo local. No se cambió aplicación, bases, servicios, modelos ni nube. Sigue faltando cobertura reciente de ventas y pedidos pendientes para reposición actual.

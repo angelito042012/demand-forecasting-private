@@ -1,5 +1,7 @@
 # Retomar sin repetir trabajo
 
+**Prioridad posterior 18/10:** recibido el conteo completado de 50 productos. Revisado y normalizado en `artifacts/private/conteo_recibido_20261018_v2/`, con corte 18/10/2026 17:00, almacén 1 y ausencia de ventas confirmados por Rogelio. Leer `docs/REVISION_CONTEO_50_20261018.md`. Encargo preparado: ETAPA_18_CLAUDE.md, integrar inventario fechado local en entorno aislado cuando el usuario envíe el mensaje. No regenerar la plantilla vacía, reemplazar stock histórico, llenar octubre con ceros ni entrenar/repetir T12. El conteo ya está; no volver a pedirlo. Las ventas recientes y pedidos pendientes son límites separados.
+
 **Prioridad vigente 18/10:** leer primero `docs/PREPARACION_DATOS_ACADEMICA_V1.md`. Codex terminó la preparación autorizada de 14 fuentes: cuatro Excel de trabajo, CSV completos y un grupo de 50 productos; originales preservados. Los saldos son calculados retrospectivos, no contados. No importarlos ni usarlos para entrenar o backtests. Esperar el encargo de integración/revisión del usuario. UX01R/R17 ya fue aceptado por Codex; solo continúa pendiente la aceptación humana. Las instrucciones de encendido siguientes no son una orden automática de iniciar servicios.
 
 Cierre del 17/10/2026. Lee CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md (instrucciones exactas para encender la demo), docs/PROTOCOLO_TRABAJO.md y docs/UX01R_REPORTE.md.

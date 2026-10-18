@@ -1,5 +1,7 @@
 # Backlog de ejecución
 
+**18/10, conteo recibido y revisado:** 50 códigos completos al 18/10 17:00, almacén 1; precisiones humanas cerradas. Ver `REVISION_CONTEO_50_20261018.md`. ETAPA_18_CLAUDE.md lista para enviar: integrar consulta de inventario fechado en ensayo local. Pendiente ejecución/revisión de esa etapa; ventas octubre para pronóstico al corte y pedidos pendientes para reposición operativa. No confundir con conciliación histórica resuelta ni con autorización de nube/T12.
+
 **18/10, prioridad de datos:** preparación académica v1 completada por Codex; ver `PREPARACION_DATOS_ACADEMICA_V1.md`. Pendiente revisar/explicar el paquete y definir contrato de integración; no existe nuevo entrenamiento/importación autorizados. Mantener los saldos retrospectivos fuera del modelo y de T12. Revisión UX01R/R17 ya aceptada en REVISION_CODEX_17: las menciones de revisión pendiente abajo son históricas.
 
 **UX01R entregado (docs/UX01R_REPORTE.md; R17 cerrado, Evaluación simplificada); pendiente la nueva prueba de comprensión de Rogelio y la revisión de Codex.** R12–R16 aceptados localmente; no repetir. A13 (nube) y A14 (participación humana) pendientes; T14 debe reflejar las pantallas finales; T15 hasta el 23/10. Publicación en nube solo con autorización explícita.

@@ -1,5 +1,7 @@
 # Instrucciones compartidas para Codex en este proyecto
 
+Actualización posterior 18/10: ya se recibió/revisó el conteo de los 50 productos; Rogelio confirmó corte 17:00 sin ventas y almacén 1. Leer `docs/REVISION_CONTEO_50_20261018.md`; fuente normalizada vigente en `artifacts/private/conteo_recibido_20261018_v2/`. Encargo preparado para continuar con Claude: ETAPA_18_CLAUDE.md (inventario fechado local en ensayo aislado). Ya no afirmar que falta todo conteo; sigue faltando cobertura de octubre para pronóstico actualizado y pedidos pendientes. No reabrir T12 ni nube. Los saldos académicos previos siguen siendo retrospectivos, distintos del conteo recibido.
+
 Prioridad posterior, 18/10: el usuario encargó directamente a Codex la preparación de los 14 Excel. Ya entregada en `docs/PREPARACION_DATOS_ACADEMICA_V1.md`; leerla antes de retomar. Originales intactos, grupo de 50 y saldo calculado bajo supuestos en paquete privado. No presentar cantidades generadas como conteos físicos. No usar el saldo retrospectivo para entrenamiento/backtests. Esta preparación no autoriza importación, repetir T12 ni publicar. Las autoridades UX posteriores siguen aceptadas; sus pasos humanos quedan pendientes.
 
 Leer docs/PROTOCOLO_TRABAJO.md, docs/ESTADO.md, docs/TRASPASO.md, CLAUDE.md y docs/DECISIONES_DATOS.md antes de editar. Las decisiones más recientes del usuario prevalecen sobre registros históricos. No asumir que una sesión perdida borró los archivos.
