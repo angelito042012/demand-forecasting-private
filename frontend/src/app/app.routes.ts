@@ -21,6 +21,7 @@ export const routes: Routes = [
       { path: 'corridas', title: 'Mis análisis', loadComponent: () => import('./pages/runs.page').then((m) => m.RunsPage) },
       { path: 'pronosticos', title: 'Ventas previstas', loadComponent: () => import('./pages/forecasts.page').then((m) => m.ForecastsPage) },
       { path: 'recomendaciones', title: 'Reposición simulada', loadComponent: () => import('./pages/recommendations.page').then((m) => m.RecommendationsPage) },
+      { path: 'inventario', title: 'Inventario informado', loadComponent: () => import('./pages/inventory.page').then((m) => m.InventoryPage) },
       { path: 'comparacion', title: 'Evaluación de resultados', loadComponent: () => import('./pages/comparison.page').then((m) => m.ComparisonPage) },
       { path: 'sistema', title: 'Estado del sistema', loadComponent: () => import('./pages/system.page').then((m) => m.SystemPage) },
     ],

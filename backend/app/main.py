@@ -17,6 +17,7 @@ from backend.app.routers import (
     backtests,
     forecasts,
     imports,
+    inventory,
     jobs,
     recommendations,
     runs,
@@ -45,7 +46,7 @@ def create_app() -> FastAPI:
     app.add_middleware(TrustedProxyMiddleware, trusted=settings.proxies)
     app.add_middleware(SecurityHeadersMiddleware, hsts=prod)
     install_error_handlers(app)
-    for module in (auth, admin, imports, sales, runs, jobs, forecasts, recommendations, backtests):
+    for module in (auth, admin, imports, sales, runs, jobs, forecasts, recommendations, backtests, inventory):
         app.include_router(module.router, prefix="/api/v1")
 
     @app.get("/api/v1/health")

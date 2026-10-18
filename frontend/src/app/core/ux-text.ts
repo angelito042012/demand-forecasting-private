@@ -109,4 +109,7 @@ export const GLOSSARY: { term: string; meaning: string; technical: string }[] = 
   { term: 'Ejemplo de julio / Evaluación de agosto', meaning: 'El ejemplo usa ventas hasta julio para explorar estimaciones y reposición simulada. La evaluación compara estimaciones fijadas a fines de julio con las ventas reales de agosto.', technical: 'T07 / T12' },
   { term: 'En uso por defecto', meaning: 'Análisis que la aplicación abre cuando no eliges otro. Elegir otro para consultar no cambia cuál está en uso por defecto.', technical: 'corrida activa (puntero)' },
   { term: 'Inventario simulado', meaning: 'Existencias inventadas con supuestos para poder ilustrar el cálculo. No corresponden al inventario real de la empresa.', technical: 'SYNTHETIC_NOT_REAL_INVENTORY' },
+  { term: 'Inventario informado', meaning: 'Existencias que la empresa declaró en un conteo con fecha y hora. No se verificó de forma independiente y no es inventario simulado.', technical: 'CONTEO_FISICO_REPORTADO_POR_USUARIO' },
+  { term: 'Disponible', meaning: 'Unidades libres para vender que la empresa informó, en la presentación indicada (p. ej. caja de 12); no se multiplicó.', technical: 'libre' },
+  { term: 'No informado', meaning: 'La empresa no declaró ese dato. No equivale a cero.', technical: 'null' },
 ];

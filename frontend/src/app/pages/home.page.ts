@@ -32,6 +32,11 @@ import { FIRST_STEPS, closeOnboarding, onboardingClosed } from './first-steps';
         <p>Revisa una sugerencia y los datos utilizados para calcularla.</p>
         <div class="actions"><a class="btn secondary" [routerLink]="['/recomendaciones']" queryParamsHandling="preserve" data-testid="go-reco">Explorar reposición simulada</a></div>
       </article>
+      <article class="card" data-testid="task-inventory">
+        <h2>Consultar el inventario informado</h2>
+        <p>Revisa las existencias que la empresa informó en su conteo del almacén principal. No es parte de la simulación.</p>
+        <div class="actions"><a class="btn secondary" [routerLink]="['/inventario']" queryParamsHandling="preserve" data-testid="go-inventory">Ver inventario informado</a></div>
+      </article>
       <article class="card" data-testid="task-runs">
         <h2>Consultar otro análisis</h2>
         <p>Cambia entre el ejemplo de julio y la evaluación de agosto.</p>

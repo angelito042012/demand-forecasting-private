@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   BacktestDetail, BacktestItem, BacktestView, ForecastPage, GroupBy, Health, ImportDetail, ImportItem, Page,
-  ImportAccepted, JobType, PublicJob, Recommendation, RecoPage, RunAccepted, RunDetail, RunOptions, RunSummary, SalesSummary, JobStatus,
+  ImportAccepted, JobType, ReportedInventoryPage, ReportedSnapshotRef, ReportedView, PublicJob, Recommendation, RecoPage, RunAccepted, RunDetail, RunOptions, RunSummary, SalesSummary, JobStatus,
 } from './models';
 
 const BASE = '/api/v1';
@@ -31,6 +31,8 @@ export interface RecoQuery {
   page: number; page_size: number; sort?: string;
 }
 
+export interface ReportedQuery { snapshot_id?: string; q?: string; view?: ReportedView; sort?: string; page: number; page_size: number }
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
@@ -55,6 +57,10 @@ export class ApiService {
   backtest(id: string, view: BacktestView = 'all') {
     return this.get<BacktestDetail>(`/backtests/${encodeURIComponent(id)}`, { view });
   }
+
+  // ---- T18: inventario informado (solo lectura) ----
+  reportedInventory(q: ReportedQuery) { return this.get<ReportedInventoryPage>('/inventory/reported', { ...q, view: q.view === 'all' ? undefined : q.view }); }
+  reportedInventorySnapshots() { return this.get<ReportedSnapshotRef[] | Page<ReportedSnapshotRef>>('/inventory/reported/snapshots'); }
 
   // ---- T10 ----
   runOptions() { return this.get<RunOptions>('/runs/options'); }

@@ -62,12 +62,14 @@ async function openHome(role: Role, url = '/inicio', total = 640, runs = [histRu
 }
 
 describe('Inicio: orientación', () => {
-  it('título, explicación y tres tarjetas de tarea con un botón real y una sola acción principal', async () => {
+  it('título, explicación y cuatro tarjetas de tarea con un botón real y una sola acción principal', async () => {
     const { m } = await openHome('lector');
     expect(m.el.querySelectorAll('h1').length).toBe(1);
     expect(txt(m.el, 'page-title')).toBe('Explora las ventas previstas y una simulación de reposición');
     expect(txt(m.el, 'page-lead')).toBe('Consulta cuánto se estimó vender y cómo se calculó una sugerencia de reposición con los datos del ejemplo.');
-    expect(m.el.querySelectorAll('[data-testid^="task-"]').length).toBe(3);
+    expect(m.el.querySelectorAll('[data-testid^="task-"]').length).toBe(4);
+    expect((q(m.el, 'go-inventory') as HTMLAnchorElement).textContent).toContain('Ver inventario informado');
+    expect((q(m.el, 'go-inventory') as HTMLAnchorElement).getAttribute('href')).toContain('/inventario');
     const go = (id: string) => q(m.el, id) as HTMLAnchorElement;
     expect(go('go-forecasts').textContent).toContain('Ver previsión');
     expect(go('go-forecasts').getAttribute('href')).toContain('/pronosticos');

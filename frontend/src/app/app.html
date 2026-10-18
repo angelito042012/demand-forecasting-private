@@ -21,6 +21,7 @@
         <li><a routerLink="/inicio" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-inicio">Inicio</a></li>
         <li><a routerLink="/pronosticos" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-ventas-previstas">Ventas previstas</a></li>
         <li><a routerLink="/recomendaciones" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-reposicion">Reposición simulada</a></li>
+        <li><a routerLink="/inventario" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-inventario">Inventario informado</a></li>
         <li><a routerLink="/corridas" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-analisis">Mis análisis</a></li>
       </ul>
       <p class="nav-title">Más</p>
@@ -44,7 +45,11 @@
   }
   <main id="contenido" tabindex="-1">
     <p class="context-strip" data-testid="context-strip" role="note">
-      <strong>Ejemplo con datos históricos de 2026.</strong> El inventario es simulado; no representa las existencias actuales.
+      @if (onInventory()) {
+        <strong>Inventario informado por la empresa (no es simulado).</strong> Las ventas y las recomendaciones del ejemplo son históricas y se consultan en otras pantallas.
+      } @else {
+        <strong>Ejemplo con datos históricos de 2026.</strong> Las sugerencias de reposición usan un inventario simulado; no representa las existencias actuales.
+      }
     </p>
     <router-outlet />
   </main>

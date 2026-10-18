@@ -10,7 +10,7 @@ x-app-env: &app-env
   MONGODB_DATABASE: ${MONGODB_DATABASE:?defina MONGODB_DATABASE}
   AUTH_SECRET: ${AUTH_SECRET:?defina AUTH_SECRET}
   ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://localhost:8443}
-  TRUSTED_PROXIES: 172.31.250.2/32
+  TRUSTED_PROXIES: ${DF_EDGE_PREFIX:-172.31.250}.2/32
   DF_UPLOADS_DIR: /data/uploads
 
 # Limites equivalentes a infra/main.bicep (0,5 vCPU / 1 GiB por contenedor); se miden en docs/T11B_GENERACION_CONTENEDOR.md.
@@ -51,7 +51,7 @@ services:
   api:
     <<: [*hardening, *limits]
     build: .
-    image: df-app:t11a-local
+    image: ${DF_APP_IMAGE:-df-app:t11a-local}
     command: ["api"]
     environment: *app-env
     volumes: [df_data:/data]
@@ -60,11 +60,11 @@ services:
     networks:
       data: {}
       edge:                     # el proxy lo alcanza por aqui; el puerto 8000 no se publica
-        ipv4_address: 172.31.250.3
+        ipv4_address: ${DF_EDGE_PREFIX:-172.31.250}.3
 
   worker:
     <<: [*hardening, *limits]
-    image: df-app:t11a-local
+    image: ${DF_APP_IMAGE:-df-app:t11a-local}
     command: ["worker", "--poll-seconds", "2"]
     environment:
       <<: *app-env
@@ -83,7 +83,7 @@ services:
 
   scheduler:                    # deshabilitado por defecto: docker compose --profile scheduler up
     <<: *hardening
-    image: df-app:t11a-local
+    image: ${DF_APP_IMAGE:-df-app:t11a-local}
     profiles: [scheduler]
     command: ["scheduler"]
     environment:
@@ -105,7 +105,7 @@ services:
     depends_on: [api]
     networks:
       edge:
-        ipv4_address: 172.31.250.2
+        ipv4_address: ${DF_EDGE_PREFIX:-172.31.250}.2
     restart: unless-stopped
 
 networks:
@@ -113,7 +113,9 @@ networks:
     internal: true              # sin salida a Internet ni al host
   edge:
     ipam:
-      config: [{subnet: 172.31.250.0/24, ip_range: 172.31.250.128/25}]   # .2 proxy y .3 api fijos
+      config:    # .2 proxy y .3 api fijos; DF_EDGE_PREFIX permite un segundo entorno de ensayo sin chocar de subred
+        - subnet: ${DF_EDGE_PREFIX:-172.31.250}.0/24
+          ip_range: ${DF_EDGE_PREFIX:-172.31.250}.128/25
 
 volumes:
   mongo_data: {}
