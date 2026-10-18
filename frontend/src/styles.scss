@@ -38,8 +38,8 @@ button {
   &:hover:not(:disabled) { background: #0846a8; }
   &:disabled { background: #e5e7eb; color: #6b7280; border-color: var(--line); cursor: not-allowed; }
 }
-select, input:not([type='checkbox']) { border: 1px solid #6b7280; border-radius: 4px; padding: 0.3rem 0.5rem; background: #fff; min-height: 2.1rem; }
-label { display: grid; gap: 0.2rem; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+select, input:not([type='checkbox']) { max-width: 100%; border: 1px solid #6b7280; border-radius: 4px; padding: 0.3rem 0.5rem; background: #fff; min-height: 2.1rem; }
+label { min-width: 0; max-width: 100%; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.2rem; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
 label.chk { display: flex; align-items: center; gap: 0.4rem; }
 .filters, .selectors { display: flex; flex-wrap: wrap; gap: 0.8rem 1rem; align-items: end; margin: 0.6rem 0 1rem; padding: 0; border: 0; }
 fieldset.selectors legend { font-weight: 700; padding: 0; margin-bottom: 0.3rem; }

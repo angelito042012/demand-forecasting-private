@@ -320,3 +320,31 @@ R11 cerrado (siete fases, reconciliación sin recomputar). Paquete final T12 int
 ## T11B (17/10/2026): R12–R14 y preflight de nube
 
 R12 (cierre atómico del reporte), R13 (bundle privado y recuperación integral comprobada: `mongo_ok`, `artefactos_ok`, `recuperacion_integral_ok`), R14 (referencia de runtime sin Git y generación real 10/07 H21 en contenedor: 22,2 s, 406 MiB, sin OOM). Plan de costo corregido con propuesta principal (crédito máximo US$ 20). Preflight autenticado de Azure completado el 18/10/2026 (solo lectura): Brazil South permitida, `spendingLimit=On`, cuota de Container Apps 0/0 pendiente de resolver. Regresión 440 aprobadas/5 omitidas. Sin recursos externos, sin transferencia de datos, sin despliegue. Detalle en `docs/T11B_REPORTE.md`.
+
+## Antecedentes movidos desde ESTADO.md el 18/10/2026 (T11A y revisiones Codex11/12)
+
+### Revisión Codex11 y entrada a T11A
+
+16 pruebas sintéticas T12 aprobadas, 0 omitidas, 69,49 s; ruff afectado limpio. Evidencia propia: artifacts/private/codex_review11_verified_tests.xml/.log y codex_review11_audit.py/.json. Recalculados H14 primaria (3401 SKU, 10366 unidades): WAPE promedio_28=0,7809666, RF=0,7910422, cero=1; RF no mejora. Reconstruidos reales desde CSV mínimo y contrastadas las27simulaciones, saldos/valor/compras,9hashes y sello Git anterior a lectura. Sin repetir entrenamiento ni evaluación real. Resultados424pytest/6omitidas son de Claude, diferenciados.
+
+R11 P2: siete fases definidas, pero audit/report no actualizan estado ni sus errores. Corregir/reconciliar solo esas operaciones, con registro posterior y hashes de cálculo intactos. Integración local y plan de capacidad independientes pueden avanzar; cierre total de T12 tras R11. No migrar la base completa: forecasts267,06MB, recomendaciones66,43MB y ventas81,79MB antes de índices. Preparar base nueva con datos/fuentes y corridas pertinentes, archivo recuperable del resto, sin sesiones/usuarios/jobs demo, sin borrar v1/v2 ni evidencias.
+
+T11A no es despliegue: exige imagen(s), configuración producción, almacén durable, prueba de copia/restauración y plan de recursos/región/costo hasta23/10 y mensual. Cuentas ya creadas; acceso secreto por canal privado. Sin crear recursos/cargos, consumir crédito sin techo concreto acordado ni transferir datos en esta preparación. T13–T15 y publicación HTTPS real siguen pendientes.
+
+### T11A preparación del despliegue (17/10/2026, verificado)
+
+- R11: auditoría y reporte registran sus fases; `estado.json` del paquete real reconciliado (siete fases, `completa=true`) con corrección técnica posterior (commit base 71656c2) y hashes originales intactos. 6 regresiones (4 fallaban antes).
+- Integración local de la evaluación final (`final_evaluation`, `final-20260731-d587255d87fb`): contrato `docs/T11_CONTRATO.md`; API/UI separan histórica T07, generada y final; fechas hasta 21/08 solo para esa corrida; recomendaciones no disponibles con motivo. Publicada en la base nueva `demand_forecasting_pub` (v1/v2 intactas).
+- Capacidad medida tras restaurar: **213,90 MB datos+índices = 41,8 % de 512 MB**; ≈2 corridas generadas más hasta el 60 %. Copia 18,9 s, restauración 17,9 s (24,1 s con verificación), verificación 10/10.
+- Contenedores: imagen única 991 MB, compose de ensayo, smoke 29/29; producción con secretos obligatorios, mismo origen, proxy de confianza explícito.
+- Pruebas: `pytest tests` 511 aprobadas / 7 omitidas; vitest 127 y build; E2E Chrome 20/20 con el paquete final real sobre copia restaurada.
+- Plan Azure (Container Apps + Files + ACR Basic + Atlas Free) ≈ US$5–7 hasta el 23/10, ≈ US$28–30/mes encendido; cifras de API pública de precios, varias **no verificadas** (egress, snapshots, medidor de gestión de entorno, regiones de Azure for Students, IPs de egreso hacia Atlas).
+- Pendientes: aprobación del plan; crear admin de la base de publicación por canal seguro; conexión a Atlas (sin credencial); generación dentro del contenedor no probada; aceptación humana.
+
+### Revisión Codex12 y fase T11B
+
+83 pruebas propias selectivas aprobadas,0omitidas,69,61s,dosavisos; ruff selectivo limpio. Restauración Mongo real sobre base temporal nueva:0problemas,18,98s,329131objetos,213,469MBdatos+índices; temporal eliminada y originales intactos. Evidencia privada codex_review12_tests.*,codex_review12_restore.json y codex_review12_repro.py/.json. No se repitieron Docker29/29,Chrome20/20 ni evaluación real; siguen como evidencia de Claude.
+
+R12:P2,falta controlar error después de _end al escribir manifiesto final. R13:P2,18artefactos listados pero0incluidos en respaldo; recuperaciónMongo no equivale a recuperaciónintegral. R14:demostrar generaciónreal con1GiB y referenciaaprobada portable sinGit/.git; montaje de NPZsolo no basta. No quitar verificaciones ni meterdatos en imagenpública.
+
+Revisar costo usando activos/idle y cuota gratuita compartida, medir memoria/tiempo y consultar suscripción/regiones/cuotas sololectura con autenticacióninteractiva propia. No hay costo máximo acordado todavía; estimaciones5–7/20USDno son cotizaciónfinal. No crearrecursos/roles/grupos, consumircrédito ni transferirdatos. Después de propuesta corregida se pide autorización concreta. Falta despliegueHTTPS/Atlas, rendimiento/aceptaciónT13 e informe/manual/video/entregaT14–T15 antes23/10.

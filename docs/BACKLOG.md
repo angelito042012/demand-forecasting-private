@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al17/10: T11A/989fa6c revisada en REVISION_CODEX_12.md; integraciónfinal/Mongo local verificadas. Siguiente ETAPA_12_CLAUDE.md (T11B): R12–R14 ypreflight/costo sololectura antesde autorizarrecursos. T12científica validada; no repetir. Sin despliegue/cargos, cuentasya creadas. T13–T15pendientes; fecha23/10. Ver ESTADO/TRASPASO.
+Estado al 18/10: T11B local aceptada (REVISION_CODEX_13.md); T13A local y borradores T14A entregados; publicación en nube pendiente de aprobación (plan en docs/T11_PLAN_DESPLIEGUE.md); aceptación humana (A14) y A13 pendientes; T14 final y T15 hasta el 23/10.
 
 T01 está parcial; T03 aceptado para seis fuentes auditadas tras R01–R04. T02A tiene controles de importación pero no conciliación con reporte externo de la MYPE. T04–T07 aceptados como desarrollo; T08/T09/T10 aceptados para alcance local. Resultados T12 validados, cierre administrativo R11 pendiente; T11A es el encargo vigente, T11real/T13–T15 pendientes. Método operativo promedio_28; RF comparador, no ganador. Congelación registrada antes del test; no modificarla para acomodar resultados. Ver ANALISIS_Y_PLAN.md y DECISIONES_DATOS.md.
 

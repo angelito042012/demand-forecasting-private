@@ -1,6 +1,6 @@
 # T11 Plan de despliegue (propuesta, NO ejecutada)
 
-Fecha: 17/10/2026; corregido en T11B el 17–18/10/2026. Estado: **propuesta para aprobación**. No se ha creado ningún recurso en la nube, no se ha iniciado sesión en Azure ni en Atlas, no se ha subido ninguna imagen a un registro y no se ha transferido ningún dato fuera de este equipo. Todo lo desplegable fue construido y probado solo en Docker local (ver `docs/T11A_EMPAQUETADO.md`). Los datos son históricos (marzo–agosto 2026); el inventario es simulado.
+Fecha: 17/10/2026; corregido en T11B el 17–18/10/2026. Estado: **propuesta para aprobación**. No se ha creado ningún recurso en la nube, no se ha subido ninguna imagen a un registro y no se ha transferido ningún dato fuera de este equipo (el 18/10/2026 se iniciaron sesiones de Azure CLI solo para consultas de lectura y para registrar `Microsoft.App`; todas cerradas). No hay inicio de sesión en Atlas. Todo lo desplegable fue construido y probado solo en Docker local (ver `docs/T11A_EMPAQUETADO.md`). Los datos son históricos (marzo–agosto 2026); el inventario es simulado.
 
 Convención: **[V]** = verificado en fuente oficial (URL y fecha 17/10/2026); **[NV]** = no verificado, con el método para verificarlo; **[S]** = supuesto de este plan.
 
@@ -34,7 +34,44 @@ Convención: **[V]** = verificado en fuente oficial (URL y fecha 17/10/2026); **
 
 **Actualización 18/10/2026 — Microsoft.App registrado y cuota reconsultada (solo ese proveedor; sin recursos, grupos, permisos, despliegue ni datos).** Al iniciar la comprobación `Microsoft.App` ya figuraba `Registered` (el script omitió el registro). No puedo demostrar si lo registró un intento anterior interrumpido de esta sesión autorizada u otro origen; los demás proveedores siguen `NotRegistered`. **`ManagedEnvironmentCount` en Brazil South: uso 0, límite 1** (el 0/0 anterior se debía al proveedor sin registrar); no hizo falta consultar las otras regiones ni solicitar aumento de cuota. Otros límites de Brazil South: `ExpressEnvironmentCount` 450, `SessionPools` 1, `SandboxCores` 1. Resultado en `artifacts/private/t11b/azure_microsoft_app.json`; sesión cerrada y caché borrada (`scripts/azure_register_app.py`). El riesgo de cuota queda resuelto para un entorno (es lo que usa el plan); el siguiente paso sigue requiriendo aprobación (registrar Storage, ContainerRegistry, OperationalInsights, ManagedIdentity e Insights, y crear recursos).
 
-**Consecuencia para el plan.** El primer paso real del despliegue pasa a ser (1) registrar `Microsoft.App`, `Microsoft.Storage`, `Microsoft.ContainerRegistry`, `Microsoft.OperationalInsights` y `Microsoft.ManagedIdentity` (sin costo; requiere aprobación explícita) y (2) volver a consultar `ManagedEnvironmentCount`. Si el límite sigue en 0, Container Apps **no está disponible** para esta oferta en esas regiones: contingencia a evaluar con el mismo método de costo (sin aprovisionar) —Azure Container Instances, App Service Linux en Brazil South o una máquina virtual pequeña—; el plan se reabriría con cifras nuevas antes de pedir crédito.
+**Consecuencia para el plan (actualizada).** Con `Microsoft.App` registrado y `ManagedEnvironmentCount` 0/1 en Brazil South, el riesgo de cantidad de entornos queda resuelto para el plan de **un** entorno; sigue sin acreditar la cuota de cómputo por entorno ni la ejecución real de la plataforma. Los otros proveedores siguen sin registrar y su registro requiere aprobación (ver «Plan de publicación actualizado»). La contingencia (ACI / App Service Linux / VM pequeña) solo se abriría si el primer recurso real fallara por cuota.
+
+## Plan de publicación actualizado (T13A, 18/10/2026): qué se crearía y qué necesita su aprobación
+
+**Nada de esto está ejecutado ni autorizado.** Estado real al 18/10/2026: sesión de Azure CLI cerrada; `Microsoft.App` registrado y `ManagedEnvironmentCount` en Brazil South uso 0 / límite 1 (suficiente para **un** entorno; no prueba cuotas de cómputo por entorno, montajes ni egreso hacia Atlas); el resto de proveedores sin registrar; 0 grupos de recursos; ninguna imagen subida; Atlas sin usuario de aplicación ni lista de IP para Azure. Evidencia local previa: T11A (contenedores, smoke 29/29), T11B (generación real en contenedor, recuperación integral) y **T13A** (`docs/T13A_REPORTE.md`: p95 ≤ 373 ms con 5 sesiones locales, pico de la API 91 MiB, 22/22 en navegador; defecto de estilos de producción corregido en la imagen: **la imagen que se subiría debe reconstruirse desde el commit que contiene esa corrección**).
+
+### Recursos (todos en el grupo `rg-demand-forecasting-pub`, Brazil South, un solo entorno)
+
+| # | Recurso | Detalle | Costo estimado (§9, lista) |
+|---|---|---|---|
+| 1 | Grupo de recursos | Contenedor lógico; se elimina de una vez | US$ 0 |
+| 2 | Log Analytics | Tope diario de ingestión; 5 GB/mes gratis | US$ 0 previsto |
+| 3 | Storage Standard LRS | Shares `df-data` (RW) y `df-ref` (solo lectura, solo worker), < 1 GB | < US$ 0,5 |
+| 4 | Container Registry Basic | Una imagen sin datos ni secretos (~1 GB) | US$ 0,17/día (≈ US$ 1 hasta el 23/10) |
+| 5 | Identidad administrada + rol AcrPull | Sin credenciales de registro | US$ 0 |
+| 6 | Container Apps Environment (Consumption, vacío primero) | Sin VNet, endpoints privados ni mantenimiento planificado | US$ 0 esperado; **medidor de gestión 0,2 US$/h no descartado** (§9.3) |
+| 7 | Container App `api` | Ingress HTTPS, 0,5 vCPU / 1 GiB, min 1 / max 1 | dentro de US$ 4 – 17 (modo A, 6 días) |
+| 8 | Container App `worker` | Sin ingress, 0,5 vCPU / 1 GiB, min 1 / max 1, monta `df-ref` solo lectura | ídem |
+
+**Costo máximo propuesto: US$ 20 de crédito hasta el 23/10/2026**; estimado US$ 4 – 17 (modo A). **Parada:** más de US$ 12 acumulados en Cost Management o cualquier medidor no previsto ⇒ modo C o `az group delete` el mismo día. Controles realmente efectivos: la suscripción tiene `spendingLimit = On` (se detiene al agotar los US$ 100), 1 réplica máxima por app, tope de logs y un único grupo eliminable; las alertas de presupuesto **no cortan** el gasto y Cost Management puede tardar horas en mostrar un cargo.
+
+### Acciones que necesitan tu aprobación explícita (cada una por separado; ninguna está autorizada hoy)
+
+1. **Registrar cuatro proveedores** (sin costo): `Microsoft.Storage`, `Microsoft.ContainerRegistry`, `Microsoft.OperationalInsights`, `Microsoft.ManagedIdentity` (más `Microsoft.Insights` si se usan métricas). Requiere sesión con MFA (la política exige MFA para escribir). Después consultar la cuota de Storage.
+2. **Crear el grupo de recursos y el entorno vacío** (primer gasto posible; sirve para detectar el medidor de gestión antes de subir nada).
+3. **Crear ACR, Storage, Log Analytics e identidad**; **subir la imagen** (primera transferencia de bytes de la aplicación; sin datos del proyecto ni secretos).
+4. **Copiar el paquete de referencia (7,6 MiB) al share `df-ref`** (datos derivados de T07, privados).
+5. **Atlas (acción tuya, por canal privado):** crear un usuario de aplicación de mínimo privilegio sobre `demand_forecasting_pub` y **rotar la credencial mostrada en la captura anterior**; añadir a la lista de IP de Atlas el egreso de Azure (varía; sin IP estática, y no abrir `0.0.0.0/0` por defecto); entregarme la URI solo por el gestor de secretos de la plataforma, nunca por chat.
+6. **Migrar a Atlas únicamente la base de publicación** `demand_forecasting_pub` (≈ 214 MB = 41,8 % de 512 MB; sin sesiones/usuarios/trabajos de ensayo) y crear el administrador por canal seguro.
+7. **Crear las apps `api` y `worker`**, comprobar HTTPS, CSRF, `TRUSTED_PROXIES` real, generación, restauración y las pruebas de nube (A13: cinco usuarios; rendimiento).
+8. **Política posterior al 23/10:** pasar a modo C (≈ US$ 7 – 12/mes) o desmontar; decisión tuya.
+
+### Alternativas y riesgos abiertos
+
+- Si Azure rechazara el entorno por cuota de cómputo o el medidor de gestión se cobrara: modo C, o contingencia (Azure Container Instances / App Service Linux / VM pequeña) con el mismo método de costo; no se cambia la arquitectura sin tu decisión.
+- Solo se resuelve al crear el primer recurso: medidor de gestión del entorno, rango real del ingress para `TRUSTED_PROXIES`, egreso hacia Atlas, permisos SMB de Azure Files con el usuario 10001, y que las apps arranquen con el montaje de referencia de solo lectura.
+- Si decides **no publicar en nube**, la entrega puede apoyarse en la demostración local reproducible (`docs/GUIA_LOCAL.md`, `docs/MANUAL_OPERACION.md`), declarando que A13 queda no cumplido; el informe no puede afirmar publicación.
+- Calendario: fecha límite 23/10/2026; el despliegue (pasos 1–7) requiere tu aprobación y un acceso MFA tuyo; conviene decidir en las próximas 24–48 h para dejar margen de corrección y de aceptación humana (A14).
 
 ## 1. Arquitectura propuesta
 

@@ -32,7 +32,7 @@ Acceso → Corridas (corrida histórica de desarrollo al 10/07/2026, con su anti
 
 ## Qué no hace todavía
 
-HTTPS, copia/restauración y despliegue en la nube (T11), evaluación final en agosto (T12) y aceptación humana. La carga masiva por CLI sigue disponible: `python -m pipeline.data.importer --source <carpeta> --db <base>`.
+Despliegue/HTTPS en la nube (publicación pendiente de aprobación; ver `docs/T11_PLAN_DESPLIEGUE.md`) y aceptación humana. Ya existen, y están documentados aparte: evaluación final T12 (`docs/T12_RESULTADOS.md`), contenedores y copia/restauración (`docs/T11A_EMPAQUETADO.md`, `docs/T11B_ACTA_RECUPERACION_INTEGRAL.md`) y pruebas locales de rendimiento/uso (`docs/T13A_REPORTE.md`). La carga masiva por CLI sigue disponible: `python -m pipeline.data.importer --source <carpeta> --db <base>`.
 
 Tras T10R: la importación CLI es administrativa **serial, nunca simultánea con cargas web/worker**, porque no usa la reserva mensual del handler. El timer continúa deshabilitado por defecto y requiere fuentes/config estables durante recuperación; no afirmar exclusión global de cualquier escritor ni cancelación instantánea de un lote ya enviado. T12 es un runner dedicado de evaluación final, no una ampliación de la carga web o de la generación de desarrollo.
 

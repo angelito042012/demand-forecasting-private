@@ -1,10 +1,10 @@
 # Estado vigente del proyecto
 
-Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–12. Este resumen sustituye estados anteriores.
+Actualizado el 18/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–12. Este resumen sustituye estados anteriores.
 
 ## Siguiente encargo
 
-**T11B entregada para revisión de Codex** (`docs/T11B_REPORTE.md`): R12–R14 cerrados, recuperación integral de archivos privados comprobada, generación real en contenedor verificada y plan de costo corregido con propuesta principal concreta. **Preflight de Azure completado el 18/10/2026 (solo lectura; sesión cerrada): Brazil South permitida, `spendingLimit=On`, Owner + UAA, proveedores sin registrar y cuota `ManagedEnvironmentCount` 0/0 (riesgo a resolver antes del despliegue).** No hay recursos facturables, subida de imágenes, transferencia de datos ni despliegue. Siguiente: revisión Codex y la autorización del plan (incluida la aprobación de registrar proveedores y reconsultar la cuota) (crédito máximo US$ 20 hasta el 23/10); después T13 y T14/T15.
+**Etapa 13 (T13A + T14A + plan de publicación) entregada para revisión de Codex el 18/10/2026.** R12–R14 aceptados por Codex para el alcance local (REVISION_CODEX_13.md). Azure: `Microsoft.App` registrado y `ManagedEnvironmentCount` Brazil South uso 0 / límite 1 (verificado por Codex; no se repite); sesión cerrada. **No hay recursos facturables, imágenes subidas, datos transferidos ni despliegue.** Hecho en esta etapa: pruebas locales de rendimiento/uso/accesibilidad (`docs/T13A_REPORTE.md`; defecto de estilos de producción hallado y corregido), borradores T14A (matriz de cierre, informe, manuales, guion de video, guion de aceptación) y plan de publicación actualizado con acciones que requieren aprobación (`docs/T11_PLAN_DESPLIEGUE.md`). Siguiente: revisión Codex; decisión del usuario sobre publicar en nube (crédito máximo propuesto US$ 20, parada > US$ 12, acciones numeradas del plan); ejecución del guion de aceptación por Rogelio; completar T14 con URL/evidencia reales y T15 (entrega 23/10/2026). Aceptación humana: **pendiente**.
 
 ## Hitos aceptados
 
@@ -45,32 +45,6 @@ Después de T12 y su revisión: T11 capacidad/archivo recuperable/HTTPS/almacena
 - Pruebas ejecutadas: 16 pruebas sintéticas T12 (bloqueo sin confirmación/congelación alterada/sello alterado, futuros no cambian el paquete, truncamiento por revisión, categorías = suma SKU, conservación RF, catálogo/cohortes/universo al 31/07, faltantes/ceros, SKU nuevos, igualdad de condiciones, balances, denominador cero, equivalencia con el motor vivo); `pytest tests`: 424 aprobadas, 6 omitidas (RUN_REALDATA), 0 fallos. No se repitieron T06/T07 ni los 4 folds.
 - Artefactos privados en `artifacts/private/final/` (fuera de Git). Pendientes: revisión Codex; integración web/publicación y plan de capacidad (T11); aceptación humana.
 
-## Revisión Codex11 y entrada a T11A
-
-16 pruebas sintéticas T12 aprobadas, 0 omitidas, 69,49 s; ruff afectado limpio. Evidencia propia: artifacts/private/codex_review11_verified_tests.xml/.log y codex_review11_audit.py/.json. Recalculados H14 primaria (3401 SKU, 10366 unidades): WAPE promedio_28=0,7809666, RF=0,7910422, cero=1; RF no mejora. Reconstruidos reales desde CSV mínimo y contrastadas las27simulaciones, saldos/valor/compras,9hashes y sello Git anterior a lectura. Sin repetir entrenamiento ni evaluación real. Resultados424pytest/6omitidas son de Claude, diferenciados.
-
-R11 P2: siete fases definidas, pero audit/report no actualizan estado ni sus errores. Corregir/reconciliar solo esas operaciones, con registro posterior y hashes de cálculo intactos. Integración local y plan de capacidad independientes pueden avanzar; cierre total de T12 tras R11. No migrar la base completa: forecasts267,06MB, recomendaciones66,43MB y ventas81,79MB antes de índices. Preparar base nueva con datos/fuentes y corridas pertinentes, archivo recuperable del resto, sin sesiones/usuarios/jobs demo, sin borrar v1/v2 ni evidencias.
-
-T11A no es despliegue: exige imagen(s), configuración producción, almacén durable, prueba de copia/restauración y plan de recursos/región/costo hasta23/10 y mensual. Cuentas ya creadas; acceso secreto por canal privado. Sin crear recursos/cargos, consumir crédito sin techo concreto acordado ni transferir datos en esta preparación. T13–T15 y publicación HTTPS real siguen pendientes.
-
-## T11A preparación del despliegue (17/10/2026, verificado)
-
-- R11: auditoría y reporte registran sus fases; `estado.json` del paquete real reconciliado (siete fases, `completa=true`) con corrección técnica posterior (commit base 71656c2) y hashes originales intactos. 6 regresiones (4 fallaban antes).
-- Integración local de la evaluación final (`final_evaluation`, `final-20260731-d587255d87fb`): contrato `docs/T11_CONTRATO.md`; API/UI separan histórica T07, generada y final; fechas hasta 21/08 solo para esa corrida; recomendaciones no disponibles con motivo. Publicada en la base nueva `demand_forecasting_pub` (v1/v2 intactas).
-- Capacidad medida tras restaurar: **213,90 MB datos+índices = 41,8 % de 512 MB**; ≈2 corridas generadas más hasta el 60 %. Copia 18,9 s, restauración 17,9 s (24,1 s con verificación), verificación 10/10.
-- Contenedores: imagen única 991 MB, compose de ensayo, smoke 29/29; producción con secretos obligatorios, mismo origen, proxy de confianza explícito.
-- Pruebas: `pytest tests` 511 aprobadas / 7 omitidas; vitest 127 y build; E2E Chrome 20/20 con el paquete final real sobre copia restaurada.
-- Plan Azure (Container Apps + Files + ACR Basic + Atlas Free) ≈ US$5–7 hasta el 23/10, ≈ US$28–30/mes encendido; cifras de API pública de precios, varias **no verificadas** (egress, snapshots, medidor de gestión de entorno, regiones de Azure for Students, IPs de egreso hacia Atlas).
-- Pendientes: aprobación del plan; crear admin de la base de publicación por canal seguro; conexión a Atlas (sin credencial); generación dentro del contenedor no probada; aceptación humana.
-
-## Revisión Codex12 y fase T11B
-
-83 pruebas propias selectivas aprobadas,0omitidas,69,61s,dosavisos; ruff selectivo limpio. Restauración Mongo real sobre base temporal nueva:0problemas,18,98s,329131objetos,213,469MBdatos+índices; temporal eliminada y originales intactos. Evidencia privada codex_review12_tests.*,codex_review12_restore.json y codex_review12_repro.py/.json. No se repitieron Docker29/29,Chrome20/20 ni evaluación real; siguen como evidencia de Claude.
-
-R12:P2,falta controlar error después de _end al escribir manifiesto final. R13:P2,18artefactos listados pero0incluidos en respaldo; recuperaciónMongo no equivale a recuperaciónintegral. R14:demostrar generaciónreal con1GiB y referenciaaprobada portable sinGit/.git; montaje de NPZsolo no basta. No quitar verificaciones ni meterdatos en imagenpública.
-
-Revisar costo usando activos/idle y cuota gratuita compartida, medir memoria/tiempo y consultar suscripción/regiones/cuotas sololectura con autenticacióninteractiva propia. No hay costo máximo acordado todavía; estimaciones5–7/20USDno son cotizaciónfinal. No crearrecursos/roles/grupos, consumircrédito ni transferirdatos. Después de propuesta corregida se pide autorización concreta. Falta despliegueHTTPS/Atlas, rendimiento/aceptaciónT13 e informe/manual/video/entregaT14–T15 antes23/10.
-
 ## T11B cierres locales y preflight (17/10/2026, verificado)
 
 - R12: cierre del reporte atómico y bajo control de error (acc9251); fallo tardío ⇒ `reporte=error`, `completa=false`, manifiesto previo invalidado; 2 regresiones fallaban antes.
@@ -79,3 +53,12 @@ Revisar costo usando activos/idle y cuota gratuita compartida, medir memoria/tie
 - Plan Azure corregido: tabla de medidores con fecha/URL, grants compartidos por suscripción, worker no presumido ocioso (medido 0,0097 vCPU), medidor de gestión de entorno anclado a la documentación, rangos conservadores; propuesta principal: modo A, US$ 4–17 estimados, crédito máximo US$ 20, parada > US$ 12. Bicep con share de referencia de solo lectura compila sin errores.
 - Pruebas: regresión T11B 440 aprobadas / 5 omitidas; pruebas nuevas R12 (4), R13 (67/1 omitida), R14 (22 + generación real). No se repitió la suite completa ni el navegador.
 - Pendientes: registrar los demás proveedores (con aprobación; `Microsoft.App` ya registrado y `ManagedEnvironmentCount` Brazil South 0/1), saldo en portal, usuario/credencial de Atlas y lista de IP, `df-ref`, primer push de imagen, T13–T15.
+- Azure (18/10/2026): preflight de solo lectura y registro autorizado únicamente de `Microsoft.App`; resultado en `artifacts/private/t11b/azure_microsoft_app.json`: proveedor ya `Registered` al comenzar la comprobación, `ManagedEnvironmentCount` Brazil South 0/1; sesión cerrada y caché borrada. La causa del 0/0 anterior no queda demostrada. Los demás proveedores siguen sin registrar.
+
+## T13A pruebas locales (18/10/2026, verificado; detalle en `docs/T13A_REPORTE.md`)
+
+- Rendimiento local (stack en contenedores 0,5 vCPU / 1 GiB, base restaurada nueva, 3 consultas, 1 y 5 sesiones, 20 medidas/sesión tras calentamiento): p95 máximo 373 ms (meta < 2 s cumplida en local), 0 errores, pico de la API 91,4 MiB, arranque en frío 6,1 s; estrangulación de CPU observada (150/647 periodos).
+- Chrome sobre la imagen de producción: 22/22 (lector, admin, 375 px); agosto rechazado; generación 10/07 desde la UI y reenvío idéntico sin duplicar; histórica predeterminada intacta.
+- **Defecto corregido:** la imagen de producción no aplicaba el CSS global (carga diferida con `onload` bloqueada por la CSP). Cambios: `frontend/angular.json` (`inlineCritical:false`) y `frontend/src/styles.scss`. Imagen reconstruida; no se repitieron las pruebas unitarias de Angular (cambio de estilos/compilación).
+- Accesibilidad: revisión automatizada sin hallazgos importantes (único contraste bajo: botones deshabilitados, exentos); sin lector de pantalla, zoom 200 % ni objetivos táctiles. A13 (HTTPS/cinco usuarios en nube) y A14 (participación humana) siguen pendientes.
+- Pendientes: decisión/aprobación de publicación; credencial/usuario Atlas por canal privado; registro de los demás proveedores; ejecución humana del guion; T14 final y T15.
