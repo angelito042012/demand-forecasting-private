@@ -1,6 +1,6 @@
 # Backlog de ejecución
 
-Estado al 17/10: T08R y **T10R/6212f6a aceptados** (REVISION_CODEX_10.md), R05–R10 cerrados para demostración local. Codex 59 regresiones aprobadas incluida cadena loop/worker real; históricas intactas y congelación verificada. Resultados T12 validados por Codex11,16pruebas propias y auditoría independiente; cierre R11 se integra al comienzo de ETAPA_11_CLAUDE.md (T11A). Azure estudiantes/Atlas Free creados, sin despliegue/conexión ni presupuesto de bolsillo; BD 459,39 MB requiere plan de capacidad. Fechas de tabla son objetivos, no evidencia. Ver ESTADO/TRASPASO.
+Estado al17/10: T11A/989fa6c revisada en REVISION_CODEX_12.md; integraciónfinal/Mongo local verificadas. Siguiente ETAPA_12_CLAUDE.md (T11B): R12–R14 ypreflight/costo sololectura antesde autorizarrecursos. T12científica validada; no repetir. Sin despliegue/cargos, cuentasya creadas. T13–T15pendientes; fecha23/10. Ver ESTADO/TRASPASO.
 
 T01 está parcial; T03 aceptado para seis fuentes auditadas tras R01–R04. T02A tiene controles de importación pero no conciliación con reporte externo de la MYPE. T04–T07 aceptados como desarrollo; T08/T09/T10 aceptados para alcance local. Resultados T12 validados, cierre administrativo R11 pendiente; T11A es el encargo vigente, T11real/T13–T15 pendientes. Método operativo promedio_28; RF comparador, no ganador. Congelación registrada antes del test; no modificarla para acomodar resultados. Ver ANALISIS_Y_PLAN.md y DECISIONES_DATOS.md.
 
@@ -17,7 +17,7 @@ T01 está parcial; T03 aceptado para seis fuentes auditadas tras R01–R04. T02A
 | T08 | API autenticada y persistencia versionada | T01, contratos | Rogelio / backend-inventory | 20 | A09 |
 | T09 | Pantallas conectadas, filtros y estados | T08; mocks antes | Fabricio / frontend | 20 | A10 |
 | T10 | Flujo local aceptado tras T10R/6212f6a | T06–T08 | Fabricio y Rogelio | 20 | A11 local; revisión10 y59 pruebas |
-| T11 | T11A vigente: integración/empaquetado/capacidad/restauración local y plan de nube; despliegue real posterior | Accesos, T08–T10 | Fabricio | 21 | A12–A13 |
+| T11 | T11B vigente: R12–R14, generación en imagen/recuperación integral y preflight; despliegue pendiente | Accesos, T08–T10 | Fabricio | 21 | A12–A13 |
 | T12 | Resultados validados por Codex11; cierre de checkpoints R11 pendiente | T06–T07 congelados; T10 aceptado | Blanca y Mauro | 21 | Predicción fija/simulación separadas, auditoría, sin re-selección |
 | T13 | Revisión independiente y aceptación | T09–T12 | Fabricio / quality-reviewer | 22 | A14, sin críticos |
 | T14 | Informe, manual, fuentes y video | Evidencia acumulada | Milton y equipo | 23 | Anexos y conclusiones verificables |

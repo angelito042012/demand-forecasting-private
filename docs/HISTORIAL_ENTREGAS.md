@@ -310,3 +310,8 @@ Ejecutada una vez por fases: verificación de la congelación, preparación y se
 ## T11A (17/10/2026): preparación local del despliegue
 
 R11 cerrado (siete fases, reconciliación sin recomputar). Paquete final T12 integrado localmente (publicador, API, UI; tres tipos de corrida separados). Base de publicación `demand_forecasting_pub` con capacidad medida (213,90 MB, 41,8 % de 512 MB), copia/restauración verificadas, contenedores con smoke 29/29 y plan Azure/Atlas con costos. pytest 511 aprobadas/7 omitidas, vitest 127, E2E Chrome 20/20. Sin recursos externos, sin transferencia de datos y sin despliegue. Detalle en `docs/T11A_REPORTE.md`.
+
+
+## Revisión Codex12: T11A local y cierres previos a nube
+
+17/10, entrega989fa6c. Codex83pruebas aprobadas sin omitidas y restauraciónMongo real sobre copia temporal,0problemas/213,469MB; no evaluaciónreal ni Docker/Chrome repetidos. R12fallotardío de manifiesto deja completa=true; R13recuperación privada solo listada; R14referenciaGit no portable y generaciónen imagen sin comprobar. Encargo ETAPA_12_CLAUDE.md,T11B, incluye correcciones y preflight/costo sololectura; no recursos/cargos/transferencias. ResultadosT12 válidos; falta despliegue yT13–T15 antes23/10.

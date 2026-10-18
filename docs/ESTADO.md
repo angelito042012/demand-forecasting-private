@@ -1,10 +1,10 @@
 # Estado vigente del proyecto
 
-Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–11. Este resumen sustituye estados anteriores.
+Actualizado el 17/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–12. Este resumen sustituye estados anteriores.
 
 ## Siguiente encargo
 
-**T11A entregada para revisión de Codex** (`docs/T11A_REPORTE.md`): R11 cerrado, paquete final T12 integrado localmente, base de publicación con capacidad medida, copia/restauración comprobada, contenedores y plan de despliegue/costos. **No se creó ningún recurso externo, no se consumió crédito, no se transfirió ningún dato y no hay despliegue.** Pendiente: revisión Codex; después la autorización concreta del plan (`docs/T11_PLAN_DESPLIEGUE.md`: recursos, región, costo máximo, pasos) antes de aprovisionar; T13 aceptación y T14/T15 informe/manual/video antes del 23/10.
+**T11A/989fa6c revisada; siguiente ETAPA_12_CLAUDE.md (T11B), REVISION_CODEX_12.md.** Integración final local y restauración Mongo verificadas. Antes de publicar: R12 fallo tardío puede dejar estado completo; R13 backup enumera18artefactos sin copiarlos/restaurarlos; R14 referencia depende de Git ausente en imagen y generación en contenedor sin probar. Codex83pruebas aprobadas y restauración real Mongo213,47MB/0problemas. T11B cierra estos puntos y preflight/costo Azure en solo lectura; sin recursos/cargos/transferencia de datos. No se inició despliegue. Datos/modelos/T12 científica no se rehacen.
 
 ## Hitos aceptados
 
@@ -62,3 +62,11 @@ T11A no es despliegue: exige imagen(s), configuración producción, almacén dur
 - Pruebas: `pytest tests` 511 aprobadas / 7 omitidas; vitest 127 y build; E2E Chrome 20/20 con el paquete final real sobre copia restaurada.
 - Plan Azure (Container Apps + Files + ACR Basic + Atlas Free) ≈ US$5–7 hasta el 23/10, ≈ US$28–30/mes encendido; cifras de API pública de precios, varias **no verificadas** (egress, snapshots, medidor de gestión de entorno, regiones de Azure for Students, IPs de egreso hacia Atlas).
 - Pendientes: aprobación del plan; crear admin de la base de publicación por canal seguro; conexión a Atlas (sin credencial); generación dentro del contenedor no probada; aceptación humana.
+
+## Revisión Codex12 y fase T11B
+
+83 pruebas propias selectivas aprobadas,0omitidas,69,61s,dosavisos; ruff selectivo limpio. Restauración Mongo real sobre base temporal nueva:0problemas,18,98s,329131objetos,213,469MBdatos+índices; temporal eliminada y originales intactos. Evidencia privada codex_review12_tests.*,codex_review12_restore.json y codex_review12_repro.py/.json. No se repitieron Docker29/29,Chrome20/20 ni evaluación real; siguen como evidencia de Claude.
+
+R12:P2,falta controlar error después de _end al escribir manifiesto final. R13:P2,18artefactos listados pero0incluidos en respaldo; recuperaciónMongo no equivale a recuperaciónintegral. R14:demostrar generaciónreal con1GiB y referenciaaprobada portable sinGit/.git; montaje de NPZsolo no basta. No quitar verificaciones ni meterdatos en imagenpública.
+
+Revisar costo usando activos/idle y cuota gratuita compartida, medir memoria/tiempo y consultar suscripción/regiones/cuotas sololectura con autenticacióninteractiva propia. No hay costo máximo acordado todavía; estimaciones5–7/20USDno son cotizaciónfinal. No crearrecursos/roles/grupos, consumircrédito ni transferirdatos. Después de propuesta corregida se pide autorización concreta. Falta despliegueHTTPS/Atlas, rendimiento/aceptaciónT13 e informe/manual/video/entregaT14–T15 antes23/10.
