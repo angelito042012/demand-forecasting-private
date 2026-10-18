@@ -1,0 +1,54 @@
+{
+  "version": "t11b-bundle-1",
+  "nota": "Lista cerrada del bundle privado (R13). Solo estas rutas relativas a la raiz del proyecto; nada mas se copia. Vive fuera de Git y fuera de Mongo.",
+  "final_dir": "artifacts/private/final",
+  "secciones": {
+    "t12_final": [
+      "artifacts/private/final/preparacion/manifiesto_preparacion.json",
+      "artifacts/private/final/preparacion/predicciones_fijas.npz",
+      "artifacts/private/final/preparacion/inicializacion_sim.npz",
+      "artifacts/private/final/preparacion/rf_categoria_T12.joblib",
+      "artifacts/private/final/reales_bloque.npz",
+      "artifacts/private/final/ventas_agosto_min.csv.gz",
+      "artifacts/private/final/predictivo.json",
+      "artifacts/private/final/simulacion.json",
+      "artifacts/private/final/simulacion_series.npz",
+      "artifacts/private/final/auditoria.json",
+      "artifacts/private/final/estado.json",
+      "artifacts/private/final/verificacion.json"
+    ],
+    "anclajes_versionados": [
+      "docs/T12_SELLO.json",
+      "docs/T12_MANIFIESTO.json",
+      "docs/T12_METRICAS.json",
+      "config/seleccion_congelada.json",
+      "config/seleccion_congelada.sha256",
+      "config/t07_config.json",
+      "config/t08_publish.json",
+      "docs/T07_MANIFIESTO.json",
+      "docs/T07_METRICAS.json"
+    ],
+    "t07_referencia": [
+      "artifacts/private/t07/predicciones_folds.csv.gz",
+      "artifacts/private/t07/simulacion_series.npz"
+    ]
+  },
+  "opcional": {
+    "runtime_reference": {
+      "directorio": "artifacts/private/runtime_reference",
+      "manifiesto": "manifest_referencia.json"
+    }
+  },
+  "funcional": {
+    "t12_sello": "docs/T12_SELLO.json",
+    "t07": {"manifiesto": "docs/T07_MANIFIESTO.json", "publish_config": "config/t08_publish.json", "entrada": "t07",
+            "config_t07": "config/t07_config.json"},
+    "seleccion": {"json": "config/seleccion_congelada.json", "sha256": "config/seleccion_congelada.sha256"}
+  },
+  "exclusiones": [
+    ".env y .env.*", "contrasenas, tokens, sesiones, cookies, claves (.pem/.key)", "directorio .git",
+    "artifacts/private/t07/modelos/ (47 MB; verify_and_load no los exige y reentrenar queda fuera del alcance)",
+    "xml/log de pruebas, checkpoints y evaluate.log de artifacts/private/final",
+    "datos crudos (data/private), bases Mongo (van en el export Mongo)"
+  ]
+}

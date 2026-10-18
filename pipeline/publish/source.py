@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
 from dataclasses import dataclass, field
@@ -225,7 +226,16 @@ def _check_metrics(metrics: dict) -> None:
         raise SourceVerificationError("predictivo incompleto")
 
 
+RUNTIME_REFERENCE_ENV = "DF_RUNTIME_REFERENCE_DIR"
+
+
 def verify_and_load(entry: dict, root: Path | None = None, *, code_repo: Path | None = None) -> VerifiedSource:
+    """Con `root`/`code_repo` explicitos o sin DF_RUNTIME_REFERENCE_DIR: verificacion de desarrollo basada en Git
+    (sin cambios). Con la variable definida: paquete de referencia de runtime, sin Git (runtime_reference.py)."""
+    runtime_dir = os.environ.get(RUNTIME_REFERENCE_ENV, "").strip()
+    if runtime_dir and root is None and code_repo is None:
+        from .runtime_reference import verify_and_load_runtime
+        return verify_and_load_runtime(entry, Path(runtime_dir))
     root = (root or PROJECT_ROOT).resolve()
     repo = code_repo or PROJECT_ROOT
     try:
@@ -254,6 +264,12 @@ def verify_and_load(entry: dict, root: Path | None = None, *, code_repo: Path | 
     files = manifest.get("codigo_archivos") or entry["code_files"]
     code = verify_code(manifest, files, repo)
     cfg_raw = verify_config(manifest, entry, repo)
+    return assemble_source(entry, manifest, metrics, cfg_raw, artifacts, paths, reference, code)
+
+
+def assemble_source(entry: dict, manifest: dict, metrics: dict, cfg_raw: bytes, artifacts: list, paths: dict,
+                    reference: dict, code: dict) -> VerifiedSource:
+    """Tramo comun (desarrollo con Git y paquete de runtime): carga y valida CSV/NPZ ya verificados por hash."""
     cfg_t07 = json.loads(cfg_raw.decode("utf-8"))
     forecasts = _load_forecasts(paths["predicciones_folds.csv.gz"], entry, manifest)
     sim = _load_sim(paths["simulacion_series.npz"], entry, manifest)

@@ -13,6 +13,12 @@ x-app-env: &app-env
   TRUSTED_PROXIES: 172.31.250.2/32
   DF_UPLOADS_DIR: /data/uploads
 
+# Limites equivalentes a infra/main.bicep (0,5 vCPU / 1 GiB por contenedor); se miden en docs/T11B_GENERACION_CONTENEDOR.md.
+x-limits: &limits
+  deploy:
+    resources:
+      limits: {cpus: "${DF_APP_CPUS:-0.5}", memory: "${DF_APP_MEMORY:-1g}"}
+
 x-hardening: &hardening
   read_only: true
   tmpfs: [/tmp]
@@ -43,7 +49,7 @@ services:
     restart: unless-stopped
 
   api:
-    <<: *hardening
+    <<: [*hardening, *limits]
     build: .
     image: df-app:t11a-local
     command: ["api"]
@@ -57,11 +63,17 @@ services:
         ipv4_address: 172.31.250.3
 
   worker:
-    <<: *hardening
+    <<: [*hardening, *limits]
     image: df-app:t11a-local
     command: ["worker", "--poll-seconds", "2"]
-    environment: *app-env
-    volumes: [df_data:/data]    # mismo DF_UPLOADS_DIR que la API
+    environment:
+      <<: *app-env
+      DF_RUNTIME_REFERENCE_DIR: /reference     # paquete T07 verificable sin Git (R14); sin la variable, la generacion
+                                               # sigue con el comparador/recomendaciones declarados "no disponibles"
+    volumes:
+      - df_data:/data           # mismo DF_UPLOADS_DIR que la API
+      # Solo lectura; privado, fuera de la imagen. Se construye con scripts/build_runtime_reference.py.
+      - ${DF_RUNTIME_REFERENCE_HOST_DIR:-./artifacts/private/runtime_reference}:/reference:ro
     depends_on:
       mongo: {condition: service_healthy}
     healthcheck:

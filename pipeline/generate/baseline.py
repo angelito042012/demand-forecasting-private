@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -45,6 +46,7 @@ from pipeline.publish.schema import (
 from pipeline.publish.signals import Signals, compute_signals
 from pipeline.publish.source import (
     PROJECT_ROOT,
+    RUNTIME_REFERENCE_ENV,
     SourceVerificationError,
     VerifiedSource,
     load_publish_config,
@@ -121,6 +123,10 @@ def _load_reference() -> tuple[VerifiedSource | None, str]:
     try:
         return verify_and_load(resolve_entry("t07", load_publish_config())), ""
     except (SourceVerificationError, OSError, KeyError, ValueError) as exc:
+        if os.environ.get(RUNTIME_REFERENCE_ENV, "").strip():
+            # Referencia de runtime configurada de forma explicita pero invalida: no se degrada en silencio.
+            raise GenerationError("REFERENCIA_INVALIDA", "El paquete de referencia de runtime configurado no "
+                                  f"supera la verificacion: {str(exc)[:200]}") from exc
         return None, f"artefactos T07 no verificados ({type(exc).__name__})"
 
 

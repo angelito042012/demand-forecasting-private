@@ -7,6 +7,10 @@
   `scheduler_ticks`) y las bases protegidas nunca se sobrescriben.
 * Consistencia del export: snapshot LOGICO documentado = sin corridas en `staging` (no hay escritores activos),
   conteos iguales antes y despues de leer cada coleccion; si cambian, el export se aborta.
+* T11B (R13): un conteo estable NO es un snapshot (una mutacion con el mismo conteo pasaria). Con `strict_content=True`
+  el export compara el hash de contenido de cada coleccion ANTES de volcarla, el del volcado y el de DESPUES de volcar
+  todas; cualquier diferencia aborta. `check_maintenance` exige ademas ausencia de escritores (corridas en staging, jobs
+  running, ticks procesando, operaciones activas sobre la base) y confirmacion explicita de la ventana de mantenimiento.
 """
 from __future__ import annotations
 
@@ -151,6 +155,50 @@ def check_runs(db) -> dict:
             "problemas": problems, "ok": not problems}
 
 
+def db_fingerprint(db, names: Iterable[str] | None = None) -> dict:
+    """Huella de contenido por coleccion {nombre: {count, content_sha256}} (detecta mutaciones con el mismo conteo)."""
+    names = sorted(names if names is not None else
+                   [n for n in db.list_collection_names() if not n.startswith("system.")])
+    return {n: collection_hash(db[n]) for n in names}
+
+
+def check_maintenance(db, *, confirmed: bool) -> dict:
+    """Ventana de mantenimiento IMPUESTA. Rechaza sin confirmacion explicita y ante cualquier indicio de escritor activo.
+    No sustituye detener los procesos: es una barrera mas, complementada por la huella de contenido antes/despues."""
+    if confirmed is not True:
+        raise ArchiveError("export sin ventana de mantenimiento: detenga API/worker/scheduler y confirme (--maintenance-confirmed)")
+    names = set(db.list_collection_names())
+    found, info = [], {"confirmada": True}
+    n_stg = db.runs.count_documents({"status": "staging"}) if "runs" in names else 0
+    info["runs_staging"] = n_stg
+    if n_stg:
+        found.append(f"{n_stg} corrida(s) en staging")
+    n_run = db.jobs.count_documents({"status": "running"}) if "jobs" in names else 0
+    info["jobs_running"] = n_run
+    if n_run:
+        found.append(f"{n_run} job(s) en running")
+    info["jobs_queued"] = db.jobs.count_documents({"status": "queued"}) if "jobs" in names else 0
+    n_tick = db.scheduler_ticks.count_documents({"status": "procesando"}) if "scheduler_ticks" in names else 0
+    info["ticks_procesando"] = n_tick
+    if n_tick:
+        found.append(f"{n_tick} tick(s) del scheduler procesando")
+    try:
+        ops = db.client.admin.command({"currentOp": 1, "active": True})["inprog"]
+        mine = [o for o in ops if str(o.get("ns", "")).startswith(db.name + ".")
+                and o.get("op") in ("insert", "update", "remove", "command", "findAndModify")
+                and not (o.get("command") or {}).get("currentOp")]
+        writers = [o for o in mine if o.get("op") in ("insert", "update", "remove")
+                   or "findAndModify" in (o.get("command") or {})]
+        info["operaciones_escritura_activas"] = len(writers)
+        if writers:
+            found.append(f"{len(writers)} operacion(es) de escritura activas sobre la base")
+    except Exception:       # noqa: BLE001 - currentOp puede estar restringido; se informa, no se inventa
+        info["operaciones_escritura_activas"] = "no_disponible"
+    if found:
+        raise ArchiveError("hay escritores activos: " + "; ".join(found))
+    return info
+
+
 def _guard_target(name: str, *, restore: bool = False) -> None:
     if name in FORBIDDEN_DBS:
         raise ArchiveError(f"la base '{name}' esta protegida: T11A no escribe en ella")
@@ -167,7 +215,7 @@ def _dump_collection(coll, path: Path) -> dict:
 
 
 def export_db(db, out_dir: Path, *, exclude: Iterable[str] = SECRET_COLLECTIONS, artifacts: list[dict] | None = None,
-              allow_staging: bool = False, only: Iterable[str] | None = None) -> dict:
+              allow_staging: bool = False, only: Iterable[str] | None = None, strict_content: bool = False) -> dict:
     """Exporta `db` a `out_dir`: <coleccion>.ndjson.gz + indices.json + manifiesto.json. Devuelve el manifiesto."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -179,20 +227,32 @@ def export_db(db, out_dir: Path, *, exclude: Iterable[str] = SECRET_COLLECTIONS,
         raise ArchiveError("hay corridas en staging (escritores activos): detenga la publicacion antes de exportar")
     names = [n for n in sorted(db.list_collection_names()) if n not in exclude and not n.startswith("system.")
              and (only is None or n in set(only))]
-    cols, idx = {}, {}
+    cols, idx, pre = {}, {}, {}
     for n in names:
         before = db[n].count_documents({})
+        if strict_content:
+            pre[n] = collection_hash(db[n])
         info = _dump_collection(db[n], out_dir / f"{n}.ndjson.gz")
         if db[n].count_documents({}) != before or info["count"] != before:
             raise ArchiveError(f"{n}: la coleccion cambio durante el export (snapshot logico roto)")
+        if strict_content and (pre[n]["content_sha256"] != info["content_sha256"] or pre[n]["count"] != info["count"]):
+            raise ArchiveError(f"{n}: el contenido cambio durante el export (mutacion con el mismo conteo)")
         cols[n] = info
         idx[n] = index_specs(db[n])
+    if strict_content:
+        post = db_fingerprint(db, names)
+        for n in names:
+            if post[n]["content_sha256"] != cols[n]["content_sha256"] or post[n]["count"] != cols[n]["count"]:
+                raise ArchiveError(f"{n}: el contenido cambio durante el export (mutacion con el mismo conteo)")
     (out_dir / "indices.json").write_text(json.dumps(idx, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     chk = check_runs(db)
     man = {"version": EXPORT_VERSION, "creado_utc": now_iso(), "base_origen": db.name, "schema_version": SCHEMA_VERSION,
            "colecciones": cols, "indices_sha256": sha256_file(out_dir / "indices.json"),
            "excluidas": sorted(exclude & set(db.list_collection_names())), "corridas": chk["runs"], "puntero_activo": chk["pointer"],
-           "consistencia": "snapshot logico: sin corridas en staging; conteos iguales antes/despues de cada coleccion",
+           "consistencia": "snapshot logico: sin corridas en staging; conteos iguales antes/despues de cada coleccion"
+                           + ("; hash de contenido igual antes, durante y despues del volcado (consistencia fuerte)"
+                              if strict_content else ""),
+           "consistencia_fuerte": bool(strict_content),
            "artefactos_privados": artifacts or [], "segundos_export": round(time.perf_counter() - t0, 2),
            "bytes_comprimidos": sum(c["file_bytes"] for c in cols.values())}
     (out_dir / "manifiesto.json").write_text(json.dumps(man, ensure_ascii=False, indent=1, default=str) + "\n", encoding="utf-8")
@@ -251,6 +311,8 @@ def restore_db(export_dir: Path, db, *, batch: int = 2000, verify_files: bool = 
     idx = json.loads((export_dir / "indices.json").read_text(encoding="utf-8"))
     for n, c in man["colecciones"].items():
         buf = []
+        if n not in db.list_collection_names():
+            db.create_collection(n)          # una coleccion vacia (sin indices propios) tambien debe existir
         for doc in _read_ndjson(export_dir / c["file"]):
             buf.append(doc)
             if len(buf) >= batch:

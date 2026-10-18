@@ -1,5 +1,8 @@
 # T11A Acta de restauración (prueba de recuperación de `demand_forecasting_pub`)
 
+> **R13 / T11B complementa esta acta.** Esta prueba cubre solo Mongo; los 18 archivos privados se listaban, no se copiaban. La recuperación integral (Mongo + bundle privado con hash de bytes y lógico, `mongo_ok`/`artefactos_ok`/`recuperacion_integral_ok`) está en `T11B_ACTA_RECUPERACION_INTEGRAL.md`.
+> **Mantenimiento antes del export:** un conteo estable no es un snapshot (una mutación con el mismo conteo pasa). Detener API, worker y scheduler de verdad y usar `python -m scripts.backup_restore export-all ... --maintenance-confirmed`, que rechaza si hay escritores activos y exige hash de contenido igual antes/durante/después. El `export` simple conserva solo la consistencia lógica de T11A.
+
 Fecha: 17/10/2026 (America/Lima). Prueba **local** en MongoDB 127.0.0.1 (contenedor `df-mongo-dev`); sin recursos externos ni transferencia de datos. Inventario simulado con supuestos; no corresponde al inventario real de la empresa. Sin filas comerciales ni secretos.
 
 ## 1. Comandos ejecutados (en orden)

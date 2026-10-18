@@ -114,6 +114,16 @@ resource share 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-05-01
   }
 }
 
+// Paquete de referencia de runtime (T11B R14): CSV/NPZ T07 + manifiesto con anclajes; montaje de SOLO LECTURA en el worker.
+resource shareRef 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-05-01' = {
+  parent: files
+  name: 'df-ref'
+  properties: {
+    shareQuota: 1
+    enabledProtocols: 'SMB'
+  }
+}
+
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: acrName
   location: location
@@ -170,6 +180,19 @@ resource envStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
   }
 }
 
+resource envStorageRef 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
+  parent: env
+  name: 'dfref'
+  properties: {
+    azureFile: {
+      accountName: storage.name
+      accountKey: storage.listKeys().keys[0].value
+      shareName: shareRef.name
+      accessMode: 'ReadOnly'
+    }
+  }
+}
+
 var commonEnv = [
   { name: 'APP_ENV', value: 'production' }
   { name: 'APP_TIMEZONE', value: 'America/Lima' }
@@ -195,6 +218,16 @@ var volumes = [
   }
 ]
 var volumeMounts = [{ volumeName: 'data', mountPath: '/data' }]
+// el worker/job monta ademas el paquete de referencia (solo lectura); la API NO lo monta
+var refVolume = {
+  name: 'reference'
+  storageType: 'AzureFile'
+  storageName: envStorageRef.name
+  mountOptions: 'uid=10001,gid=10001,file_mode=0440,dir_mode=0550,nobrl'
+}
+var workerVolumes = concat(volumes, [refVolume])
+var workerMounts = concat(volumeMounts, [{ volumeName: 'reference', mountPath: '/reference' }])
+var workerEnv = concat(commonEnv, [{ name: 'DF_RUNTIME_REFERENCE_DIR', value: '/reference' }])
 
 resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
   name: apiName
@@ -257,12 +290,12 @@ resource worker 'Microsoft.App/containerApps@2024-03-01' = if (deployApps && wor
           name: 'worker'
           image: imageRef
           args: ['worker']
-          resources: { cpu: json('0.5'), memory: '1Gi' } // generar/importar usa pandas; 0.25/0.5Gi puede no alcanzar (medir)
-          env: commonEnv
-          volumeMounts: volumeMounts
+          resources: { cpu: json('0.5'), memory: '1Gi' } // medido en contenedor (T11B): generacion 10/07 H21 pico ~406 MiB de 1 GiB sin OOM
+          env: workerEnv
+          volumeMounts: workerMounts
         }
       ]
-      volumes: volumes
+      volumes: workerVolumes
       scale: { minReplicas: 1, maxReplicas: 1 }
     }
   }
@@ -292,11 +325,11 @@ resource workerJob 'Microsoft.App/jobs@2024-03-01' = if (deployApps && workerMod
           image: imageRef
           args: ['worker-once']
           resources: { cpu: json('0.5'), memory: '1Gi' }
-          env: commonEnv
-          volumeMounts: volumeMounts
+          env: workerEnv
+          volumeMounts: workerMounts
         }
       ]
-      volumes: volumes
+      volumes: workerVolumes
     }
   }
 }
