@@ -384,3 +384,7 @@ Inventario informado integrado en entorno de ensayo aislado (commit 464eb0c); ve
 ## R18 (18/10/2026)
 
 Verificacion del derivado contra el Excel antes de importar (commit 616b5ef); ver `docs/T18_REPORTE.md` §5.
+
+## Etapa 19 (18/10/2026)
+
+Planificación de compras para noviembre bajo supuestos (commits 2e99534, 7dbb30b); ver `docs/T19_REPORTE.md`.

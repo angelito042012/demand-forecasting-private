@@ -101,3 +101,19 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 | I7 | Abrir «Detalles del conteo» | Archivo, huella corta, versión, desconocidos declarados | |
 | I8 | Ir a «Reposición simulada» | Sigue siendo el ejemplo histórico con el aviso de inventario simulado; **no** usa el conteo del 18/10 | |
 | I9 | Explicar con sus palabras: ¿por qué no aparece una recomendación de compra para hoy? | Faltan las ventas del 01 al 18/10 y los pedidos por recibir; no se supone cero | |
+
+## Prueba guiada de Planificar compras (etapa 19)
+
+- **Dirección:** `https://localhost:8445` (ensayo ens19; las demos 8443 y 8444 no tienen esta pantalla). Usuarios `t19_lector` y `t19_admin`; contraseñas solo en `artifacts/private/t13b/ens19_credenciales.txt`. Imagen `df-app:t19-7dbb30b`. Aceptación humana: **PENDIENTE**; complete la columna de resultado real solo con lo que observe y responda.
+
+| N.º | Paso | Resultado esperado (plan base) | Resultado real / observación |
+|---|---|---|---|
+| P1 | Abrir «Planificar compras» y leer los dos avisos y «De dónde sale este plan» | Ventas hasta el 30/09; octubre desconocido (no cero); conteo del 18/10 17:00; «no llegan otros pedidos (supuesto)»; el mes está a 32–61 días del último dato | |
+| P2 | Buscar el producto 3110044 (LAN KERATIN ACOND X 300 ML) | Stock del conteo 0; ventas previstas del mes 36.429; 7 días: llega 25/10, compra 54; 14 días: llega 01/11, compra 45 | |
+| P3 | Pulsar «Entender la compra» en ese producto | 7 días: sin stock hasta el 24/10 (faltan 7.286 u), necesidad 25/10–30/11 + reserva 7 días, compra 54. 14 días: faltan 15.786 u antes de llegar, necesidad noviembre + reserva, compra 45 | |
+| P4 | Responder: ¿por qué con 14 días se compra menos pero es peor? | Se pierden más ventas antes de que llegue la orden; la compra menor no es un ahorro | |
+| P5 | Buscar 6020011 (REFLEX AMPOLLA CJA X 12) | Stock del conteo 106; compra 0 en ambos plazos («0 (no hace falta comprar)») | |
+| P6 | Buscar 12040022 (LANOSTERIN CHAMPU X 1 LT) | Stock 23; ventas previstas del mes 18.214; compra 8 en ambos plazos | |
+| P7 | Responder: ¿cuántos productos necesitan compra y por qué hay productos con 0? | 19 con compra (7 y 14 días); 31 con 0 calculado porque su stock cubre el consumo | |
+| P8 | Responder: ¿qué cambiaría si entraran las ventas de octubre o si llegara un pedido en camino? | El plan se recalcula como otra versión con esos datos; hoy son desconocidos y no se suponen cero | |
+| P9 | (Administrador) Cambiar la fecha de decisión al 25/10 y generar | Se calcula en segundo plano y aparece otra versión con llegadas 01/11 y 08/11 (puede retirarse después) | |

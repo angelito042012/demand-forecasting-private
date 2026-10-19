@@ -14,26 +14,24 @@
 
 **Actualización Codex,18/10/2026:** Rogelio recibió compras marzo–septiembre y ventas de septiembre, y pidió revisar los14Excel antes de decidir alcance o validar interfaz. Auditoría de solo lectura en `docs/AUDITORIA_NUEVOS_DATOS_14_EXCEL.md`; detalle privado `artifacts/private/auditoria_14_excel/audit.json`. Hay1 802productos comunes, pero saldo inicial desconocido: compras−ventas no identifica inventario real. Pendientes: aclarar incidencias y decidir si es posible verificar un saldo real para un grupo de productos. No importar, deduplicar ni entrenar por inferencia de esta auditoría; T12 se conserva. UX01R/R17 ya revisados y aceptados localmente en REVISION_CODEX_17 (las menciones posteriores a revisión pendiente son históricas). No se cambió estado de servicios ni se accedió a nube.
 
-## Estado al 18/10/2026 (Claude, tras la etapa 18)
+## Estado al 18/10/2026 (Claude, tras la etapa 19)
 
-Último commit de código: `464eb0c` (inventario informado). UX01/UX01R aceptados localmente por Codex (REVISION_CODEX_17); R12–R17 no se repiten.
+Código: commits `2e99534` y `7dbb30b` (T19). UX01/UX01R y T18/R18 aceptados localmente por Codex; no repetir. T12, `config/seleccion_congelada.*` y punteros históricos intactos.
 
-### Entornos locales (ambos solo en 127.0.0.1, certificado autofirmado)
-| | Dirección | Imagen | Base | Comando |
+### Entornos locales (todos solo en 127.0.0.1, certificado autofirmado)
+| | Dirección | Imagen | Base | Comando (`.venv\Scripts\python.exe -m scripts.demo_local …`) |
 |---|---|---|---|---|
-| Demo anterior (sin Inventario informado) | https://localhost:8443 | `df-app:ux01r-f95092f` | `df_demo_20261017221940` | `.venv\Scripts\python.exe -m scripts.demo_local up|status|stop` |
-| Ensayo T18 (con Inventario informado) | https://localhost:8444 | `df-app:t18r-616b5ef` | `df_ens18_20261018172811` | `.venv\Scripts\python.exe -m scripts.demo_local --env ens18 up|status|stop` |
-Credenciales (nunca imprimirlas): demo en `artifacts/private/t13b/demo_credenciales.txt`; ensayo en `artifacts/private/t13b/ens18_credenciales.txt`. `df-mongo-dev` se encendió solo para las pruebas backend; no lo necesitan las demos. Nunca `down -v`; no tocar contenedores ajenos.
+| Demo anterior | https://localhost:8443 | `df-app:ux01r-f95092f` | `df_demo_20261017221940` | `up|status|stop` |
+| Ensayo T18 (Inventario informado) | https://localhost:8444 | `df-app:t18r-616b5ef` | `df_ens18_20261018172811` | `--env ens18 up|status|stop` |
+| **Ensayo T19 (Planificar compras)** | **https://localhost:8445** | `df-app:t19-7dbb30b` | `df_ens19_20261018193002` | `--env ens19 up|status|stop` |
+Credenciales (nunca imprimirlas): `artifacts/private/t13b/{demo,ens18,ens19}_credenciales.txt`. `df-mongo-dev` se enciende solo para pruebas backend. Nunca `down -v`; no tocar contenedores ajenos ni v1/v2/pub.
 
-### R18 (corregido, commit `616b5ef`)
-El importador valida el CSV derivado contra el Excel revisado antes de escribir (`DERIVADO_NO_COINCIDE`); ver `docs/T18_REPORTE.md` §5. Ensayo 8444 actualizado a `df-app:t18r-616b5ef` (misma base y snapshot); demo 8443 intacta.
-
-### Hecho en la etapa 18
-Contrato `docs/T18_CONTRATO_INVENTARIO_INFORMADO.md`, importador `pipeline/inventory/reported_count.py` (CLI; `demo_local --env ens18 import-count …`), API `GET /api/v1/inventory/reported[/snapshots]`, pantalla `/inventario`, `demo_local` multi-entorno y compose con `DF_APP_IMAGE`/`DF_EDGE_PREFIX`. Snapshot `invrep-20261018T1700-a1-608d15a74a58` (v1): 50 productos, 48 con existencia, 2 sin. Reporte `docs/T18_REPORTE.md`.
+### Hecho en la etapa 19
+Contrato `docs/T19_CONTRATO_PLANIFICACION.md`; `pipeline/plan/{normalize,dataset,engine,sales,store,descriptive}.py`; API `/api/v1/plans…`; trabajo `generate_plan`; pantalla `/planificar`; `demo_local import-plan-data`; `scripts/t19_descriptive_check.py`. Plan base `plan-2026-11-d20261018-831a5df711f4`. Reporte `docs/T19_REPORTE.md`. Evidencia privada `artifacts/private/t19/`.
 
 ### Pendiente
-1. **Prueba humana de Rogelio** en 8444: tres tareas de comprensión (`docs/T13_GUION_ACEPTACION.md`) + consultar el inventario informado. Aceptación humana y la observación «No comprendió el uso en su primera visita» siguen abiertas hasta sus respuestas reales.
-2. Revisión de Codex de la etapa 18.
-3. **Datos faltantes:** ventas del 01/10 al corte del conteo (sin ellas no hay pronóstico ni recomendación actualizados; no son cero); compras/movimientos de octubre y pedidos por recibir (desconocidos, no cero).
-4. Azure/Atlas/publicación: **sin autorización**; plan en `docs/T11_PLAN_DESPLIEGUE.md`. T14 final, T15 (entrega 23/10/2026).
-- Si se interrumpe: `git status`, `docker ps -a`, `demo_local status` y `demo_local --env ens18 status`.
+1. **Acompañamiento a Rogelio** para entender las cifras (guion `docs/T13_GUION_ACEPTACION.md`, bloque «Prueba guiada de Planificar compras»); aceptación humana **pendiente**, no registrar sin sus respuestas.
+2. Revisión de Codex de la etapa 19.
+3. Datos faltantes (no bloquean): ventas del 01/10 al corte, pedidos por recibir, movimientos de octubre; con ventas de octubre se importaría una versión nueva del dataset con el mismo contrato.
+4. Azure/Atlas/publicación: **sin autorización**. T14 final y T15 (23/10/2026).
+- Si se interrumpe: `git status`, `docker ps -a`, `demo_local [--env ens18|ens19] status`.

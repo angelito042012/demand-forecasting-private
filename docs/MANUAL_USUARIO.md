@@ -136,3 +136,13 @@ Primeros pasos (con **Volver a mostrar «Cómo empezar» en Inicio**), «Qué no
 ## 9. Alcance de este manual
 
 No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTPS externo y la aceptación humana están pendientes; este manual no los afirma. Las contraseñas de las cuentas de ensayo no se escriben aquí.
+
+## Planificar compras (versión de ensayo ens19, `https://localhost:8445`)
+
+**Para qué sirve:** proponer, por producto, una única compra para cubrir todo noviembre de 2026, bajo supuestos visibles. No es un pedido ejecutado ni una mejora comprobada; usa ventas registradas hasta el 30 de septiembre (octubre es desconocido, no cero) y el conteo informado del 18/10/2026 17:00.
+
+**Cómo se lee:** (1) el recuadro «De dónde sale este plan» dice qué es dato real, qué es proyección y qué es supuesto, y a cuántos días del último dato está el mes; (2) la tabla muestra por producto las ventas previstas del mes (sin limitar por stock), el stock del conteo y, para cada plazo de entrega (7 y 14 días), la fecha de llegada, el stock al inicio del mes, la **compra propuesta** y su estado («Cubre noviembre», «Llega tarde», «No llega a tiempo», «No se puede calcular»); un **0** significa «calculado: no hace falta comprar», y «No se puede calcular» no es cero; (3) **Entender la compra** reconstruye la cantidad: stock del conteo → consumo hasta la llegada (y lo que faltó) → stock al llegar → demanda del puente de octubre, de noviembre y reserva → necesidad menos stock → compra redondeada. Un plazo mayor no implica comprar más: puede comprarse menos pero con más ventas no atendidas antes de la llegada.
+
+**Qué no hace:** no suma unidades de productos distintos, no usa valores monetarios, no usa el inventario simulado, no arrastra las ventas perdidas como pedidos atrasados y no actualiza el pronóstico con octubre. Los decimales usan punto (18.214 = 18,2 unidades).
+
+**Administrador:** el formulario permite cambiar mes, fecha de decisión, plazos, reserva, mínimo y múltiplo, y declarar pedidos por recibir (producto, unidades, fecha de llegada y si es reportado o asumido); por defecto «no llegan otros pedidos» (supuesto). Un envío idéntico reutiliza el plan.
