@@ -27,3 +27,7 @@ Registro de lo que resulta confuso, para la mejora de claridad posterior (Vercel
 
 ## Paso 3 (18/10/2026) — clasificación (entendido tras la ayuda del asistente, no por la pantalla sola)
 Rogelio clasificó correctamente: ventas hasta el 30/09 y conteo del 18/10 = datos reales (el conteo es reportado, no verificado); promedio de 28 días = proyección; reserva de 7 días y «no llegan otros pedidos» = supuestos. Matiz explicado: la reserva es una decisión de planificación modificable.
+
+## Paso 4 (18/10/2026) — producto 3110044 (LAN KERATIN ACOND X 300 ML)
+Por la pantalla: Rogelio leyó correctamente ventas previstas 36.429, stock del conteo 0, plazo 7 días (llega 25/10, inicio de mes 45.5, compra 54, faltantes antes del mes 7.286), plazo 14 días (llega 01/11, inicio 45, compra 45, faltantes 15.786). Tras la ayuda: el punto es decimal (36.429 = 36,4 unidades); 14 días compra menos pero pierde más ventas, no es un ahorro.
+**Posible confusión a registrar:** el formato decimal con punto (es-PE) puede leerse como separador de miles; evaluar en la mejora de claridad.
