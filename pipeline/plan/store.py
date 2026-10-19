@@ -3,14 +3,26 @@
 Colecciones propias `plan_runs` (cabecera) y `plan_results` (un documento por plan x producto). Solo LEE `plan_sales`,
 `plan_datasets` e `inventory_reported_*`; no escribe en `recommendations`, `runs`, `inventory_snapshot` ni en T12.
 Un resultado incompleto (staging) nunca es visible; un fallo conserva el ultimo plan completado.
+
+R19 (REVISION_CODEX_19): PROPIEDAD POR INTENTO con fencing, como el publicador historico (`pipeline/publish/protocol.py`):
+* la cabecera lleva `attempt` (token), `generation` (solo crece) y `lease_expires_at`; `claim_attempt` crea la cabecera o
+  toma una `failed`/abandonada con CAS sobre (status, generation) de forma atomica ANTES de escribir o limpiar nada;
+* los resultados de un intento se escriben con su `attempt` (su propio espacio) y el indice unico incluye `attempt`: un
+  intento obsoleto nunca pisa ni borra los de otro; su limpieza solo borra `{plan_id, attempt: <su token>}`;
+* antes de cada escritura se renueva el lease con CAS (`renew`): si el intento perdio la propiedad lanza
+  `LostPlanOwnership` y se detiene sin escribir ni borrar nada ajeno (tampoco la cabecera);
+* la publicacion es un CAS que pasa la cabecera a `completed` y fija `children_ref = attempt`: los lectores consultan solo
+  los resultados cuyo `attempt == children_ref`; un intento obsoleto no puede completar, asi que sus filas son invisibles
+  y luego `purge_orphans` las elimina (nunca las de `children_ref`).
 """
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from pymongo.errors import DuplicateKeyError
 
+from pipeline.jobs.queue import LostOwnership
 from pipeline.plan import engine, sales
 from pipeline.plan.engine import PlanParams, PlanRejected
 
@@ -22,12 +34,28 @@ PROTECTED_DBS = frozenset({"demand_forecasting_dev", "demand_forecasting_v2", "d
 SCHEMA_VERSION = 1
 BATCH = 25
 LABEL = "Plan de compra bajo supuestos"
+LEASE_SECONDS = 60
+
+
+class LostPlanOwnership(LostOwnership):
+    """Este intento ya no es el dueno del plan (lo tomo otro): se detiene sin escribir ni limpiar nada ajeno."""
 
 
 def ensure_indexes(db) -> None:
     db[RUNS].create_index([("plan_id", 1)], name="plan_id_unique", unique=True)
     db[RUNS].create_index([("status", 1), ("month", 1), ("created_at", -1)], name="status_month_created")
-    db[RESULTS].create_index([("plan_id", 1), ("producto_id", 1)], name="plan_product_unique", unique=True)
+    try:                                             # R19: el indice unico antiguo (sin `attempt`) impediria aislar intentos
+        db[RESULTS].drop_index("plan_product_unique")
+    except Exception:                                # noqa: BLE001, S110 - no existe (base nueva) o ya se migro
+        pass
+    db[RESULTS].create_index([("plan_id", 1), ("attempt", 1), ("producto_id", 1)], name="plan_attempt_product_unique", unique=True)
+
+
+def children_filter(run: dict) -> dict:
+    """Filtro de los resultados PUBLICADOS de un plan completado: los del intento `children_ref`. Los planes anteriores a R19
+    (sin `children_ref`) tienen resultados sin campo `attempt`."""
+    ref = run.get("children_ref")
+    return {"plan_id": run["plan_id"], "attempt": ref} if ref else {"plan_id": run["plan_id"], "attempt": {"$exists": False}}
 
 
 def _now() -> datetime:
@@ -160,15 +188,75 @@ def _counts(docs: list[dict], leads) -> dict:
     return {"products": len(docs), "by_status": by, "by_scenario": per_lead}
 
 
-def clean_attempt(db, plan_id: str) -> None:
-    """Limpia el intento previo (staging/failed) de ESTE plan_id; nunca toca otros planes ni uno completado."""
-    db[RESULTS].delete_many({"plan_id": plan_id})
-    db[RUNS].delete_many({"plan_id": plan_id, "status": {"$in": ["staging", "failed"]}})
+class Attempt:
+    """Propiedad de un intento de generar un plan: (token, generation)."""
+
+    def __init__(self, plan_id: str, token: str, generation: int, prior: str | None = None):
+        # `prior` = token del intento abandonado/fallido que este toma (sus filas son las unicas que puede limpiar al empezar)
+        self.plan_id, self.token, self.generation, self.prior = plan_id, token, generation, prior
+
+    def owned(self) -> dict:
+        return {"plan_id": self.plan_id, "status": "staging", "attempt": self.token, "generation": self.generation}
+
+
+def _gen_filter(cur: dict) -> dict:
+    """CAS sobre la generacion leida (o sobre su ausencia, en cabeceras anteriores a R19)."""
+    return {"generation": cur["generation"]} if "generation" in cur else {"generation": {"$exists": False}}
+
+
+def claim_attempt(db, head: dict) -> Attempt:
+    """Crea la cabecera `staging` o toma una `failed`/abandonada (lease vencido) con CAS atomico. Si otro intento vigente la
+    tiene => PLAN_EN_CURSO. No escribe resultados ni borra nada ajeno."""
+    pid, token = head["plan_id"], head["attempt"]
+    fresh = {**head, "generation": 1, "lease_expires_at": _now() + timedelta(seconds=LEASE_SECONDS)}
+    for _ in range(4):
+        try:
+            db[RUNS].insert_one(dict(fresh))
+            return Attempt(pid, token, 1)
+        except DuplicateKeyError:
+            pass
+        cur = db[RUNS].find_one({"plan_id": pid}, {"_id": 0})
+        if cur is None:
+            continue
+        lease = cur.get("lease_expires_at")
+        if cur["status"] == "completed" or (cur["status"] == "staging" and lease is not None and lease > _now()):
+            raise PlanRejected("PLAN_EN_CURSO", "Otro intento está generando este mismo plan; se reintentará.")
+        gen = int(cur.get("generation", 0))
+        won = db[RUNS].find_one_and_update(
+            {"plan_id": pid, "status": cur["status"], **_gen_filter(cur)},
+            {"$set": {**{k: v for k, v in head.items() if k != "plan_id"}, "status": "staging", "generation": gen + 1,
+                      "lease_expires_at": _now() + timedelta(seconds=LEASE_SECONDS)},
+             "$unset": {"error": "", "children_ref": ""}}, return_document=True)
+        if won is not None:
+            return Attempt(pid, token, gen + 1, prior=cur.get("attempt"))
+    raise PlanRejected("PLAN_EN_CURSO", "Otro intento está generando este mismo plan; se reintentará.")
+
+
+def renew(db, att: Attempt) -> None:
+    """Renueva el lease con CAS sobre (attempt, generation, staging): si se perdio => LostPlanOwnership (sin escribir mas)."""
+    r = db[RUNS].update_one(att.owned(), {"$set": {"lease_expires_at": _now() + timedelta(seconds=LEASE_SECONDS)}})
+    if r.matched_count != 1:
+        raise LostPlanOwnership(att.plan_id)
+
+
+def purge_prior(db, att: Attempt) -> None:
+    """Al empezar: borra SOLO las filas del intento abandonado que este tomo (token conocido y ya sin propiedad: no puede
+    publicar). Nunca borra por `!=`: un sucesor posterior (o el plan publicado) tiene otro token y no se toca."""
+    if att.prior and att.prior != att.token:
+        db[RESULTS].delete_many({"plan_id": att.plan_id, "attempt": att.prior})
+
+
+def purge_orphans(db, plan_id: str) -> None:
+    """Mantenimiento seguro: solo si el plan YA esta `completed`, elimina las filas de intentos que no son `children_ref`
+    (un plan completado ya no puede cambiar de intento publicado, asi que esas filas son definitivamente invisibles)."""
+    run = db[RUNS].find_one({"plan_id": plan_id, "status": "completed"}, {"children_ref": 1, "_id": 0})
+    if run and run.get("children_ref"):
+        db[RESULTS].delete_many({"plan_id": plan_id, "attempt": {"$ne": run["children_ref"]}})
 
 
 def generate_plan(db, raw_params, *, dataset_id: str | None = None, snapshot_id: str | None = None,
                   expected_plan_id: str | None = None, job_id: str | None = None, guard=None, progress=None) -> dict:
-    """Genera (o reutiliza) el plan. `guard()` se llama antes de cada escritura (fencing del trabajo)."""
+    """Genera (o reutiliza) el plan. `guard()` es el fencing del TRABAJO; ademas cada escritura renueva la propiedad del INTENTO."""
     if db.name in PROTECTED_DBS:
         raise PlanRejected("BASE_PROTEGIDA", "No se escribe en bases de desarrollo, v2 ni publicadas.")
     guard = guard or (lambda: None)
@@ -178,9 +266,11 @@ def generate_plan(db, raw_params, *, dataset_id: str | None = None, snapshot_id:
     ensure_indexes(db)
     cur = db[RUNS].find_one({"plan_id": plan_id}, {"_id": 0})
     if cur and cur["status"] == "completed":
-        if db[RESULTS].count_documents({"plan_id": plan_id}) == cur["counts"]["products"]:
+        if db[RESULTS].count_documents(children_filter(cur)) == cur["counts"]["products"]:
             return {"action": "reused", "plan_id": plan_id, "counts": cur["counts"], "version": cur["version"]}
-        db[RUNS].update_one({"plan_id": plan_id, "status": "completed"}, {"$set": {"status": "failed"}})   # danado: se rehace
+        # danado: se rehace con CAS sobre su generacion (si otro lo rehace a la vez, uno gana)
+        db[RUNS].update_one({"plan_id": plan_id, "status": "completed", **_gen_filter(cur)},
+                            {"$set": {"status": "failed"}, "$unset": {"children_ref": ""}})
     cutoff, count = sales.cutoff_of(dataset), count_date_of(snapshot)
     sales.check_coverage(dataset, cutoff)
     if progress:
@@ -191,36 +281,45 @@ def generate_plan(db, raw_params, *, dataset_id: str | None = None, snapshot_id:
                          snapshot["as_of_local"]) for it in items]
     counts = _counts(docs, params.lead_days)
     guard()
-    clean_attempt(db, plan_id)
     token = uuid.uuid4().hex
     prior = db[RUNS].count_documents({"status": "completed", "month": params.month})
     ident = identity_of(params, dataset, snapshot)
     head = _header(plan_id, params, dataset, snapshot, token, job_id, prior + 1, ident)
+    att = claim_attempt(db, head)                     # reclamacion atomica ANTES de limpiar o escribir
     try:
-        db[RUNS].insert_one(dict(head))
-    except DuplicateKeyError:
-        raise PlanRejected("PLAN_EN_CURSO", "Otro intento está generando este mismo plan; se reintentará.") from None
-    try:
+        renew(db, att)
+        purge_prior(db, att)                          # solo las filas del intento abandonado que tomamos
         for i in range(0, len(docs), BATCH):
             guard()
+            renew(db, att)
             if progress:
                 progress("guardando resultados", {"productos": min(i + BATCH, len(docs)), "total": len(docs)})
-            db[RESULTS].insert_many(docs[i:i + BATCH])
-        if db[RESULTS].count_documents({"plan_id": plan_id}) != len(docs):
+            db[RESULTS].insert_many([{**d, "attempt": token} for d in docs[i:i + BATCH]])
+        if db[RESULTS].count_documents({"plan_id": plan_id, "attempt": token}) != len(docs):
             raise PlanRejected("ESCRITURA_INCOMPLETA", "El número de resultados escritos no coincide.")
         guard()
-        done = db[RUNS].update_one({"plan_id": plan_id, "status": "staging", "attempt": token},
-                                   {"$set": {"status": "completed", "counts": counts, "completed_at": _now()}})
+        renew(db, att)
+        done = db[RUNS].update_one(att.owned(), {"$set": {"status": "completed", "children_ref": token, "counts": counts,
+                                                          "completed_at": _now()}, "$unset": {"lease_expires_at": ""}})
         if done.matched_count != 1:
-            raise PlanRejected("ESCRITURA_INCOMPLETA", "El intento perdió su cabecera; no se publicó.")
+            raise LostPlanOwnership(plan_id)          # perdio la propiedad justo al publicar: sus filas quedan invisibles
+        purge_orphans(db, plan_id)                    # ya publicado por NOSOTROS: solo filas de intentos abandonados
+    except LostOwnership:
+        _drop_own_results(db, plan_id, token)         # solo las de ESTE intento; cabecera y filas del sucesor intactas
+        raise
     except BaseException as exc:
-        # fallo: se descartan los resultados de ESTE intento y se deja `failed`; los demas planes no se tocan
-        try:
-            db[RESULTS].delete_many({"plan_id": plan_id})
-            db[RUNS].update_one({"plan_id": plan_id, "attempt": token, "status": "staging"},
-                                {"$set": {"status": "failed", "error": {"code": getattr(exc, "code", type(exc).__name__)}}})
-        except Exception:                      # noqa: BLE001, S110 - la limpieza se repite al reintentar por plan_id
+        _drop_own_results(db, plan_id, token)
+        try:                                          # fallo del propio intento: failed por CAS (solo si seguimos siendo dueños)
+            db[RUNS].update_one(att.owned(), {"$set": {"status": "failed", "error": {"code": getattr(exc, "code", type(exc).__name__)}},
+                                              "$unset": {"lease_expires_at": ""}})
+        except Exception:                             # noqa: BLE001, S110 - se repite al reintentar por claim
             pass
         raise
     return {"action": "created", "plan_id": plan_id, "counts": counts, "version": prior + 1}
 
+
+def _drop_own_results(db, plan_id: str, token: str) -> None:
+    try:
+        db[RESULTS].delete_many({"plan_id": plan_id, "attempt": token})
+    except Exception:                                 # noqa: BLE001, S110 - quedaran invisibles y se purgan despues
+        pass

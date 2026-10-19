@@ -80,12 +80,12 @@ def test_same_inputs_reuse_the_plan_without_rewriting(db):
                                                          "nature": "ASUMIDA"}]}])
 def test_changed_inputs_create_a_new_version_and_keep_the_old_one(db, change):
     first = gen(db)
-    before = db.plan_results.find({"plan_id": first["plan_id"]}, {"_id": 0}).to_list()
+    before = [{k: v for k, v in d.items() if k != "attempt"} for d in db.plan_results.find({"plan_id": first["plan_id"]}, {"_id": 0}).to_list()]
     second = gen(db, raw=change)
     assert second["action"] == "created" and second["plan_id"] != first["plan_id"]
     heads = {p["plan_id"]: p for p in db.plan_runs.find({}, {"_id": 0})}
     assert set(heads) == {first["plan_id"], second["plan_id"]} and all(p["status"] == "completed" for p in heads.values())
-    assert db.plan_results.find({"plan_id": first["plan_id"]}, {"_id": 0}).to_list() == before
+    assert [{k: v for k, v in d.items() if k != "attempt"} for d in db.plan_results.find({"plan_id": first["plan_id"]}, {"_id": 0}).to_list()] == before
     assert heads[first["plan_id"]]["version"] == 1
     assert heads[second["plan_id"]]["version"] == (1 if "month" in change else 2)       # version por mes objetivo
 
@@ -161,14 +161,14 @@ def test_interrupted_staging_attempt_is_cleaned_by_its_own_plan_id(db):
 
 def test_data_after_the_cutoff_does_not_change_an_earlier_plan(db):
     first = gen(db)
-    before = db.plan_results.find({"plan_id": first["plan_id"]}, {"_id": 0}).to_list()
+    before = [{k: v for k, v in d.items() if k != "attempt"} for d in db.plan_results.find({"plan_id": first["plan_id"]}, {"_id": 0}).to_list()]
     # ventas de octubre y una venta enorme tras el corte, en el MISMO dataset: fuera de la ventana y del corte
     db.plan_sales.insert_many([h._sale(h.DATASET_ID, 9000 + i, "1000001", date(2026, 10, 1 + i), "5000") for i in range(10)])
     db.plan_runs.delete_many({})
     db.plan_results.delete_many({})
     again = gen(db)
     assert again["action"] == "created" and again["plan_id"] == first["plan_id"]
-    after = db.plan_results.find({"plan_id": first["plan_id"]}, {"_id": 0}).to_list()
+    after = [{k: v for k, v in d.items() if k != "attempt"} for d in db.plan_results.find({"plan_id": first["plan_id"]}, {"_id": 0}).to_list()]
     key = lambda d: d["producto_id"]
     assert sorted(after, key=key) == sorted(before, key=key)
     assert res(db, first["plan_id"], "1000001")["forecast"]["daily_exact"] == "2"

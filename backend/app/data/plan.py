@@ -115,8 +115,9 @@ def get_plan(db, plan_id: str) -> dict:
     return out
 
 
-def _filter(plan_id: str, q: str | None) -> dict:
-    base: dict = {"plan_id": plan_id}
+def _filter(plan: dict, q: str | None) -> dict:
+    """Resultados PUBLICADOS del plan (R19: solo los del intento `children_ref`) y busqueda opcional."""
+    base: dict = store.children_filter(plan)
     if q:
         rx = re.escape(q)
         base["$or"] = [{"producto_id": {"$regex": f"^{rx}"}}, {"producto": {"$regex": rx, "$options": "i"}}]
@@ -139,14 +140,14 @@ def get_results(db, plan_id: str, *, q: str | None, status: str | None, sort: st
         allowed[f"purchase_{lead}"] = [(f"sortkeys.purchase_{lead}", 1), ("producto_id", 1)]
         allowed[f"-purchase_{lead}"] = [(f"sortkeys.purchase_{lead}", -1), ("producto_id", 1)]
     order = check_sort(sort, allowed, "producto_id")
-    base = _filter(plan_id, q)
+    base = _filter(plan, q)
     coll = db[store.RESULTS]
     counts = {s: coll.count_documents({**base, "status": s}) for s in engine.STATUSES}
     by_lead = {str(lead): {s: coll.count_documents({**base, f"scenarios.{lead}.status": s}) for s in engine.STATUSES}
                for lead in leads}
     total_all = sum(counts.values())
     flt = {**base, "status": status} if status else base
-    proj = {"_id": 0, "sortkeys": 0, "statuses": 0, "pending_orders": 0}
+    proj = {"_id": 0, "sortkeys": 0, "statuses": 0, "pending_orders": 0, "attempt": 0}
     for lead in leads:
         for h in HEAVY:
             proj[f"scenarios.{lead}.{h}"] = 0
@@ -159,8 +160,8 @@ def get_results(db, plan_id: str, *, q: str | None, status: str | None, sort: st
 
 
 def get_result(db, plan_id: str, producto_id: str) -> dict:
-    _readable_plan(db, plan_id)
-    d = db[store.RESULTS].find_one({"plan_id": plan_id, "producto_id": producto_id}, {"_id": 0, "sortkeys": 0})
+    plan = _readable_plan(db, plan_id)
+    d = db[store.RESULTS].find_one({**store.children_filter(plan), "producto_id": producto_id}, {"_id": 0, "sortkeys": 0, "attempt": 0})
     if d is None:
         raise ApiError(404, "NO_ENCONTRADO", "Producto no encontrado en el plan.")
     return {**_item(d, True), "label": LABEL}
