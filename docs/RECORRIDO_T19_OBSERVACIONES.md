@@ -24,3 +24,6 @@ Registro de lo que resulta confuso, para la mejora de claridad posterior (Vercel
 - En «Parámetros», explicar cada término en una línea («Plazo de entrega: días que tarda en llegar el pedido»).
 - Mostrar la distancia como una línea de tiempo (30/09 → 18/10 → 01/11 → 30/11).
 - Etiquetar cada dato con «Dato real / Proyección / Supuesto» (colores o rótulos constantes).
+
+## Paso 3 (18/10/2026) — clasificación (entendido tras la ayuda del asistente, no por la pantalla sola)
+Rogelio clasificó correctamente: ventas hasta el 30/09 y conteo del 18/10 = datos reales (el conteo es reportado, no verificado); promedio de 28 días = proyección; reserva de 7 días y «no llegan otros pedidos» = supuestos. Matiz explicado: la reserva es una decisión de planificación modificable.
