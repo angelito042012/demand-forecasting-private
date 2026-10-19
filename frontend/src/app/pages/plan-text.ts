@@ -22,7 +22,8 @@ export function stepValue(v: string | null | undefined): string {
   return v === null || v === undefined || v === '' ? '' : (isDecimalText(v) ? fmtDec(Number(v), 3) : v);
 }
 
-export function isZero(v: string | null | undefined): boolean {
+export function isZero(v: string | number | null | undefined): boolean {
+  if (typeof v === 'number') return v === 0;
   return isDecimalText(v) && Number(v) === 0;
 }
 

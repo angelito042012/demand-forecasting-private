@@ -516,7 +516,7 @@ export interface PlanHeader extends PlanRef {
 export interface PlanScenario {
   arrival_date: string | null;
   stock_at_arrival?: string | null;
-  purchase_qty: string | null;
+  purchase_qty: string | number | null;   // la API entrega un entero (o null); los fixtures antiguos usaban texto
   stock_month_start: string | null;
   shortage_before_month: string | null;
   shortage_month: string | null;
