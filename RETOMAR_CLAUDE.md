@@ -12,4 +12,5 @@ Pendiente por personas: prueba humana de Rogelio (tres tareas de comprension + i
 
 Preservar originales, resultados congelados y puntero historico; el inventario simulado de T07/T12 sigue rotulado como simulado y el inventario informado NO se rotula simulado. Entrega final 23/10/2026 (America/Lima).
 R18 corregido (commit 616b5ef): el importador verifica el CSV derivado contra el Excel antes de escribir; revision de Codex pendiente solo de ese cambio.
-Etapa 19 entregada (commits 2e99534, 7dbb30b; docs/T19_REPORTE.md): Planificar compras en ens19 https://localhost:8445 (`demo_local --env ens19 up|status|stop`, imagen df-app:t19-7dbb30b, claves en artifacts/private/t13b/ens19_credenciales.txt). Pendiente: acompañamiento y aceptacion de Rogelio, revision de Codex, ventas de octubre; sin nube.
+Etapa 19 entregada (commits 2e99534, 7dbb30b; docs/T19_REPORTE.md): Planificar compras en ens19 https://localhost:8445 (`demo_local --env ens19 up|status|stop`, imagen df-app:t19r-667828b, claves en artifacts/private/t13b/ens19_credenciales.txt). Pendiente: acompañamiento y aceptacion de Rogelio, revision de Codex, ventas de octubre; sin nube.
+R19/R20 corregidos (a728017, 667828b): ens19 con imagen df-app:t19r-667828b; pendiente revisión de Codex y recorrido acompañado; aceptación humana pendiente.
