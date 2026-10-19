@@ -307,11 +307,15 @@ def generate_plan(db, raw_params, *, dataset_id: str | None = None, snapshot_id:
         _drop_own_results(db, plan_id, token)         # solo las de ESTE intento; cabecera y filas del sucesor intactas
         raise
     except BaseException as exc:
-        _drop_own_results(db, plan_id, token)
-        try:                                          # fallo del propio intento: failed por CAS (solo si seguimos siendo dueños)
-            db[RUNS].update_one(att.owned(), {"$set": {"status": "failed", "error": {"code": getattr(exc, "code", type(exc).__name__)}},
-                                              "$unset": {"lease_expires_at": ""}})
-        except Exception:                             # noqa: BLE001, S110 - se repite al reintentar por claim
+        # R19 (adenda 2): un error puede ser AMBIGUO (el servidor aplico la publicacion y se perdio la respuesta). Solo el intento
+        # que logra pasar SU cabecera staging -> failed por CAS puede limpiar sus filas; si ya completo, o no se puede confirmar
+        # el estado, se conservan (invisibles si no se publicaron; el siguiente intento las purga por su token).
+        try:
+            failed = db[RUNS].update_one(att.owned(), {"$set": {"status": "failed", "error": {"code": getattr(exc, "code", type(exc).__name__)}},
+                                                       "$unset": {"lease_expires_at": ""}})
+            if failed.matched_count == 1:
+                _drop_own_results(db, plan_id, token)
+        except Exception:                             # noqa: BLE001, S110 - estado incierto: no se borra nada por inferencia
             pass
         raise
     # R19 (adenda): a partir de aqui el plan YA esta publicado; nada puede deshacerlo. La purga de filas de intentos abandonados

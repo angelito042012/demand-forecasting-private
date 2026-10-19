@@ -198,3 +198,35 @@ def test_purge_failure_after_publication_does_not_delete_the_published_plan(db, 
     assert len(published(db, pid)) == len(h.PRODUCTS) == head["counts"]["products"]
     monkeypatch.undo()
     assert store.generate_plan(db, h.RAW)["action"] == "reused"
+
+
+def test_uncertain_publication_acknowledgement_keeps_published_results_and_retry_is_idempotent(db, monkeypatch):
+    """Adenda 2 de REVISION_CODEX_19: el servidor aplica la publicacion pero el cliente recibe un error de red."""
+    from pymongo.errors import AutoReconnect
+    pid = pid_of(db)
+    coll = db[store.RUNS]
+    real = type(coll).update_one
+
+    def lossy(self, flt, upd, *a, **k):
+        res = real(self, flt, upd, *a, **k)
+        if upd.get("$set", {}).get("status") == "completed":
+            raise AutoReconnect("respuesta perdida tras publicar")
+        return res
+
+    monkeypatch.setattr(type(coll), "update_one", lossy)
+    with pytest.raises(AutoReconnect):
+        store.generate_plan(db, h.RAW)
+    monkeypatch.undo()
+    head = db.plan_runs.find_one({"plan_id": pid}, {"_id": 0})
+    assert head["status"] == "completed" and len(published(db, pid)) == len(h.PRODUCTS) == head["counts"]["products"]
+    assert store.generate_plan(db, h.RAW)["action"] == "reused"            # el reintento es idempotente
+    assert len(published(db, pid)) == len(h.PRODUCTS)
+
+
+def test_ordinary_failure_still_cleans_only_its_own_rows_after_winning_the_failed_cas(db, monkeypatch):
+    monkeypatch.setattr(store, "BATCH", 1)
+    pid = pid_of(db)
+    guard, _ = hook_at(3, lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    with pytest.raises(RuntimeError):
+        store.generate_plan(db, h.RAW, guard=guard)
+    assert db.plan_runs.find_one({"plan_id": pid})["status"] == "failed" and db.plan_results.count_documents({"plan_id": pid}) == 0
