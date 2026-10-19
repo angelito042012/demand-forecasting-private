@@ -400,3 +400,7 @@ Planificación de compras para noviembre bajo supuestos (commits 2e99534, 7dbb30
 
 **Revisión Codex de f0bae1d, 18/10:** fallo de purga posterior cerrado con reproducción propia (conserva 1/1 filas). R19 aún requiere proteger respuesta incierta de publicación: actualización aplicada seguida de AutoReconnect deja completed con 0/1 filas en reproducción propia. Ver última adenda de REVISION_CODEX_19.md y check_uncertain_publish.py. R20 cerrado; recorrido lector puede comenzar, generación administrativa y cierre técnico pendientes de ese caso. No repetir T19/T12/modelos.
 
+
+
+**18/10 — R19/R20 cerrados en revisión Codex (462e7f5):** reproducciones propias de fallo de purga y respuesta incierta conservan resultados (1/1); reintento reused. Recorrido lector listo para comenzar; aceptación humana pendiente. Navegador del ejecutor 23/25: quedan casos 17/18 de generación de variante/fechas para validación administrativa, sin acreditar 25/25 ni repetir suites completas. Ver cierre final de REVISION_CODEX_19.md.
+

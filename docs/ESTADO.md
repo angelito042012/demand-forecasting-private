@@ -1,5 +1,7 @@
 # Estado vigente del proyecto
 
+**18/10 — R19/R20 cerrados en revisión Codex (462e7f5):** reproducciones propias de fallo de purga y respuesta incierta conservan resultados (1/1); reintento reused. Recorrido lector listo para comenzar; aceptación humana pendiente. Navegador del ejecutor 23/25: quedan casos 17/18 de generación de variante/fechas para validación administrativa, sin acreditar 25/25 ni repetir suites completas. Ver cierre final de REVISION_CODEX_19.md.
+
 **Revisión Codex de f0bae1d, 18/10:** fallo de purga posterior cerrado con reproducción propia (conserva 1/1 filas). R19 aún requiere proteger respuesta incierta de publicación: actualización aplicada seguida de AutoReconnect deja completed con 0/1 filas en reproducción propia. Ver última adenda de REVISION_CODEX_19.md y check_uncertain_publish.py. R20 cerrado; recorrido lector puede comenzar, generación administrativa y cierre técnico pendientes de ese caso. No repetir T19/T12/modelos.
 
 **Revisión Codex posterior, 18/10 (a728017 / 667828b):** R20 cerrado con 11 pruebas propias aprobadas. R19 original atendido, pero pendiente caso residual de limpieza posterior a publicación: un error puede dejar completed sin resultados. Ver adenda final de REVISION_CODEX_19.md y reproducción privada check_post_publish.py. Corregir únicamente ese manejo de error, con regresión dirigida; no repetir T19/modelos/T12. Aprendizaje de lectura del plan existente puede comenzar; creación de planes y aceptación técnica final después de la corrección. Aceptación humana pendiente.
