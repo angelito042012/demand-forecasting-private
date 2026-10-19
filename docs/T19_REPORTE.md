@@ -53,3 +53,5 @@ Reproducción: `tests/plan/test_store_r19.py`, `frontend/src/app/pages/ux-plan-c
 
 **R19 adenda 2 corregida (commit `462e7f5`; imagen de ens19 `df-app:t19r-462e7f5`, misma base y usuarios):** ante un error ambiguo de publicación (el servidor aplicó el cambio y se perdió la respuesta) el intento solo limpia sus filas si logra pasar su propia cabecera staging→failed por comparación atómica; si ya completó o no puede confirmarlo, las conserva. Regresión `test_uncertain_publication_acknowledgement_keeps_published_results_and_retry_is_idempotent` (falla sin la corrección; con ella el reintento da `reused`); reproducción de Codex con la corrección: 1 fila publicada de 1. Dirigidas plan+API+jobs 324 aprobadas, 3 omitidas. Navegador sobre la imagen nueva: 23 de 25 comprobaciones; las dos de generar una variante no son representativas porque ese trabajo de prueba ya estaba completado y se reutiliza (no se crearon planes; la base conserva el plan base). Aceptación humana pendiente.
 
+
+Verificación de navegador de la variante (decisión 22/10; llegadas 29/10 y 05/11): 2/2 (e2e_variante.mjs); retirada después; la base conserva el plan base.
