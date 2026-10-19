@@ -182,3 +182,19 @@ def test_published_results_are_only_those_of_children_ref_and_legacy_plans_still
     db.plan_results.delete_many({"plan_id": pid, "attempt": "huerfano"})
     legacy = db.plan_runs.find_one({"plan_id": pid}, {"_id": 0})
     assert db.plan_results.count_documents(store.children_filter(legacy)) == len(h.PRODUCTS)
+
+
+def test_purge_failure_after_publication_does_not_delete_the_published_plan(db, monkeypatch):
+    """Adenda de REVISION_CODEX_19: si la purga posterior a la publicacion falla, el plan completado conserva sus resultados."""
+    pid = pid_of(db)
+
+    def boom(*_a, **_k):
+        raise RuntimeError("fallo de la purga tras publicar")
+
+    monkeypatch.setattr(store, "purge_orphans", boom)
+    out = store.generate_plan(db, h.RAW)                    # la publicacion ya ocurrio: el fallo de mantenimiento no la deshace
+    head = db.plan_runs.find_one({"plan_id": pid}, {"_id": 0})
+    assert out["action"] == "created" and head["status"] == "completed"
+    assert len(published(db, pid)) == len(h.PRODUCTS) == head["counts"]["products"]
+    monkeypatch.undo()
+    assert store.generate_plan(db, h.RAW)["action"] == "reused"

@@ -303,7 +303,6 @@ def generate_plan(db, raw_params, *, dataset_id: str | None = None, snapshot_id:
                                                           "completed_at": _now()}, "$unset": {"lease_expires_at": ""}})
         if done.matched_count != 1:
             raise LostPlanOwnership(plan_id)          # perdio la propiedad justo al publicar: sus filas quedan invisibles
-        purge_orphans(db, plan_id)                    # ya publicado por NOSOTROS: solo filas de intentos abandonados
     except LostOwnership:
         _drop_own_results(db, plan_id, token)         # solo las de ESTE intento; cabecera y filas del sucesor intactas
         raise
@@ -315,6 +314,12 @@ def generate_plan(db, raw_params, *, dataset_id: str | None = None, snapshot_id:
         except Exception:                             # noqa: BLE001, S110 - se repite al reintentar por claim
             pass
         raise
+    # R19 (adenda): a partir de aqui el plan YA esta publicado; nada puede deshacerlo. La purga de filas de intentos abandonados
+    # es mantenimiento de mejor esfuerzo fuera del manejador de errores: si falla, esas filas siguen invisibles (children_ref).
+    try:
+        purge_orphans(db, plan_id)
+    except Exception:                                 # noqa: BLE001, S110 - se purgaran en una ejecucion posterior
+        pass
     return {"action": "created", "plan_id": plan_id, "counts": counts, "version": prior + 1}
 
 
