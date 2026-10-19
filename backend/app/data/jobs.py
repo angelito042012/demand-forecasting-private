@@ -34,6 +34,9 @@ def links_for(result) -> dict:
             links["import"] = f"/imports/{iid}"
         if isinstance(rid, str) and _RUN.match(rid):
             links["run"] = f"/runs/{rid}"
+        pid = result.get("plan_id")
+        if isinstance(pid, str) and _RUN.match(pid):
+            links["plan"] = f"/plans/{pid}"
     return links
 
 

@@ -111,5 +111,10 @@ export const GLOSSARY: { term: string; meaning: string; technical: string }[] = 
   { term: 'Inventario simulado', meaning: 'Existencias inventadas con supuestos para poder ilustrar el cálculo. No corresponden al inventario real de la empresa.', technical: 'SYNTHETIC_NOT_REAL_INVENTORY' },
   { term: 'Inventario informado', meaning: 'Existencias que la empresa declaró en un conteo con fecha y hora. No se verificó de forma independiente y no es inventario simulado.', technical: 'CONTEO_FISICO_REPORTADO_POR_USUARIO' },
   { term: 'Disponible', meaning: 'Unidades libres para vender que la empresa informó, en la presentación indicada (p. ej. caja de 12); no se multiplicó.', technical: 'libre' },
+  { term: 'Plan de compra', meaning: 'Unidades que habría que pedir por producto para cubrir un mes, bajo supuestos visibles. No es un pedido ejecutado ni una mejora comprobada.', technical: 'plan_id / escenario' },
+  { term: 'Compra propuesta', meaning: 'Una sola orden por producto, hecha en la fecha de decisión y redondeada al final. Si no se puede calcular, se dice así; nunca se muestra como cero.', technical: 'purchase_qty' },
+  { term: 'Faltante', meaning: 'Ventas que no se podrían atender porque no habría existencias. No se recuperan después.', technical: 'shortage' },
+  { term: 'Reserva', meaning: 'Días de ventas previstas que se quieren dejar al terminar el mes. Es un supuesto, no una garantía de atención.', technical: 'reserve_days' },
+  { term: 'Plazo de entrega', meaning: 'Días naturales entre la decisión de compra y la llegada del pedido. Es un supuesto que se puede cambiar.', technical: 'lead_days' },
   { term: 'No informado', meaning: 'La empresa no declaró ese dato. No equivale a cero.', technical: 'null' },
 ];

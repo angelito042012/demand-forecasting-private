@@ -20,7 +20,7 @@
     "nombre_cliente": "solo etiqueta saneada (<= 80 caracteres [A-Za-z0-9._ -]); nunca decide rutas",
     "rechazar": ["macros (vbaProject.bin)", "enlaces externos", "contenido no zip", "encabezados distintos a los del importador", "fechas fuera de marzo-julio 2026"]
   },
-  "cola": {"tipos": ["import_excel", "generate_run"], "lease_segundos": 60, "latido_segundos": 15, "max_intentos": 5,
+  "cola": {"tipos": ["import_excel", "generate_run", "generate_plan"], "lease_segundos": 60, "latido_segundos": 15, "max_intentos": 5,
            "backoff_base_segundos": 5, "backoff_publicacion_en_curso_segundos": 65, "sondeo_segundos": 3},
   "temporizador": {
     "habilitado_por_defecto": false,

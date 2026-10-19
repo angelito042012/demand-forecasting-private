@@ -20,6 +20,8 @@ export class App {
   private readonly url = signal('');
   /** En «Inventario informado» la franja no puede decir «simulado»: esa pantalla muestra el conteo de la empresa. */
   protected readonly onInventory = computed(() => /^\/inventario(\/|\?|$)/.test(this.url()));
+  /** T19: Planificar compras tampoco puede hablar de inventario simulado. */
+  protected readonly onPlan = computed(() => /^\/planificar(\/|\?|$)/.test(this.url()));
 
   constructor() {
     this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => { this.menuOpen.set(false); this.url.set(e.urlAfterRedirects); });

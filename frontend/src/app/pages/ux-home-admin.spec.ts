@@ -67,7 +67,8 @@ describe('Inicio: orientación', () => {
     expect(m.el.querySelectorAll('h1').length).toBe(1);
     expect(txt(m.el, 'page-title')).toBe('Explora las ventas previstas y una simulación de reposición');
     expect(txt(m.el, 'page-lead')).toBe('Consulta cuánto se estimó vender y cómo se calculó una sugerencia de reposición con los datos del ejemplo.');
-    expect(m.el.querySelectorAll('[data-testid^="task-"]').length).toBe(4);
+    expect(m.el.querySelectorAll('[data-testid^="task-"]').length).toBe(5);
+    expect((q(m.el, 'go-plan') as HTMLAnchorElement).getAttribute('href')).toContain('/planificar');
     expect((q(m.el, 'go-inventory') as HTMLAnchorElement).textContent).toContain('Ver inventario informado');
     expect((q(m.el, 'go-inventory') as HTMLAnchorElement).getAttribute('href')).toContain('/inventario');
     const go = (id: string) => q(m.el, id) as HTMLAnchorElement;

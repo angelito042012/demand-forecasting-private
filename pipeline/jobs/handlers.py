@@ -31,6 +31,8 @@ from pipeline.generate.baseline import generate_and_publish
 from pipeline.generate.config import PROJECT_ROOT, GenerationError, load_t10_config
 from pipeline.jobs import queue
 from pipeline.jobs.xlsx_check import XlsxRejected, inspect_xlsx
+from pipeline.plan import store as plan_store
+from pipeline.plan.engine import PlanRejected
 from pipeline.publish.protocol import LostOwnership as PublishLostOwnership
 from pipeline.publish.protocol import PublishInProgressError, PublishValidationError
 from pipeline.publish.schema import SchemaError
@@ -258,7 +260,28 @@ def generate_run(ctx: JobContext) -> dict:
                                 progress=ctx.progress, stage_hook=ctx.stage_hook, activate_run=ctx.activate_run)
 
 
-HANDLERS = {"import_excel": import_excel, "generate_run": generate_run}
+# ------------------------------------------------------------------ generate_plan (T19)
+def generate_plan(ctx: JobContext) -> dict:
+    """Calcula y guarda el plan de compra en el worker (nunca en la peticion HTTP). Idempotente por plan_id."""
+    inp = ctx.claim.input
+    try:
+        params, dataset_id, snapshot_id = dict(inp["params"]), str(inp["dataset_id"]), str(inp["snapshot_id"])
+        plan_id = str(inp["plan_id"])
+    except (KeyError, ValueError, TypeError):
+        raise JobFailure("ENTRADA_INVALIDA", "La entrada del trabajo no es válida.") from None
+    ctx.check()
+    try:
+        res = plan_store.generate_plan(ctx.db, params, dataset_id=dataset_id, snapshot_id=snapshot_id,
+                                       expected_plan_id=plan_id, job_id=ctx.claim.job_id, guard=ctx.guard,
+                                       progress=ctx.progress)
+    except PlanRejected as exc:
+        raise JobFailure(exc.code, exc.message, retryable=exc.code == "PLAN_EN_CURSO") from None
+    return {"outcome": "sin_cambios" if res["action"] == "reused" else "generado", "plan_id": res["plan_id"],
+            "action": res["action"], "version": res["version"], "productos": res["counts"]["products"],
+            "estados": res["counts"]["by_status"]}
+
+
+HANDLERS = {"import_excel": import_excel, "generate_run": generate_run, "generate_plan": generate_plan}
 
 
 def default_uploads_dir(cfg: dict | None = None) -> Path:

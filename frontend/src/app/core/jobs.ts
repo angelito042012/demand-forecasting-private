@@ -35,7 +35,7 @@ export function progressEntries(j: PublicJob): [string, string][] {
 }
 
 export const STATUS_LABELS: Record<JobStatus, string> = { queued: 'Esperando turno', running: 'En curso', completed: 'Terminado', failed: 'No se pudo completar' };
-export const TYPE_LABELS: Record<JobType, string> = { import_excel: 'Carga de un archivo Excel', generate_run: 'Creación de un análisis' };
+export const TYPE_LABELS: Record<JobType, string> = { import_excel: 'Carga de un archivo Excel', generate_run: 'Creación de un análisis', generate_plan: 'Cálculo de un plan de compra' };
 
 export const REJECT_MOTIVES: Record<string, string> = {
   FECHAS_FUERA_DE_ALCANCE: 'El archivo tiene fechas fuera del alcance del proyecto (marzo a julio de 2026). No se cargó nada: revisa el mes del archivo.',

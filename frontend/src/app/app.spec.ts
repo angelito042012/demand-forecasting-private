@@ -25,7 +25,7 @@ describe('App shell', () => {
     TestBed.inject(AuthService).session.set(session);
     f.detectChanges();
     const links = Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Inicio', 'Ventas previstas', 'Reposición simulada', 'Inventario informado', 'Mis análisis', 'Ventas registradas', 'Evaluación de resultados', 'Datos cargados', 'Ayuda']);
+    expect(links).toEqual(['Inicio', 'Ventas previstas', 'Reposición simulada', 'Planificar compras', 'Inventario informado', 'Mis análisis', 'Ventas registradas', 'Evaluación de resultados', 'Datos cargados', 'Ayuda']);
     expect(el.querySelector('[data-testid="nav-cargar"]')).toBeNull();
     expect(el.querySelector('[data-testid="nav-crear"]')).toBeNull();
     expect(el.querySelector('[data-testid="user"]')?.textContent).toContain('ana');
@@ -36,7 +36,7 @@ describe('App shell', () => {
     TestBed.inject(AuthService).session.set({ ...session, role: 'admin' });
     f.detectChanges();
     const links = Array.from((f.nativeElement as HTMLElement).querySelectorAll('nav a')).map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Inicio', 'Ventas previstas', 'Reposición simulada', 'Inventario informado', 'Mis análisis', 'Ventas registradas', 'Evaluación de resultados', 'Ayuda', 'Cargar datos', 'Crear análisis', 'Estado del sistema']);
+    expect(links).toEqual(['Inicio', 'Ventas previstas', 'Reposición simulada', 'Planificar compras', 'Inventario informado', 'Mis análisis', 'Ventas registradas', 'Evaluación de resultados', 'Ayuda', 'Cargar datos', 'Crear análisis', 'Estado del sistema']);
   });
   it('el menú móvil se abre y se cierra con el botón (aria-expanded)', async () => {
     const f = TestBed.createComponent(App);
@@ -59,8 +59,8 @@ describe('App shell', () => {
   });
   it('rutas protegidas por guard y perezosas', () => {
     const prot = routes.find((r) => r.canActivate)!;
-    expect(prot.children!.filter((r) => r.loadComponent).length).toBe(11);
-    expect(prot.children!.map((r) => r.path)).toEqual(expect.arrayContaining(['inicio', 'ayuda', 'crear-analisis', 'corridas', 'pronosticos', 'recomendaciones', 'comparacion', 'inventario', 'resumen', 'cargas', 'sistema']));
+    expect(prot.children!.filter((r) => r.loadComponent).length).toBe(12);
+    expect(prot.children!.map((r) => r.path)).toEqual(expect.arrayContaining(['inicio', 'ayuda', 'crear-analisis', 'corridas', 'pronosticos', 'recomendaciones', 'comparacion', 'inventario', 'planificar', 'resumen', 'cargas', 'sistema']));
     expect(routes.find((r) => r.path === 'acceso')?.canActivate).toBeUndefined();
   });
 });

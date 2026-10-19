@@ -13,7 +13,7 @@ Admin = Annotated[CurrentUser, Depends(require_admin)]
 @router.get("/jobs", dependencies=[Depends(strict_params("status", "type"))])
 def list_jobs(_: Admin, db: Db, page: Page = 1, page_size: PageSize = 50,
               status: Literal["queued", "running", "completed", "failed"] | None = None,
-              type: Literal["import_excel", "generate_run"] | None = None):
+              type: Literal["import_excel", "generate_run", "generate_plan"] | None = None):
     return jobs_repo.list_jobs(db, page, page_size, status, type)
 
 

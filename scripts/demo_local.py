@@ -232,6 +232,29 @@ def cmd_import_count(a) -> int:
     return r.returncode
 
 
+def cmd_import_plan_data(a) -> int:
+    """Verifica contra los 14 libros originales e importa el dataset de planificacion en la base de ESTE entorno (T19)."""
+    st = state()
+    pkg = Path(a.package).resolve()
+    if not (pkg / "manifest.json").exists():
+        print("Falta manifest.json en el paquete.")
+        return 1
+    e = env(st)
+    cmd = ["docker", "run", "--rm", "--network", f"{st['project']}_data", "-v", f"{pkg}:/pkg:ro",
+           "-e", "MONGODB_URI", "-e", "MONGODB_DATABASE", "--entrypoint", "python", st.get("image") or DEFAULT_IMAGE,
+           "-m", "pipeline.plan.dataset", "--package", "/pkg", "--db", st["db"]]
+    audit = pkg.parent / "auditoria_14_excel" / "audit.json"
+    if audit.exists():     # huellas auditadas de los 14 libros: se montan solo lectura y se contrastan en la verificacion
+        cmd[5:5] = ["-v", f"{audit.parent}:/audit:ro"]
+        cmd += ["--audit", "/audit/audit.json"]
+    if a.dry_run:
+        cmd.append("--dry-run")
+    r = subprocess.run(cmd, env={**os.environ, "MONGODB_URI": e["MONGODB_URI"], "MONGODB_DATABASE": st["db"]}, check=False,
+                       capture_output=True, text=True)
+    print(mask((r.stdout + r.stderr)[-2000:], st).strip())
+    return r.returncode
+
+
 def cmd_stop(a) -> int:
     st = state()
     r = dc(st, "stop")
@@ -266,6 +289,9 @@ def main(argv=None) -> int:
     ic.add_argument("--group", required=True)
     ic.add_argument("--sales-history-end", default=None)
     ic.add_argument("--dry-run", action="store_true")
+    ip = sub.add_parser("import-plan-data")
+    ip.add_argument("--package", required=True)
+    ip.add_argument("--dry-run", action="store_true")
     sub.add_parser("stop")
     sub.add_parser("down")
     a = ap.parse_args(argv)
@@ -277,7 +303,7 @@ def main(argv=None) -> int:
         return 2
     CFG.update({"name": a.env, "port": a.port or 8443, "image": a.image, "edge_prefix": a.edge_prefix})
     return {"up": cmd_up, "status": cmd_status, "create-user": cmd_create_user, "stop": cmd_stop, "down": cmd_down,
-            "import-count": cmd_import_count}[a.cmd](a)
+            "import-count": cmd_import_count, "import-plan-data": cmd_import_plan_data}[a.cmd](a)
 
 
 if __name__ == "__main__":

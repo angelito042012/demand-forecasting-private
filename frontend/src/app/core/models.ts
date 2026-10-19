@@ -376,7 +376,7 @@ export const FINAL_UNAVAILABLE_REASON = 'RECOMENDACION_NO_VALIDADA_PARA_ESTE_ORI
 export const RUN_LABEL = 'Corrida histórica de desarrollo al 10/07/2026';
 
 // ---- T10: trabajos, importaciones y generación de corridas (docs/T10_CONTRATO.md §2-§3) ----
-export type JobType = 'import_excel' | 'generate_run';
+export type JobType = 'import_excel' | 'generate_run' | 'generate_plan';
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed';
 
 export interface JobError { code: string; message?: string; retryable?: boolean; attempt?: number; at?: string }
@@ -479,3 +479,83 @@ export interface ReportedSnapshotRef {
   snapshot_id: string; version: number; status: string; as_of_local: string;
   warehouse: { id: string; name: string }; source?: { sha256_short?: string }; imported_at?: string;
 }
+
+// ---- T19: Planificar compras (docs/T19_CONTRATO_PLANIFICACION.md §6). Cantidades: texto decimal exacto; null = no calculable (nunca 0). ----
+export type PlanStatus = 'OK' | 'LLEGA_TARDE' | 'NO_LLEGA_A_TIEMPO' | 'NO_CALCULABLE';
+export type PlanNature = 'REPORTADA' | 'ASUMIDA';
+export interface PlanPendingOrder { producto_id: string; units: number; arrival_date: string; nature: PlanNature }
+export interface PlanAssumption { code?: string; text: string; nature?: string }
+export interface PlanInputs {
+  dataset: { dataset_id: string; sales_cutoff: string; source_rows?: number; classes?: Record<string, number>; imported_at?: string } | null;
+  snapshot: { snapshot_id: string; as_of_local: string; warehouse?: { id: string; name: string } | string; products?: number } | null;
+  defaults?: {
+    month: string; decision_date: string; lead_days: number[]; reserve_days: number; min_order: number; order_multiple: number;
+    pending_orders: PlanPendingOrder[];
+  };
+  limits?: {
+    decision_min: string; decision_max: string; months: string[]; lead_min: number; lead_max: number; max_leads: number; horizon_days: number;
+  };
+  assumptions?: PlanAssumption[];
+  unavailable_reason?: string | null;
+}
+export interface PlanRef {
+  plan_id: string; month: string; decision_date: string; lead_days: number[]; status: string; created_at?: string;
+  dataset_id?: string; snapshot_id?: string; counts?: Record<string, number>;
+}
+export interface PlanList { items?: PlanRef[]; unavailable_reason?: string | null }
+export interface PlanHeader extends PlanRef {
+  sales_cutoff?: string;
+  target_start?: string; target_end?: string;
+  snapshot?: { snapshot_id?: string; as_of_local?: string; warehouse?: { id: string; name: string } | string } | null;
+  parameters?: { reserve_days?: number; min_order?: number; order_multiple?: number; pending_orders?: PlanPendingOrder[] };
+  distances?: { cutoff_to_count?: number; cutoff_to_month_start?: number; cutoff_to_month_end?: number };
+  assumptions?: PlanAssumption[];
+  warnings?: string[];
+  method?: string;
+}
+export interface PlanScenario {
+  arrival_date: string | null;
+  stock_at_arrival?: string | null;
+  purchase_qty: string | null;
+  stock_month_start: string | null;
+  shortage_before_month: string | null;
+  shortage_month: string | null;
+  served_month: string | null;
+  demand_before_arrival_in_month?: string | null;
+  end_stock?: string | null;
+  status: PlanStatus;
+  decision_required_date?: string | null;
+}
+export interface PlanForecast {
+  daily: string | null; daily_exact?: string | null; month_total: string | null; month_days?: number;
+  window_start?: string; window_end?: string; sum_28?: string; days_valid?: number;
+}
+export interface PlanResultItem {
+  producto_id: string; producto: string; categoria?: string; unidad_descripcion?: string | null;
+  forecast: PlanForecast;
+  count_stock: { libre: string | null; as_of_local?: string | null };
+  scenarios: Record<string, PlanScenario>;
+}
+export interface PlanResultsPage {
+  items: PlanResultItem[]; page: number; page_size: number; total: number; has_more: boolean;
+  status_counts?: Partial<Record<PlanStatus, number>>;
+  unavailable_reason?: string | null;
+}
+export interface PlanStep { label: string; text?: string; value?: string | null }
+export interface PlanDailyRow { fecha: string; inicio: string; recepciones: string; demanda: string; atendida: string; faltante: string; fin: string }
+export interface PlanScenarioDetail extends PlanScenario {
+  explanation?: PlanStep[];
+  breakdown?: Record<string, string | null>;
+  daily?: PlanDailyRow[];
+}
+export interface PlanResultDetail extends Omit<PlanResultItem, 'scenarios'> {
+  scenarios: Record<string, PlanScenarioDetail>;
+  explanation?: Record<string, PlanStep[]>;
+  breakdown?: Record<string, Record<string, string | null>>;
+  daily?: Record<string, PlanDailyRow[]>;
+}
+export interface PlanCreateBody {
+  month: string; decision_date: string; lead_days: number[]; reserve_days: number; min_order: number; order_multiple: number;
+  pending_orders: PlanPendingOrder[];
+}
+export interface PlanAccepted { plan_id: string; job_id: string; status: JobStatus; reused: boolean }

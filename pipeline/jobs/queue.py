@@ -27,7 +27,7 @@ from datetime import UTC, datetime, timedelta
 from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
-JOB_TYPES = ("import_excel", "generate_run")
+JOB_TYPES = ("import_excel", "generate_run", "generate_plan")
 STATUSES = ("queued", "running", "completed", "failed")
 COLLECTION = "jobs"
 DEFAULT_LEASE_SECONDS = 60

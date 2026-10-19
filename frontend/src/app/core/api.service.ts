@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import {
   BacktestDetail, BacktestItem, BacktestView, ForecastPage, GroupBy, Health, ImportDetail, ImportItem, Page,
   ImportAccepted, JobType, ReportedInventoryPage, ReportedSnapshotRef, ReportedView, PublicJob, Recommendation, RecoPage, RunAccepted, RunDetail, RunOptions, RunSummary, SalesSummary, JobStatus,
+  PlanInputs, PlanList, PlanRef, PlanHeader, PlanResultsPage, PlanResultDetail, PlanCreateBody, PlanAccepted,
 } from './models';
 
 const BASE = '/api/v1';
@@ -30,6 +31,8 @@ export interface RecoQuery {
   no_orders?: boolean;
   page: number; page_size: number; sort?: string;
 }
+
+export interface PlanQuery { q?: string; status?: string; sort?: string; page: number; page_size: number }
 
 export interface ReportedQuery { snapshot_id?: string; q?: string; view?: ReportedView; sort?: string; page: number; page_size: number }
 
@@ -74,5 +77,17 @@ export class ApiService {
   }
   createRun(body: { origin: string; horizon_days: number; method: string }): Observable<RunAccepted> {
     return this.http.post<RunAccepted>(`${BASE}/runs`, body, { withCredentials: true });
+  }
+
+  // ---- T19: Planificar compras (lectura para todos; createPlan solo administrador, el servidor decide) ----
+  planInputs() { return this.get<PlanInputs>('/plans/inputs'); }
+  plans(month?: string) { return this.get<PlanRef[] | PlanList>('/plans', { month }); }
+  plan(id: string) { return this.get<PlanHeader>(`/plans/${encodeURIComponent(id)}`); }
+  planResults(id: string, q: PlanQuery) { return this.get<PlanResultsPage>(`/plans/${encodeURIComponent(id)}/results`, { ...q }); }
+  planResult(id: string, producto_id: string) {
+    return this.get<PlanResultDetail>(`/plans/${encodeURIComponent(id)}/results/${encodeURIComponent(producto_id)}`);
+  }
+  createPlan(body: PlanCreateBody): Observable<PlanAccepted> {
+    return this.http.post<PlanAccepted>(`${BASE}/plans`, body, { withCredentials: true });
   }
 }
