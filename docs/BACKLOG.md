@@ -1,5 +1,7 @@
 # Backlog de ejecución
 
+**18/10 — revisión Codex de T19 terminada:** integración y cálculos base entregados; pendientes R19 (publicación/limpieza por intento) y R20 (contrato real de pantalla, fechas, parámetros, serie y pedidos). Encargo `REVISION_CODEX_19.md`; 119 pruebas propias aprobadas, 100 recálculos sin diferencias, 4 regresiones frontend fallando y fallo de relevo reproducido. No repetir T19 completo/modelos/T12; corregir y revisar solo estos bloques antes de aceptación técnica y prueba humana.
+
 **Nueva prioridad uno, 18/10 — T19:** ETAPA_19_CLAUDE.md preparado para implementar integración de 14 fuentes, previsión de noviembre y compra única para cubrir el mes (elección humana confirmada), 50 productos y plazos supuestos de 7/14 días. Incluye proyección desde conteo, consumo previo, fechas y faltantes; ensayo aislado en 8445. Implementación pendiente de Claude. Sin nuevos modelos/selección ni reejecución de T12; nube sin autorización. La prueba humana y los entregables finales permanecen, pero el cierre documental no sustituye T19.
 
 **18/10 — R18 cerrado por Codex:** T18 aceptada técnicamente en alcance local; 39 pruebas propias aprobadas. Próximo: aceptación humana de Rogelio, actualización T14 (informe/manuales/matriz aún anteriores al conteo), preparación de sustentación/video y paquete T15, resolución de publicación conforme al alcance. No ampliar modelos/datos por rutina; 14 fuentes preparadas no equivalen a importación/estudio nuevo. Ver cierre de `REVISION_CODEX_18.md`. Los estados R18 pendientes de abajo son históricos.

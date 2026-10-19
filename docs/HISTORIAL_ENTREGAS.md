@@ -1,5 +1,9 @@
 # Historial de entregas anteriores
 
+## Revisión Codex 19: noviembre entregado con correcciones pendientes (18/10/2026)
+
+Revisados commits 2e99534, 7dbb30b, f50f6a1. 119 pruebas propias aprobadas (118 puras + 1 paquete real), 100 escenarios base sin diferencias contra API guardada. Detectados R19: un intento obsoleto puede borrar resultados del sucesor completado; reproducción determinista en memoria, sin Mongo real. R20: pantalla/fixtures difieren del servidor en parámetros, corte y serie diaria, y aviso de pedidos cero es incondicional; 4 regresiones propias fallan. Detalle y encargo en REVISION_CODEX_19.md; evidencia privada codex_review19. Sin cambios de app/fuentes/bases/servicios ni reejecución de modelos/T12. Claude corrige estos bloques; aceptación técnica/humana pendientes.
+
 ## Encargo T19 autorizado: noviembre y compra por escenarios (18/10/2026)
 
 Rogelio priorizó conectar las 14 fuentes, previsión futura y reposición; eligió una compra para cubrir todo noviembre. Codex preparó ETAPA_19_CLAUDE.md con integración trazable, nuevo modo de planificación separado, 50 productos/conteo fechado, consumo previo al mes, escenarios7/14 y reserva supuesta, faltantes/recepciones y origen de cada dato visibles. Incluye validación mensual descriptiva sin reabrir T12. No se implementó app ni se alteraron datos/bases/servicios/nube al redactarlo. Claude mantiene ejecución; aceptación técnica/humana deT19 pendientes. Esta prioridad supera la espera anterior de integración y la recomendación de concentrarse únicamente en documentación.
