@@ -392,3 +392,7 @@ Verificacion del derivado contra el Excel antes de importar (commit 616b5ef); ve
 ## Etapa 19 (18/10/2026)
 
 Planificación de compras para noviembre bajo supuestos (commits 2e99534, 7dbb30b); ver `docs/T19_REPORTE.md`.
+
+
+**Revisión Codex posterior, 18/10 (a728017 / 667828b):** R20 cerrado con 11 pruebas propias aprobadas. R19 original atendido, pero pendiente caso residual de limpieza posterior a publicación: un error puede dejar completed sin resultados. Ver adenda final de REVISION_CODEX_19.md y reproducción privada check_post_publish.py. Corregir únicamente ese manejo de error, con regresión dirigida; no repetir T19/modelos/T12. Aprendizaje de lectura del plan existente puede comenzar; creación de planes y aceptación técnica final después de la corrección. Aceptación humana pendiente.
+

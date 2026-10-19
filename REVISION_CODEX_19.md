@@ -42,3 +42,16 @@ Pruebas dirigidas con cuerpo real: reserva/mínimo/múltiplo distintos de defaul
 ## Encargo y siguiente paso
 
 Claude corrige solo R19/R20, incorpora regresiones y entrega commits, evidencia dirigida, contrato/reporte/estado actualizados e imagen de ens19. Reutilizar su base y conservar demos 8443/8444, conteo, dataset y T12. No reimportar/reentrenar/restaurar todo por rutina; sin nube ni compras reales. Actualizar su lista de tareas conforme al trabajo efectivamente terminado: una lista desactualizada no invalida los commits, pero tampoco acredita terminación. Aceptación técnica de estas correcciones y acompañamiento real de Rogelio siguen pendientes. Después del cierre técnico, recorrido de comprensión en 8445 con `t19_lector`; no registrar aceptación por inferencia.
+
+
+## Revisión posterior de a728017 / 667828b / 2c7a82e — 18/10/2026
+
+R20 cerrado en el alcance revisado: contrato real corregido; ejecución propia de `npm test -- --watch=false --include=src/app/pages/ux-plan-contract.spec.ts`: 11/11 aprobadas. TEMP/TMP privados. Revisado aislamiento por intento y filtro de lectura de R19: el caso original de borrado del sucesor está atendido por tokens distintos. Las siete pruebas Mongo y 25 de navegador son evidencia del ejecutor, no reejecuciones propias.
+
+**R19 permanece abierto por un caso residual [P1]: fallo después de publicar.** En `pipeline/plan/store.py:generate_plan`, tras el CAS a `completed` se llama a `purge_orphans` dentro del mismo try. Si esa operación falla (por ejemplo un error de Mongo en la limpieza), el except general llama a `_drop_own_results` y borra las filas del intento YA PUBLICADO. La actualización a failed no coincide porque exige staging; queda completed con cero filas. Esto afecta la garantía de conservar resultados completados, aunque el relevo original ya esté corregido.
+
+Reproducción propia determinista con generate_plan y motor reales, colecciones en memoria y fallo inyectado únicamente en purge_orphans después de publicar: `artifacts/private/codex_review19/check_post_publish.py`; resultado `post_publish_result.json`: status=completed, expected_rows=1, remaining_published_rows=0. No modifica Mongo ni demos. Los dobles solo modelan operaciones usadas; confirmar regresión sobre Mongo temporal al corregir.
+
+Encargo acotado: separar el mantenimiento posterior de la transacción lógica de publicación y evitar rollback de resultados publicados; contemplar también respuesta de publicación incierta ante error de red (no borrar por inferencia si pudo completarse). Añadir regresión de fallo de limpieza posterior que conserve cabecera y filas publicadas, lectura e idempotencia; pruebas dirigidas y actualizar imagen ens19 conservando base. No repetir dataset, modelos o T12. Revisión técnica final pendiente solo de este punto.
+
+Rogelio puede iniciar aprendizaje en modo lector sobre el plan existente, sin registrar aceptación final ni crear planes como parte de esa sesión hasta cerrar el punto. La aceptación humana requiere respuestas reales. Después quedan entregables académicos, manuales, sustentación y decisión de publicación conforme a autorización.
