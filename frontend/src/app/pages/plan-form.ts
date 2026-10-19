@@ -43,9 +43,9 @@ const INT = /^\d+$/;
       }
 
       <h3>Pedidos por recibir</h3>
-      <p class="notice info" data-testid="pf-assumption"><strong>No llegan otros pedidos (supuesto).</strong>
-        @if (orders().length === 0) { Por ahora no se declaró ninguno: no se informó si hay pedidos en camino, así que el plan supone que no llega ninguno. }
-        @else { Solo se tendrán en cuenta los pedidos de esta lista; ningún otro llega en este escenario. }
+      <p class="notice info" data-testid="pf-assumption">
+        @if (orders().length === 0) { <strong>No llegan otros pedidos (supuesto).</strong> Por ahora no se declaró ninguno: no se informó si hay pedidos en camino, así que el plan supone que no llega ninguno. }
+        @else { <strong>Se consideran los pedidos declarados abajo; no llegan otros adicionales (supuesto).</strong> }
       </p>
       @if (orders().length) {
         <ul class="plain" data-testid="pf-orders">

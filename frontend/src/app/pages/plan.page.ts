@@ -17,7 +17,7 @@ import { Pager } from '../ui/pager';
 import { PlanForm } from './plan-form';
 import { localDay, localStamp, zoneLabel } from './inventory.page';
 import {
-  NOT_COMPUTABLE, NOT_REPORTED, STATUS_FILTERS, purchaseText, qtyText, statusText, statusTone, stepValue,
+  NOT_COMPUTABLE, NOT_REPORTED, PENDING_NATURE, STATUS_FILTERS, purchaseText, qtyText, statusText, statusTone, stepValue,
 } from './plan-text';
 
 const SORTS: { value: string; label: string }[] = [
@@ -52,7 +52,7 @@ const SORTS: { value: string; label: string }[] = [
           @if (cutoff(); as c) {
             <p class="notice warn" data-testid="plan-cutoff">
               Las ventas registradas terminan el <strong>{{ longDate(c) }}</strong>. Lo ocurrido después de esa fecha{{ gapMonth() ? ' (por ejemplo ' + gapMonth() + ')' : '' }} es desconocido, no es cero.
-              <strong>En este escenario no llegan otros pedidos (supuesto).</strong>
+              @if (pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
             </p>
           }
           <section class="toolbar" aria-label="Elegir el plan" data-testid="plan-picker">
@@ -85,9 +85,18 @@ const SORTS: { value: string; label: string }[] = [
                   <li data-testid="src-count"><strong>Conteo reportado por la empresa:</strong> {{ countStamp() }}{{ warehouseName() ? ' · ' + warehouseName() : '' }}. Lo informó la empresa y no se verificó de forma independiente.</li>
                   <li data-testid="src-projection"><strong>Proyección posterior:</strong> calculada con el promedio de los últimos 28 días de ventas; no son ventas observadas. Estima ventas registradas, que pueden haber estado limitadas por falta de stock.</li>
                   <li data-testid="src-params"><strong>Parámetros (supuestos que se pueden cambiar):</strong>
-                    decisión de compra el {{ longDate(h.decision_date) }} · plazos de entrega de {{ leadText() }} días
-                    @if (h.parameters; as p) {
+                    decisión de compra el {{ longDate(h.params?.decision_date ?? h.decision_date) }} · plazos de entrega de {{ leadText() }} días
+                    @if (h.params; as p) {
                       · reserva de {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
+                    }
+                  </li>
+                  <li data-testid="src-orders"><strong>Pedidos por recibir:</strong> {{ pendingNote() }}
+                    @if (pendingOrders().length) {
+                      <ul class="plain" data-testid="src-pending">
+                        @for (o of pendingOrders(); track $index) {
+                          <li data-testid="src-pending-item">Producto <strong>{{ o.producto_id }}</strong> · {{ o.units }} unidades · llega el {{ shortDate(o.arrival_date) }} · {{ pendingNature(o.nature) }}</li>
+                        }
+                      </ul>
                     }
                   </li>
                 </ul>
@@ -162,7 +171,7 @@ const SORTS: { value: string; label: string }[] = [
                             <span class="muted" data-col="unit"> · {{ r.unidad_descripcion || NOT_REPORTED }}</span><br />
                             <button type="button" class="secondary small" data-testid="plan-understand" [attr.aria-label]="'Entender la compra de ' + r.producto" (click)="pick(r.producto_id)">Entender la compra</button>
                           </td>
-                          <td class="num" data-col="forecast">{{ qty(r.forecast.month_total) }}</td>
+                          <td class="num" data-col="forecast">{{ qty(r.forecast?.month_total) }}</td>
                           <td class="num" data-col="count">{{ qty(r.count_stock.libre, NOT_REPORTED) }}</td>
                           @for (l of leads(); track l) {
                             @if (r.scenarios[l]; as sc) {
@@ -196,12 +205,17 @@ const SORTS: { value: string; label: string }[] = [
                 @if (detail(); as x) {
                   <p><strong>{{ x.producto_id }}</strong> {{ x.producto }} <span class="muted">· {{ x.unidad_descripcion || NOT_REPORTED }}</span></p>
                   <ul class="plain" data-testid="ex-forecast">
-                    <li>Ventas previstas del mes, sin limitar por stock: <strong>{{ qty(x.forecast.month_total) }}</strong>
-                      @if (x.forecast.daily !== null && x.forecast.daily !== undefined) { ({{ qty(x.forecast.daily) }} por día }
-                      @if (x.forecast.sum_28 !== undefined && x.forecast.days_valid !== undefined) { = {{ qty(x.forecast.sum_28) }} unidades vendidas en {{ x.forecast.days_valid }} días válidos }
-                      @if (x.forecast.daily !== null && x.forecast.daily !== undefined) { ) }
+                    <li>Ventas previstas del mes, sin limitar por stock: <strong>{{ qty(x.forecast?.month_total) }}</strong>
+                      @if (x.forecast; as fc) {
+                        @if (fc.daily !== null && fc.daily !== undefined) { ({{ qty(fc.daily) }} por día }
+                        @if (fc.sum_28 !== undefined && fc.days_valid !== undefined) { = {{ qty(fc.sum_28) }} unidades vendidas en {{ fc.days_valid }} días válidos }
+                        @if (fc.daily !== null && fc.daily !== undefined) { ) }
+                      }
                     </li>
                     <li>Stock del conteo: <strong>{{ qty(x.count_stock.libre, NOT_REPORTED) }}</strong> ({{ countDay() }}).</li>
+                    @for (o of x.pending_orders ?? []; track $index) {
+                      <li data-testid="ex-pending">Pedido por recibir de este producto: {{ o.units }} unidades el {{ shortDate(o.arrival_date) }}.</li>
+                    }
                   </ul>
                   <div class="plan-cols">
                     @for (l of leadsOf(x); track l) {
@@ -210,6 +224,9 @@ const SORTS: { value: string; label: string }[] = [
                           <h3>Plazo de {{ l }} días</h3>
                           <p><span [attr.class]="'chip ' + tone(sc.status)">{{ stat(sc) }}</span>
                             {{ sc.arrival_date ? 'Llega el ' + longDate(sc.arrival_date) : 'No llega dentro del mes' }}</p>
+                          @if (sc.status === 'NO_LLEGA_A_TIEMPO' && sc.required_arrival_date) {
+                            <p data-testid="ex-decide">Para que llegue el primer día del mes habría que decidir la compra el {{ longDate(sc.required_arrival_date) }}.</p>
+                          }
                           <p data-testid="ex-buy">Compra propuesta: <strong>{{ buy(sc) ?? NOT_COMPUTABLE }}</strong></p>
                           @if (stepsFor(x, l); as steps) {
                             @if (steps.length) {
@@ -223,7 +240,7 @@ const SORTS: { value: string; label: string }[] = [
                             }
                           }
                           <ul class="plain" data-testid="ex-served">
-                            <li>Ventas previstas sin limitar por stock: {{ qty(x.forecast.month_total) }}</li>
+                            <li>Ventas previstas sin limitar por stock: {{ qty(x.forecast?.month_total) }}</li>
                             <li>Ventas que podrían atenderse en este escenario: <strong>{{ qty(sc.served_month) }}</strong></li>
                             <li>Faltante en el mes: {{ qty(sc.shortage_month) }}</li>
                           </ul>
@@ -234,10 +251,10 @@ const SORTS: { value: string; label: string }[] = [
                                 <div class="table-wrap" tabindex="0" role="region" [attr.aria-label]="'Serie diaria del plazo de ' + l + ' días'">
                                   <table>
                                     <caption class="muted">Cada día primero llegan los pedidos y después se consume la demanda.</caption>
-                                    <thead><tr><th scope="col">Día</th><th scope="col" class="num">Al inicio</th><th scope="col" class="num">Llega</th><th scope="col" class="num">Demanda</th><th scope="col" class="num">Atendida</th><th scope="col" class="num">Faltante</th><th scope="col" class="num">Al cierre</th></tr></thead>
+                                    <thead><tr><th scope="col">Día</th><th scope="col" class="num">Al inicio</th><th scope="col" class="num">Llega</th>@if (hasAvailable(rows)) { <th scope="col" class="num">Disponible</th> }<th scope="col" class="num">Demanda</th><th scope="col" class="num">Atendida</th><th scope="col" class="num">Faltante</th><th scope="col" class="num">Al cierre</th></tr></thead>
                                     <tbody>
                                       @for (r of rows; track r.fecha) {
-                                        <tr><th scope="row">{{ shortDate(r.fecha) }}</th><td class="num">{{ qty(r.inicio) }}</td><td class="num">{{ qty(r.recepciones) }}</td><td class="num">{{ qty(r.demanda) }}</td><td class="num">{{ qty(r.atendida) }}</td><td class="num">{{ qty(r.faltante) }}</td><td class="num">{{ qty(r.fin) }}</td></tr>
+                                        <tr><th scope="row">{{ shortDate(r.fecha) }}</th><td class="num">{{ qty(r.inicio) }}</td><td class="num">{{ qty(r.recepciones) }}</td>@if (hasAvailable(rows)) { <td class="num">{{ qty(r.disponible) }}</td> }<td class="num">{{ qty(r.demanda) }}</td><td class="num">{{ qty(r.atendida) }}</td><td class="num">{{ qty(r.faltante) }}</td><td class="num">{{ qty(r.fin) }}</td></tr>
                                       }
                                     </tbody>
                                   </table>
@@ -332,6 +349,7 @@ export class PlanPage {
         const keep = this.wantPlan && items.some((p) => p.plan_id === this.wantPlan) ? this.wantPlan : null;
         this.wantPlan = null;
         const chosen = keep ?? (items.some((p) => p.plan_id === this.planId()) ? this.planId() : items[0]?.plan_id ?? null);
+        if (chosen !== this.planId()) this.clearPlan();
         this.planId.set(chosen);
         this.sel.set(null);
         if (chosen) { this.hdr.reload(); this.res.reload(); }
@@ -354,7 +372,23 @@ export class PlanPage {
     .some((s) => s.kind === 'error' && (s.error.status === 403 || s.error.code === 'PROHIBIDO')));
 
   // ---- procedencia (todo viene de la API) ----
-  cutoff = computed(() => this.header()?.sales_cutoff ?? this.inputs()?.dataset?.sales_cutoff ?? null);
+  /** Con un plan elegido, el corte es el DE ESE PLAN (nunca el del dataset más nuevo); sin plan, el de las entradas. */
+  cutoff = computed(() => {
+    if (this.planId()) { const h = this.header(); return h?.dates?.sales_cutoff ?? h?.dataset?.sales_cutoff ?? null; }
+    return this.inputs()?.dataset?.sales_cutoff ?? null;
+  });
+  pendingOrders = computed(() => this.header()?.params?.pending_orders ?? []);
+  /** Aviso de pedidos por recibir DERIVADO del plan elegido; null mientras el plan elegido no se cargó. */
+  pendingNote = computed((): string | null => {
+    if (!this.planId()) return 'En este escenario no llegan otros pedidos (supuesto).';
+    const h = this.header();
+    if (!h?.params) return null;
+    const n = h.params.pending_orders.length;
+    if (n === 0) return 'En este escenario no llegan otros pedidos (supuesto).';
+    const who = n === 1 ? 'Se considera 1 pedido por recibir declarado' : `Se consideran ${n} pedidos por recibir declarados`;
+    return `${who} (producto, unidades, fecha de llegada y si es reportado o asumido) y no llegan otros adicionales (supuesto).`;
+  });
+  pendingNature = (n: string) => PENDING_NATURE[n] ?? n;
   private countIso = computed(() => this.header()?.snapshot?.as_of_local ?? this.inputs()?.snapshot?.as_of_local ?? null);
   countStamp = computed(() => {
     const s = localStamp(this.countIso());
@@ -368,7 +402,7 @@ export class PlanPage {
     return typeof w === 'string' ? `almacén ${w}` : `${w.name} (almacén ${w.id})`;
   });
   leads = computed(() => {
-    const h = this.header()?.lead_days;
+    const h = this.header()?.params?.lead_days ?? this.header()?.lead_days;
     if (h?.length) return h.map(String);
     const first = this.results()?.items[0];
     return first ? Object.keys(first.scenarios).sort((a, b) => Number(a) - Number(b)) : [];
@@ -394,13 +428,21 @@ export class PlanPage {
     return parts.join(' · ');
   }
   leadsOf(x: PlanResultDetail): string[] { return Object.keys(x.scenarios).sort((a, b) => Number(a) - Number(b)); }
-  stepsFor(x: PlanResultDetail, l: string): PlanStep[] { return x.scenarios[l]?.explanation ?? x.explanation?.[l] ?? []; }
-  dailyFor(x: PlanResultDetail, l: string): PlanDailyRow[] { return x.scenarios[l]?.daily ?? x.daily?.[l] ?? []; }
+  stepsFor(x: PlanResultDetail, l: string): PlanStep[] { return x.scenarios[l]?.explanation ?? []; }
+  dailyFor(x: PlanResultDetail, l: string): PlanDailyRow[] { return x.scenarios[l]?.series ?? []; }
+  hasAvailable(rows: PlanDailyRow[]): boolean { return rows.some((r) => r.disponible !== undefined && r.disponible !== null); }
 
   // ---- acciones de lectura ----
   loadInputs() { this.inp.reload(); }
-  setMonth(m: string) { if (m === this.month()) return; this.month.set(m); this.planId.set(null); this.pl.reload(); }
-  pickPlan(id: string) { if (id === this.planId()) return; this.planId.set(id); this.sel.set(null); this.page.set(1); this.hdr.reload(); this.res.reload(); }
+  /** Nada del plan anterior sobrevive: producto abierto, detalle, cabecera y resultados. */
+  private clearPlan() {
+    this.sel.set(null);
+    this.hdr.state.set({ kind: 'loading' });
+    this.res.state.set({ kind: 'loading' });
+    this.det.state.set({ kind: 'loading' });
+  }
+  setMonth(m: string) { if (m === this.month()) return; this.month.set(m); this.clearPlan(); this.planId.set(null); this.versions.set([]); this.page.set(1); this.pl.reload(); }
+  pickPlan(id: string) { if (id === this.planId()) return; this.clearPlan(); this.planId.set(id); this.page.set(1); this.hdr.reload(); this.res.reload(); }
   search() { this.q.set(this.draft.trim()); this.page.set(1); this.res.reload(); }
   setStatus(v: string) { this.status.set(v); this.page.set(1); this.res.reload(); }
   setSort(v: string) { this.sort.set(v); this.page.set(1); this.res.reload(); }

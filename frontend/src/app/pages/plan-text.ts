@@ -64,3 +64,6 @@ export const STATUS_FILTERS: { value: string; label: string }[] = [
 ];
 
 export const NATURE_LABELS: Record<string, string> = { REPORTADA: 'Reportada', ASUMIDA: 'Asumida' };
+
+/** Naturaleza de un pedido por recibir ya declarado en un plan. */
+export const PENDING_NATURE: Record<string, string> = { REPORTADA: 'Reportado', ASUMIDA: 'Asumido' };

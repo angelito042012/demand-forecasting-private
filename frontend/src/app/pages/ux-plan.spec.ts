@@ -23,31 +23,33 @@ const inputsBody = (over: object = {}) => ({
 });
 const planRef = (id = PLAN_ID, over: object = {}) => ({ plan_id: id, month: '2026-11', decision_date: '2026-10-18', lead_days: [7, 14], status: 'completed', created_at: '2026-10-18T18:30:00-05:00', ...over });
 const header = () => ({
-  ...planRef(), sales_cutoff: '2026-09-30', target_start: '2026-11-01', target_end: '2026-11-30', dataset_id: 'plds-aaaaaaaaaaaa', snapshot_id: 'invrep-20261018T1700-a1-608d15a74a58',
+  ...planRef(), version: 1, counts: { products: 50 }, dataset_id: 'plds-aaaaaaaaaaaa', snapshot_id: 'invrep-20261018T1700-a1-608d15a74a58',
+  dataset: { dataset_id: 'plds-aaaaaaaaaaaa', sales_cutoff: '2026-09-30', source_rows: 106525 },
+  dates: { sales_cutoff: '2026-09-30', count_date: '2026-10-18', count_as_of_local: '2026-10-18T17:00:00-05:00', decision_date: '2026-10-18', month_start: '2026-11-01', month_end: '2026-11-30', window_start: '2026-09-03' },
   snapshot: { snapshot_id: 'invrep-20261018T1700-a1-608d15a74a58', as_of_local: '2026-10-18T17:00:00-05:00', warehouse: { id: '1', name: 'Almacén Principal' } },
-  parameters: { reserve_days: 7, min_order: 1, order_multiple: 1, pending_orders: [] },
-  distances: { cutoff_to_count: 18, cutoff_to_month_start: 32, cutoff_to_month_end: 61 },
-  assumptions: [{ text: 'En este escenario no llegan otros pedidos', nature: 'ASUMIDA' }], warnings: [],
+  params: { month: '2026-11', decision_date: '2026-10-18', lead_days: [7, 14], reserve_days: 7, min_order: 1, order_multiple: 1, pending_orders: [] },
+  distances: { cutoff_to_count: 18, cutoff_to_month_start: 32, cutoff_to_month_end: 61, count_to_decision: 0, horizon_limit_days: 120 },
+  assumptions: [{ code: 'PEDIDOS_PENDIENTES', text: 'En este escenario no llegan otros pedidos (0 asumido).', nature: 'SUPUESTO' }], warnings: [],
 });
 const sc = (over: object = {}) => ({
-  arrival_date: '2026-10-25', stock_at_arrival: '28', purchase_qty: '60', stock_month_start: '14', shortage_before_month: '0', shortage_month: '0',
+  arrival_date: '2026-10-25', stock_at_arrival: '28', purchase_qty: 60, stock_month_start: '14', shortage_before_month: '0', shortage_month: '0',
   served_month: '60', status: 'OK', ...over,
 });
 function item(i: number, over: object = {}) {
   return {
     producto_id: String(3230000 + i).padStart(9, '0'), producto: `PRODUCTO DE PRUEBA ${i + 1}`, categoria: 'X', unidad_descripcion: i === 1 ? 'Caja de 12' : 'Un frasco de 250 ML',
     forecast: { daily: '2', daily_exact: '2', month_total: i === 7 ? '0' : '60', month_days: 30, sum_28: '56', days_valid: 28 },
-    count_stock: { libre: '40', as_of_local: '2026-10-18T17:00:00-05:00' },
+    count_stock: { libre: 40, as_of_local: '2026-10-18T17:00:00-05:00' },
     scenarios: { '7': sc(), '14': sc({ arrival_date: '2026-11-01', stock_at_arrival: '14' }) },
     ...over,
   };
 }
 function items() {
   return Array.from({ length: 50 }, (_, i) => {
-    if (i === 0) return item(i, { scenarios: { '7': sc({ purchase_qty: '0' }), '14': sc({ purchase_qty: '0', arrival_date: '2026-11-01' }) } });
-    if (i === 1) return item(i, { scenarios: { '7': sc({ purchase_qty: '74' }), '14': sc({ arrival_date: null, purchase_qty: null, stock_at_arrival: null, stock_month_start: null, shortage_before_month: null, shortage_month: null, served_month: null, status: 'NO_LLEGA_A_TIEMPO' }) } });
-    if (i === 2) return item(i, { scenarios: { '7': sc(), '14': sc({ arrival_date: '2026-11-08', purchase_qty: '60', status: 'LLEGA_TARDE', shortage_month: '14', stock_month_start: '0' }) } });
-    if (i === 3) return item(i, { count_stock: { libre: null, as_of_local: null }, scenarios: { '7': sc({ arrival_date: null, purchase_qty: null, stock_at_arrival: null, stock_month_start: null, shortage_before_month: null, shortage_month: null, served_month: null, status: 'NO_CALCULABLE' }), '14': sc({ arrival_date: null, purchase_qty: null, stock_at_arrival: null, stock_month_start: null, shortage_before_month: null, shortage_month: null, served_month: null, status: 'NO_CALCULABLE' }) } });
+    if (i === 0) return item(i, { scenarios: { '7': sc({ purchase_qty: 0 }), '14': sc({ purchase_qty: 0, arrival_date: '2026-11-01' }) } });
+    if (i === 1) return item(i, { scenarios: { '7': sc({ purchase_qty: 74 }), '14': sc({ arrival_date: null, purchase_qty: null, stock_at_arrival: null, stock_month_start: null, shortage_before_month: null, shortage_month: null, served_month: null, status: 'NO_LLEGA_A_TIEMPO' }) } });
+    if (i === 2) return item(i, { scenarios: { '7': sc(), '14': sc({ arrival_date: '2026-11-08', purchase_qty: 60, status: 'LLEGA_TARDE', shortage_month: '14', stock_month_start: '0' }) } });
+    if (i === 3) return item(i, { forecast: null, count_stock: { libre: null, as_of_local: null }, scenarios: { '7': sc({ arrival_date: null, purchase_qty: null, stock_at_arrival: null, stock_month_start: null, shortage_before_month: null, shortage_month: null, served_month: null, status: 'NO_CALCULABLE' }), '14': sc({ arrival_date: null, purchase_qty: null, stock_at_arrival: null, stock_month_start: null, shortage_before_month: null, shortage_month: null, served_month: null, status: 'NO_CALCULABLE' }) } });
     return item(i);
   });
 }
@@ -68,12 +70,12 @@ const steps14 = [
   { label: 'Stock del conteo', value: '40' }, { label: 'Stock al llegar el pedido', text: '01/11', value: '14' },
   { label: 'Cantidad sin redondear', value: '60' }, { label: 'Compra redondeada', value: '60' },
 ];
-const daily = (n: number) => Array.from({ length: n }, (_, i) => ({ fecha: `2026-10-${String(19 + i).padStart(2, '0')}`, inicio: '40', recepciones: '0', demanda: '2', atendida: '2', faltante: '0', fin: '38' }));
+const daily = (n: number) => Array.from({ length: n }, (_, i) => ({ fecha: `2026-10-${String(19 + i).padStart(2, '0')}`, inicio: '40', recepciones: '0', disponible: '40', demanda: '2', atendida: '2', faltante: '0', fin: '38' }));
 const detailBody = () => ({
   ...item(4),
   scenarios: {
-    '7': { ...sc({ served_month: '60' }), explanation: steps7, daily: daily(3) },
-    '14': { ...sc({ arrival_date: '2026-11-01', stock_at_arrival: '14', served_month: '60' }), explanation: steps14, daily: daily(2) },
+    '7': { ...sc({ served_month: '60' }), explanation: steps7, series: daily(3) },
+    '14': { ...sc({ arrival_date: '2026-11-01', stock_at_arrival: '14', served_month: '60' }), explanation: steps14, series: daily(2) },
   },
 });
 
@@ -166,6 +168,7 @@ describe('Planificar compras: lectura', () => {
     expect(cell(el, '003230002', 'buy-14')).toContain('Llega tarde: faltarían 14 unidades');
     expect(cell(el, '003230003', 'buy-7')).toBe('No se puede calcular');
     expect(cell(el, '003230003', 'count')).toBe('No informado');
+    expect(cell(el, '003230003', 'forecast')).toBe('No se puede calcular');   // forecast null del servidor: nunca 0
     expect(cell(el, '003230004', 'buy-7')).toContain('60');
     expect(cell(el, '003230004', 'arrival-7')).toBe('25/10/2026');
     expect(cell(el, '003230004', 'start-14')).toBe('14');
@@ -227,6 +230,7 @@ describe('Planificar compras: lectura', () => {
     expect(det.querySelectorAll('tbody tr').length).toBe(3);
     expect(det.querySelector('table caption')).toBeTruthy();
     expect(det.querySelector('th[scope="row"]')!.textContent).toBe('19/10/2026');
+    expect(det.textContent).toContain('Disponible');
   });
 
   it('un plan con varias versiones ofrece una lista corta y cambia de plan', async () => {
@@ -312,7 +316,7 @@ describe('Planificar compras: administrador', () => {
     expect(txt(el, 'pf-order')).toContain('30 unidades');
     expect(txt(el, 'pf-order')).toContain('05/11/2026');
     expect(txt(el, 'pf-order')).toContain('Reportada');
-    expect(txt(el, 'pf-assumption')).toContain('ningún otro llega');
+    expect(txt(el, 'pf-assumption')).toContain('Se consideran los pedidos declarados abajo; no llegan otros adicionales (supuesto)');
   });
 
   it('valida antes de enviar (plazos fuera de rango) y bloquea el botón', async () => {
