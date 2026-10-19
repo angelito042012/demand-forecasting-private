@@ -1,5 +1,7 @@
 # Estado vigente del proyecto
 
+**Revisión Codex de f0bae1d, 18/10:** fallo de purga posterior cerrado con reproducción propia (conserva 1/1 filas). R19 aún requiere proteger respuesta incierta de publicación: actualización aplicada seguida de AutoReconnect deja completed con 0/1 filas en reproducción propia. Ver última adenda de REVISION_CODEX_19.md y check_uncertain_publish.py. R20 cerrado; recorrido lector puede comenzar, generación administrativa y cierre técnico pendientes de ese caso. No repetir T19/T12/modelos.
+
 **Revisión Codex posterior, 18/10 (a728017 / 667828b):** R20 cerrado con 11 pruebas propias aprobadas. R19 original atendido, pero pendiente caso residual de limpieza posterior a publicación: un error puede dejar completed sin resultados. Ver adenda final de REVISION_CODEX_19.md y reproducción privada check_post_publish.py. Corregir únicamente ese manejo de error, con regresión dirigida; no repetir T19/modelos/T12. Aprendizaje de lectura del plan existente puede comenzar; creación de planes y aceptación técnica final después de la corrección. Aceptación humana pendiente.
 
 Actualizado el 18/10/2026, Lima. Fecha final 23/10/2026. Claude ejecuta y Codex dirige/revisa; un ejecutor principal activo. Historial en HISTORIAL_ENTREGAS.md; revisiones 01–17. Este resumen sustituye estados anteriores.
