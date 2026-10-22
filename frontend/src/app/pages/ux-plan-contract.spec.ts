@@ -115,11 +115,11 @@ describe('Planificar compras · contrato real (R20)', () => {
   it('1. reserva, mínimo y múltiplo salen de params del plan, distintos de los valores por defecto', async () => {
     const { el } = await open([planA()]);
     const t = txt(el, 'src-params');
-    expect(t).toContain('reserva de 9 días');
+    expect(t).toContain('reserva 9 días');
     expect(t).toContain('compra mínima 3');
     expect(t).toContain('múltiplo 2');
     expect(t).toContain('7 y 14 días');
-    expect(t).toContain('18 de octubre de 2026');
+    expect(txt(el, 'head-decision')).toBe('18/10/2026');   // la decisión se muestra una sola vez, en el resumen
   });
 
   it('2. el corte es el del PLAN seleccionado (31/08), no el del dataset más nuevo (30/09)', async () => {
@@ -213,7 +213,7 @@ describe('Planificar compras · contrato real (R20)', () => {
 
     expect(txt(el, 'src-sales')).toContain('31 de julio de 2026');
     expect(txt(el, 'src-sales')).not.toContain('agosto');
-    expect(txt(el, 'src-params')).toContain('reserva de 7 días');
+    expect(txt(el, 'src-params')).toContain('reserva 7 días');
     expect(txt(el, 'src-params')).toContain('compra mínima 1');
     expect(q(el, 'src-pending')).toBeNull();
     expect(txt(el, 'plan-cutoff')).toContain('31 de julio de 2026');
@@ -231,7 +231,7 @@ describe('Planificar compras · contrato real (R20)', () => {
     at(`/plans/${ID_B}/results`).flush({ error: { code: 'X', message: 'x' } }, { status: 500, statusText: 'x' });
     await settle(f);
     expect(el.textContent).not.toContain('31 de agosto');
-    expect(el.textContent).not.toContain('reserva de 9 días');
+    expect(el.textContent).not.toContain('reserva 9 días');
     expect(el.textContent).not.toContain('30 de septiembre');   // tampoco el corte del dataset más nuevo
     expect(q(el, 'src-pending')).toBeNull();
   });

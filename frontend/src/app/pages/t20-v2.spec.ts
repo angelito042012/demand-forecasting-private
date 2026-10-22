@@ -87,15 +87,16 @@ describe('T20 Compra recomendada con existencia reconstruida', () => {
     const { el } = await openPlan();
     expect(txt(el, 'page-title')).toBe('Compra recomendada');
     const heads = Array.from(el.querySelectorAll('[data-testid="plan-table"] thead th')).map((h) => (h.textContent ?? '').replace(/\s+/g, ' ').trim());
-    expect(heads.some((h) => h.startsWith('Ventas previstas'))).toBe(true);
-    expect(heads.some((h) => h.startsWith('Existencias (cierre 20/10/2026)'))).toBe(true);
-    expect(heads).toContain('Compra recomendada');
+    expect(heads.some((h) => h.startsWith('Venta prevista del mes'))).toBe(true);
+    expect(heads).toContain('Existencias');
+    expect(heads).toContain('Stock al 1/11');
+    expect(heads).toContain('Comprar');
     const src = txt(el, 'src-count');
     expect(src).toContain('Existencia reconstruida al cierre del 20/10/2026 (conteo reportado 18/10/2026 a las 17:00 + movimientos del sistema)');
     expect(src).not.toContain('Conteo reportado por la empresa:');
     expect(src).toContain('21/10/2026 a las 16:26');
     expect(txt(el, 'src-params')).toContain('Configuración de reposición');
-    expect(txt(el, 'src-params')).toContain('no condiciones confirmadas del proveedor');
+    expect(txt(el, 'src-params')).toContain('no confirmada por el proveedor');
   });
 
   it('el supuesto de pedidos es el texto de la API (sin afirmar que no existen pedidos)', async () => {
@@ -316,7 +317,7 @@ describe('Piloto de presentación de «Compra recomendada» (22/10)', () => {
     await ok(f, at(`/plans/${V2}/results`), one);
     expect(txt(el, 'plan-summary')).toContain('1 producto en este plan');
     expect(txt(el, 'plan-summary')).not.toContain('1 productos');
-    expect(txt(el, 'plan-summary')).toContain('Decimales con punto');
+    expect(txt(el, 'plan-legend')).toContain('Decimales y miles');
   });
 
   it('«Entender la compra» da primero compra, llegada y faltantes y después el cálculo; el foco pasa al título', async () => {

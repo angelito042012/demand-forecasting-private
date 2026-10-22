@@ -37,8 +37,7 @@ const SORTS: { value: string; label: string }[] = [
   selector: 'app-plan-page',
   imports: [FormsModule, PageHeader, StatePanel, Pager, PlanForm],
   template: `
-    <app-page-header title="Compra recomendada"
-      lead="Cuánto comprar de cada producto, cuándo llega y qué productos requieren atención." />
+    <app-page-header title="Compra recomendada" />
 
     @if (forbidden()) {
       <p class="notice danger" role="alert" data-testid="plan-forbidden">No tienes permiso para ver los planes de compra. Ingresa con otro usuario o avisa al administrador.</p>
@@ -50,31 +49,40 @@ const SORTS: { value: string; label: string }[] = [
               No se puede planificar todavía: falta {{ !i.dataset ? 'cargar las ventas' : 'cargar el conteo de inventario' }}.
             </p>
           }
-          <div class="plan-top">
-          <section class="toolbar plan-picker" aria-label="Elegir el plan" data-testid="plan-picker">
-            <div class="filters">
+          @if (cutoff(); as c) {
+            <p class="notice warn compact plan-cutoff" data-testid="plan-cutoff" role="note">
+              <strong data-testid="plan-band">Plan de compra bajo supuestos</strong>, no es un pedido ejecutado.
+              Ventas registradas hasta el <strong>{{ longDate(c) }}</strong>; lo posterior es desconocido, no es cero.
+              @if (!planId() && pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
+            </p>
+          }
+          <section class="plan-summary" aria-label="Plan elegido" data-testid="plan-picker">
+            <div class="filters picks">
               <label>Mes
                 <select name="month" data-testid="plan-month" [ngModel]="month()" (ngModelChange)="setMonth($event)">
                   @for (m of monthOptions(); track m) { <option [value]="m">{{ monthLabel(m) }}</option> }
                 </select>
               </label>
               @if (versions().length > 1) {
-                <label>Versión del plan
+                <label>Versión
                   <select name="ver" data-testid="plan-version" [ngModel]="planId()" (ngModelChange)="pickPlan($event)">
-                    @for (v of versions(); track v.plan_id) { <option [value]="v.plan_id">{{ versionLabel(v) }}</option> }
+                    @for (v of versions(); track v.plan_id) { <option [value]="v.plan_id">{{ versionShort(v) }}</option> }
                   </select>
                 </label>
               }
             </div>
+            @if (header(); as h) {
+              <dl class="plan-facts" data-testid="plan-head">
+                @if (versions().length <= 1) {
+                  <div><dt>Versión</dt><dd data-testid="head-version">{{ h.version ? 'v' + h.version + ' · ' : '' }}{{ stampOf(h.created_at) }}</dd></div>
+                }
+                <div><dt>Decisión de compra</dt><dd data-testid="head-decision">{{ shortDate(h.params?.decision_date ?? h.decision_date) }}</dd></div>
+                <div><dt>Ventas hasta</dt><dd data-testid="head-sales">{{ shortDate(cutoff()) }}</dd></div>
+                <div class="grow"><dt>Existencias</dt>
+                  <dd data-testid="head-stock">{{ reconstructed() ? 'Cierre del ' + countDay() + ' (reconstruida: conteo informado ' + baseStamp() + ' más movimientos del sistema)' : 'Conteo informado ' + countStamp() }}</dd></div>
+              </dl>
+            }
           </section>
-          @if (cutoff(); as c) {
-            <p class="notice warn compact plan-cutoff" data-testid="plan-cutoff" role="note">
-              <strong data-testid="plan-band">Plan de compra bajo supuestos</strong>, no es un pedido ejecutado.
-              Ventas registradas hasta el <strong>{{ longDate(c) }}</strong>; lo posterior{{ gapMonth() ? ' (por ejemplo ' + gapMonth() + ')' : '' }} es desconocido, no es cero.
-              @if (!planId() && pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
-            </p>
-          }
-          </div>
         }
       </app-state-panel>
 
@@ -82,25 +90,12 @@ const SORTS: { value: string; label: string }[] = [
         @if (planId()) {
           <app-state-panel [state]="hdr.state()" (retry)="hdr.reload()">
             @if (header(); as h) {
-              <section class="plan-head" aria-label="Resumen del plan" data-testid="plan-head">
-                <dl class="plan-facts">
-                  @if (versions().length <= 1) {
-                    <div><dt>Versión</dt><dd data-testid="head-version">{{ h.version ? 'v' + h.version + ' · ' : '' }}{{ stampOf(h.created_at) }}</dd></div>
-                  }
-                  <div><dt>Decisión de compra</dt><dd data-testid="head-decision">{{ shortDate(h.params?.decision_date ?? h.decision_date) }}</dd></div>
-                  <div><dt>Ventas registradas hasta</dt><dd data-testid="head-sales">{{ shortDate(cutoff()) }}</dd></div>
-                  <div class="wide"><dt>Existencias</dt>
-                    <dd data-testid="head-stock">{{ reconstructed() ? 'Cierre del ' + countDay() + ' · reconstruida: conteo informado ' + baseStamp() + ' más movimientos del sistema' : 'Conteo informado ' + countStamp() }}</dd></div>
-                </dl>
-              </section>
-
               <div class="plan-info">
               <section class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
-                <p data-testid="src-params"><strong>Configuración de reposición</strong>
-                  (parámetros configurados, no condiciones confirmadas del proveedor):
-                  decisión de compra el {{ longDate(h.params?.decision_date ?? h.decision_date) }} · plazos de entrega de {{ leadText() }} días
+                <p data-testid="src-params"><strong>Configuración de reposición</strong>{{ ' ' }}<span class="muted">(configurada; no confirmada por el proveedor)</span>:
+                  plazos de entrega de {{ leadText() }} días
                   @if (h.params; as p) {
-                    · reserva de {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
+                    · reserva {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
                   }
                 </p>
                 <p data-testid="src-orders"><span class="chip warn">Supuesto</span> <strong>Pedidos por recibir:</strong> {{ pendingNote() }}
@@ -144,6 +139,7 @@ const SORTS: { value: string; label: string }[] = [
                 </select>
               </label>
               <button type="submit" class="small" [class.btn]="!isAdmin" [class.secondary]="isAdmin" data-testid="plan-search">Buscar</button>
+              <button type="button" class="secondary small" data-testid="plan-legend-open" (click)="showLegend()">Cómo leer la tabla</button>
             </form>
           </section>
 
@@ -152,20 +148,19 @@ const SORTS: { value: string; label: string }[] = [
               @if (d.items.length === 0) {
                 <p class="state" data-testid="plan-no-match">Ningún producto coincide con la búsqueda o el estado elegido.</p>
               } @else {
-                <p class="muted table-meta" data-testid="plan-summary">{{ d.total }} {{ d.total === 1 ? 'producto' : 'productos' }} en este plan. Cantidades en la presentación de cada producto. Decimales con punto: 18.214 son 18 unidades y 214 milésimas; miles con coma: 1,250.</p>
-                <div class="table-wrap plan-table-wrap" tabindex="0" role="region" aria-label="Tabla del plan de compra. Desplázate hacia los lados para ver todas las columnas.">
+                <div class="table-wrap plan-table-wrap" tabindex="0" role="region" aria-label="Tabla del plan de compra. Si no caben todas las columnas, desplázate hacia los lados.">
                   <table data-testid="plan-table" class="plan-table">
                     <thead>
                       <tr>
-                        <th scope="col" rowspan="2" class="sticky-col">Producto y presentación</th>
-                        <th scope="col" rowspan="2" class="num">Ventas previstas <small>(mes, sin limitar por stock)</small></th>
-                        <th scope="col" rowspan="2" class="num">{{ reconstructed() ? 'Existencias' : 'Stock del conteo' }} <small>({{ reconstructed() ? 'cierre ' : '' }}{{ countDay() }})</small></th>
-                        @for (l of leads(); track l; let i = $index) { <th scope="colgroup" colspan="4" [attr.data-lead]="l" class="lead-group" [class.lead-b]="i % 2 === 1">Plazo de entrega de {{ l }} días</th> }
+                        <th scope="col" rowspan="2" class="sticky-col">Producto</th>
+                        <th scope="col" rowspan="2" class="num c-forecast">Venta prevista del mes</th>
+                        <th scope="col" rowspan="2" class="num c-count">{{ reconstructed() ? 'Existencias' : 'Stock del conteo' }}</th>
+                        @for (l of leads(); track l; let i = $index) { <th scope="colgroup" colspan="4" [attr.data-lead]="l" class="lead-group" [class.lead-b]="i % 2 === 1">Plazo de {{ l }} días</th> }
                       </tr>
                       <tr>
                         @for (l of leads(); track l; let i = $index) {
-                          <th scope="col" class="lead-start" [class.lead-b]="i % 2 === 1">Llega el</th><th scope="col" class="num" [class.lead-b]="i % 2 === 1">Stock al inicio del mes</th>
-                          <th scope="col" class="num" [class.lead-b]="i % 2 === 1">Compra recomendada</th><th scope="col" class="num" [class.lead-b]="i % 2 === 1">Faltantes</th>
+                          <th scope="col" class="lead-start c-arrival" [class.lead-b]="i % 2 === 1">Llegada</th><th scope="col" class="num c-start" [class.lead-b]="i % 2 === 1">Stock al {{ monthFirst() }}</th>
+                          <th scope="col" class="num c-buy" [class.lead-b]="i % 2 === 1">Comprar</th><th scope="col" class="num c-short" [class.lead-b]="i % 2 === 1">Faltantes</th>
                         }
                       </tr>
                     </thead>
@@ -174,7 +169,7 @@ const SORTS: { value: string; label: string }[] = [
                         <tr [attr.data-sku]="r.producto_id">
                           <td data-col="product" class="sticky-col">
                             <strong data-col="code">{{ r.producto_id }}</strong> {{ r.producto }}
-                            <span class="muted" data-col="unit"> · {{ r.unidad_descripcion || NOT_REPORTED }}</span><br />
+                            <span class="muted unit" data-col="unit"> · {{ r.unidad_descripcion || NOT_REPORTED }}</span><br />
                             @if (r.stock_provenance?.discrepancy; as dx) {
                               <span class="chip warn" data-testid="plan-diff-chip">Diferencia con el sistema</span>
                               <span class="muted" data-testid="plan-diff-text"> {{ discText(dx) }}</span><br />
@@ -185,11 +180,11 @@ const SORTS: { value: string; label: string }[] = [
                           <td class="num" data-col="count">{{ qty(r.count_stock.libre, NOT_REPORTED) }}</td>
                           @for (l of leads(); track l) {
                             @if (r.scenarios[l]; as sc) {
-                              <td class="lead-start" [attr.data-col]="'arrival-' + l">{{ sc.arrival_date ? shortDate(sc.arrival_date) : 'No llega en el mes' }}</td>
+                              <td class="lead-start" [attr.data-col]="'arrival-' + l">@if (sc.arrival_date) { <span aria-hidden="true">{{ dayMonth(sc.arrival_date) }}</span><span class="sr-only">{{ shortDate(sc.arrival_date) }}</span> } @else { No llega en el mes }</td>
                               <td class="num" [attr.data-col]="'start-' + l">{{ qty(sc.stock_month_start) }}</td>
-                              <td class="num" [attr.data-col]="'buy-' + l">
-                                @if (buy(sc); as b) { <strong>{{ b }}</strong><br /> }
-                                <span [attr.class]="'chip ' + tone(sc.status)" [attr.data-status]="sc.status">{{ stat(sc) }}</span>
+                              <td class="num buy-cell" [attr.data-col]="'buy-' + l">
+                                @if (buy(sc); as b) { <strong>{{ buyNumber(sc) }}</strong><span class="sr-only"> {{ b === buyNumber(sc) ? '' : b.slice(buyNumber(sc).length).trim() }}</span><br /> }
+                                <span [attr.class]="'chip ' + tone(sc.status)" [attr.data-status]="sc.status" [attr.title]="stat(sc)">@if (chipShort(sc) === stat(sc)) { {{ stat(sc) }} } @else { <span aria-hidden="true">{{ chipShort(sc) }}</span><span class="sr-only">{{ stat(sc) }}</span> }</span>
                               </td>
                               <td class="num short-cell" [attr.data-col]="'short-' + l">
                                 @for (line of shortLines(sc); track line) { <span>{{ line }}</span> }
@@ -205,7 +200,21 @@ const SORTS: { value: string; label: string }[] = [
                 </div>
               }
               <app-pager [page]="d.page" [pageSize]="d.page_size" [total]="d.total" [hasMore]="d.has_more" (go)="go($event)" />
-              <p class="muted" data-testid="plan-units-note">Las cantidades no se suman entre productos (caja, pack, frasco) y no hay valores en dinero. «Ventas previstas» es lo que se estima vender sin limitar por stock; lo que podría atenderse con cada plazo está en «Entender la compra».</p>
+              <p class="muted table-meta" data-testid="plan-summary">{{ d.total }} {{ d.total === 1 ? 'producto' : 'productos' }} en este plan.</p>
+              <details class="help fold" data-testid="plan-legend" [open]="legendOpen()" (toggle)="legendOpen.set($any($event.target).open)">
+                <summary>Cómo leer la tabla</summary>
+                <ul class="plain">
+                  <li><strong>Venta prevista del mes:</strong> unidades que se estima vender en el mes, sin limitar por stock. Lo que sí podría atenderse con cada plazo está en «Entender la compra».</li>
+                  <li><strong>Existencias:</strong> {{ reconstructed() ? 'existencia reconstruida al cierre del ' + countDay() + ' (conteo informado más movimientos del sistema)' : 'stock del conteo del ' + countDay() }}.</li>
+                  <li><strong>Llegada:</strong> día en que llega el pedido según el plazo de entrega (se muestra día y mes; el año es el del plan o el siguiente).</li>
+                  <li><strong>Stock al {{ monthFirst() }}:</strong> existencia estimada al empezar el mes, después de las ventas y llegadas previas.</li>
+                  <li><strong>Comprar:</strong> unidades recomendadas; «Cubre el mes», «Llega tarde» o «No llega a tiempo» indican si el pedido alcanza.</li>
+                  <li><strong>Faltantes:</strong> «Antes» = unidades que no se podrían atender antes de empezar el mes; «En el mes» = durante el mes. Un faltante vacío no se muestra como 0: dice «No se puede calcular».</li>
+                  <li data-testid="plan-units-note">Las cantidades están en la presentación de cada producto (caja, pack, frasco); no se suman entre productos y no hay valores en dinero.</li>
+                  <li><strong>Decimales y miles:</strong> el punto separa decimales (18.214 son 18 unidades y 214 milésimas) y la coma separa miles (1,250).</li>
+                  <li><strong>Configuración de reposición:</strong> plazos, reserva, compra mínima y múltiplo son parámetros configurados por el administrador, no condiciones confirmadas del proveedor.</li>
+                </ul>
+              </details>
             }
           </app-state-panel>
 
@@ -402,40 +411,56 @@ const SORTS: { value: string; label: string }[] = [
   styles: `
     .plan-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin: 1rem 0; }
     td, th { vertical-align: top; }
-    .plan-top { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: stretch; margin: 0 0 0.5rem; }
-    .plan-picker { margin: 0; flex: 0 1 auto; }
-    .plan-picker .filters { gap: 0.5rem 1rem; }
-    .plan-top .plan-cutoff { flex: 1 1 24rem; margin: 0; }
+    .plan-cutoff { margin: 0 0 0.5rem; }
+    .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .plan-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.5rem; margin: 0 0 0.4rem; padding: 0.45rem 0.9rem;
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.95rem; }
+    .picks { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; align-items: center; margin: 0; }
+    .picks label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.95rem; }
+    .picks select { min-height: 2.2rem; padding: 0.2rem 0.5rem; }
+    .plan-summary .plan-facts { display: flex; flex-wrap: wrap; gap: 0.1rem 1.4rem; flex: 1 1 24rem; border: 0; padding: 0; background: none; }
+    .plan-facts > div { display: flex; gap: 0.35rem; align-items: baseline; }
+    .plan-facts > div.grow { flex: 1 1 100%; }
     .plan-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0.5rem 0; align-items: start; }
     @media (min-width: 1100px) { .plan-info:has(.fold) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
     .plan-info > * { margin: 0; }
     .short-cell span { display: block; white-space: nowrap; }
     .plan-table th[data-col-h], .plan-table td[data-col='forecast'], .plan-table td[data-col='count'] { min-width: 5.5rem; }
-    .compact { padding: 0.5rem 0.9rem; margin: 0.5rem 0; }
-    .plan-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.5rem 1.5rem; margin: 0; padding: 0.7rem 1rem;
-      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-    .plan-facts .wide { grid-column: 1 / -1; }
+    .compact { padding: 0.4rem 0.9rem; margin: 0.4rem 0; font-size: 0.95rem; }
+    .plan-info { font-size: 0.95rem; }
+    .toolbar { margin: 0.4rem 0; padding: 0.4rem 0.9rem; }
+    .toolbar label { font-size: 0.95rem; }
+    .toolbar select, .toolbar input { min-height: 2.2rem; }
+    .plan-facts { margin: 0; }
     .plan-facts dt { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+    .plan-facts dt::after { content: ':'; }
     .plan-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .plan-params { margin: 0.5rem 0; padding: 0.1rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-    .plan-params p { margin: 0.4rem 0; }
+    .plan-params { margin: 0; padding: 0.1rem 0.9rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.95rem; }
+    .plan-params p { margin: 0.35rem 0; }
     .fold > summary { cursor: pointer; }
     .link-like { text-decoration: underline; color: var(--link); }
     .table-meta { margin: 0.4rem 0; }
-    .plan-table { width: 100%; min-width: 1500px; font-size: 0.95rem; }
-    .plan-table thead th { white-space: normal; vertical-align: bottom; }
+    .plan-table-wrap { max-height: none; margin: 0.4rem 0; }
+    .plan-table { width: 100%; min-width: 60rem; font-size: 0.95rem; table-layout: auto; }
+    .plan-table th, .plan-table td { padding: 0.4rem 0.5rem; }
+    .plan-table thead th { white-space: normal; vertical-align: bottom; line-height: 1.25; position: static; }
     .plan-table td.num { white-space: normal; }
-    .plan-table td.num strong, .plan-table td.num > .chip { white-space: nowrap; }
-    .plan-table td[data-col^='arrival'] { white-space: nowrap; }
-    .plan-table th, .plan-table td { padding: 0.5rem 0.7rem; }
-    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); min-width: 14rem; max-width: 18rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
+    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); width: 15rem; min-width: 12rem; max-width: 16rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
     .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
+    .plan-table .unit { display: block; font-size: 0.9rem; }
+    .plan-table .c-forecast, .plan-table .c-count { width: 6rem; min-width: 5.5rem; }
+    .plan-table .c-arrival { width: 4.6rem; min-width: 4.2rem; }
+    .plan-table .c-start { width: 5rem; min-width: 4.6rem; }
+    .plan-table .c-buy { width: 6.8rem; min-width: 6.2rem; }
+    .plan-table .c-short { width: 6.4rem; min-width: 5.8rem; }
+    .plan-table td[data-col^='arrival'] { white-space: nowrap; }
     .plan-table .lead-start { border-left: 2px solid #9aa3b0; }
     .plan-table th.lead-group { text-align: center; background: #dde7f3; }
     .plan-table th.lead-group.lead-b, .plan-table th.lead-b { background: #e6e2f1; }
     .plan-table th[scope=col]:not(.sticky-col) { background: #e8ecf2; }
     .plan-table th.lead-b[scope=col] { background: #ece9f5; }
-    .plan-table td .chip { white-space: normal; display: inline-block; }
+    .plan-table .buy-cell strong { font-size: 1.05rem; }
+    .plan-table td .chip { white-space: nowrap; font-size: 0.85rem; padding: 0.05rem 0.5rem; }
     .explain h3 { margin-top: 0; }
     .explain h4 { margin: 0.9rem 0 0.3rem; font-size: 1rem; }
     .explain .verdict { margin: 0.2rem 0; }
@@ -558,6 +583,24 @@ export class PlanPage {
     return `${who} (producto, unidades, fecha de llegada y si es reportado o asumido) y no llegan otros adicionales (supuesto).`;
   });
   pendingNature = (n: string) => PENDING_NATURE[n] ?? n;
+  /** «Stock al 1/11»: primer día del mes del plan elegido (nunca fijo). */
+  monthFirst = computed(() => { const m = /^\d{4}-(\d{2})$/.exec(this.planMonth() || ''); return m ? `1/${m[1]}` : 'inicio del mes'; });
+  private static readonly MON = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  /** «28 oct»; la fecha completa queda para lectores de pantalla y en «Entender la compra». */
+  dayMonth = (iso: string | null | undefined): string => {
+    const m = iso ? /^\d{4}-(\d{2})-(\d{2})/.exec(iso) : null;
+    return m ? `${Number(m[2])} ${PlanPage.MON[Number(m[1]) - 1]}` : fmtDate(iso);
+  };
+  /** Número de la compra sin la aclaración «(no hace falta comprar)». */
+  buyNumber(sc: Parameters<typeof purchaseText>[0]): string { const t = purchaseText(sc); return t === null ? '' : t.replace(/\s*\(no hace falta comprar\)$/, ''); }
+  chipShort(sc: { status: string }): string {
+    return sc.status === 'OK' ? 'Cubre el mes' : sc.status === 'LLEGA_TARDE' ? 'Llega tarde' : sc.status === 'NO_LLEGA_A_TIEMPO' ? 'No llega a tiempo' : NOT_COMPUTABLE;
+  }
+  legendOpen = signal(false);
+  showLegend() {
+    this.legendOpen.set(true);
+    setTimeout(() => { const d = this.doc.querySelector('[data-testid="plan-legend"]') as HTMLElement | null; d?.scrollIntoView?.({ block: 'center' }); (d?.querySelector('summary') as HTMLElement | null)?.focus(); }, 0);
+  }
   private countIso = computed(() => this.header()?.snapshot?.as_of_local ?? this.inputs()?.snapshot?.as_of_local ?? null);
   countStamp = computed(() => {
     const s = localStamp(this.countIso());
@@ -580,6 +623,7 @@ export class PlanPage {
   monthOptions = computed(() => this.inputs()?.limits?.months ?? (this.month() ? [this.month()] : []));
 
   monthLabel = (m: string) => { const n = monthName(`${m}-01`); return n ? `${n} de ${m.slice(0, 4)}` : m; };
+  versionShort = (v: PlanRef) => `${v.version ? 'v' + v.version + ' · ' : ''}${this.stampOf(v.created_at)}`;
   versionLabel = (v: PlanRef) => `Creado el ${this.stampOf(v.created_at)} · decisión el ${fmtDate(v.decision_date)} · plazos ${v.lead_days.join(' y ')} días`;
   stampOf = (iso: string | undefined) => localStamp(iso) ?? 'fecha no informada';
   shortDate = (iso: string | null | undefined) => fmtDate(iso);
