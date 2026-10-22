@@ -1,0 +1,38 @@
+# T22 — Plan de extensión de las mejoras esenciales del piloto a Inicio, Ventas previstas y Existencias (22/10/2026)
+
+**Solo plan; nada de esto está implementado ni publicado.** Se ejecutará únicamente cuando Rogelio confirme el piloto (`t22-piloto-3`). No es un rediseño amplio: son los mismos cuatro criterios del piloto aplicados a tres pantallas, con cambios concretos medidos en una auditoría al 100 % (`artifacts/private/t20/audit_pantallas.mjs`, `audit_pantallas.json`, capturas en `artifacts/private/t20/screens_t22/auditoria/`; ens19, 1905×910 y 1366×640, plan v2).
+
+## 1. Criterios del piloto que se trasladan
+(a) aviso de supuestos **una sola vez** y breve; (b) resumen compacto de fechas y procedencia; (c) encabezados cortos con la explicación **una vez** en «Cómo leer la tabla» (cerrado); (d) tabla a **ancho completo** (clase `wide` en `<main>` solo mientras la pantalla está abierta) con la primera columna fija; (e) procedencia/pendientes en desplegables cerrados; (f) singular correcto; (g) filtros en una fila. Sin tocar cálculos, API, datos, parámetros ni permisos. Texto «Dato real / Dato de la empresa / Proyección / Supuesto» **se conserva** (tipifica el dato).
+
+## 2. Medidas actuales (100 %) y objetivo
+| Pantalla | Tabla empieza (1905 / 1366) | 1.ª fila completa hasta | Ancho útil vs tabla | Observación |
+|---|---|---|---|---|
+| Ventas previstas | 682 / 731 px | 844 / 893 px (de 910 / 640) | 1238 vs 1305 (se corta) / 1068 vs 1305 | Tarjeta «Plan vigente» de ~300 px con 4 viñetas; franja azul global repetida; encabezados largos («Ventas previstas del mes (sin limitar por stock)») |
+| Existencias | 717 / 742 px | 879 / 904 px | 1238 vs 1303 (se corta) / 1068 vs 1303 | Tres bloques apilados (resumen, «último movimiento», pendientes) + enlace; encabezados largos |
+| Inicio | sin tabla | — (página de 1612 px) | — | Tarjeta del plan de ~270 px; las cuatro entradas (Ventas previstas, Existencias, Compra recomendada, Mis análisis) quedan bajo el pliegue a 1366×640; secciones «Evaluación académica…» y «Cómo empezar» ocupan espacio a la vista |
+**Objetivo (igual que el piloto):** tabla desde ≲ 400 px, encabezados y una fila completa visibles a 1366×640, sin columna cortada a 1905 y 1366 px, encabezados ≤ 2 líneas, páginas sin desborde horizontal a 390 px.
+
+## 3. Cambios concretos
+**Ayudante compartido (pequeño):** extraer del piloto el código que añade/quita la clase `wide` (`plan.page.ts`, constructor) a una función `useWideMain()` en `core/` y usarla en `plan.page.ts`, `plan-forecasts.page.ts` y `stock.page.ts`. En `app.html`, ocultar la franja global `context-strip` también en `/pronosticos` y `/existencias` (como ya se hace en `/planificar`) porque cada página lleva su propio aviso de una línea; en `/inicio` se mantiene la franja (única) y se quitan las repeticiones de la tarjeta.
+
+**Ventas previstas** (`plan-forecasts.page.ts`, 158 líneas; testids a conservar: `fc-source`, `fc-version`, `fc-provenance`, `fc-sales`, `fc-stock`, `fc-projection`, `fc-assumption`, `fc-table`, `fc-q`, `fc-sort`, `fc-search`, `fc-summary`, `fc-units-note`, `fc-to-plan`, `fc-to-academic`):
+1. Tarjeta «Plan vigente: noviembre de 2026» → resumen compacto de 2–3 líneas: versión · creado · decisión · ventas hasta · existencias (cierre y procedencia) y las cuatro etiquetas (`Dato real`, `Dato de la empresa`, `Proyección`, `Supuesto`) en filas de una línea; el texto largo («Es el mismo plan que se abre por defecto…», definición del promedio de 28 días) pasa a «De dónde sale este plan» (cerrado).
+2. Barra única de filtros (búsqueda sin etiqueta larga, «Orden», «Buscar», enlace «Cómo leer la tabla»).
+3. Encabezados: «Producto» · «Venta prevista del mes» · «Por día» · «Últimos 28 días» · «Existencias» · «Compra recomendada»/enlace; matices («sin limitar por stock», cierre 20/10, 28 días) una sola vez en «Cómo leer la tabla»; el enlace «ver en Compra recomendada» se mantiene.
+4. `wide` + primera columna fija; «N productos» con singular; nota de unidades y «¿Buscas la evaluación histórica…?» pasan a la leyenda/pie.
+
+**Existencias** (`stock.page.ts`, 168 líneas):
+1. Resumen compacto único: «Existencia reconstruida al cierre del 20/10/2026 (conteo informado 18/10/2026 17:00 + movimientos del sistema) · Almacén Principal»; la línea «último movimiento 21/10 16:26» se une a la misma tarjeta; el aviso azul global deja de repetirla.
+2. «Pendiente de confirmar con la empresa»: aviso breve «2 pendientes de confirmar · Ver detalle» con el texto completo en el desplegable (cerrado); las diferencias siguen marcadas en las filas afectadas (las 13). El enlace «Ver el conteo informado» pasa a la barra de filtros.
+3. Encabezados: «Producto» · «Conteo 18/10» · «Entradas» · «Salidas» · «Existencia al 20/10» · «Diferencia» (fechas tomadas del plan, no fijas); «hasta el cierre» y la regla de reconstrucción en «Cómo leer la tabla»/«Cómo se reconstruyó» (ya cerrado).
+4. `wide`, filtros en una fila (código/nombre, «Solo diferencias», Buscar), singular.
+
+**Inicio** (`home.page.ts`, 212 líneas):
+1. Tarjeta «Plan de compra vigente»: de 4 viñetas a 2 líneas (versión y decisión; ventas hasta · existencias · proyección con sus etiquetas) y la línea «19 de 50 con plazo de 7 días · 19 de 50 con plazo de 14 días» se conserva (es el dato clave de la pantalla); opcional: añadir «N con llegada tardía a 14 días» si la API de resultados ya lo entrega (hoy `status_counts`).
+2. Las cuatro entradas (Ventas previstas, Existencias, Compra recomendada, Mis análisis) suben para verse sin desplazarse a 1366×640.
+3. «Evaluación académica con datos históricos del ejemplo» y «Cómo empezar» pasan a desplegables cerrados (el texto metodológico y la etiqueta «Inventario simulado con supuestos; no corresponde al inventario real de la empresa» siguen intactos dentro del apartado académico y en sus pantallas).
+4. Sin cambios de ancho (no hay tabla).
+
+## 4. Pruebas y tiempo
+Actualizar las aserciones que miran textos movidos en `ux-home-admin.spec.ts`, `t21-current-plan.spec.ts`, `ux-forecasts-reco.spec.ts` y `t20-v2.spec.ts`; añadir pruebas de orden, desplegables cerrados, `wide` y singular por pantalla; extender `e2e_t22_piloto.mjs` a las tres pantallas (1905×910, 1366×640, 390×844; teclado; datos intactos: 18.214 / 0 / 25 / 21 y llegada tardía a 14 d en 3110044; compra y existencias iguales a la API). Estimación: implementación 1 h 15 min, pruebas y capturas 45 min, imagen local + documentación 20 min; **después de confirmar el piloto**. Publicación posterior a Azure: construir imagen `t22…`, subirla al ACR, actualizar `dfpub-api` y `dfpub-worker`, **medir de nuevo la IP de salida** (puede cambiar con una revisión nueva) y repetir `e2e_publica.mjs`, `e2e_publica2.mjs` y `seg_publica.mjs` (≈ 40 min).
