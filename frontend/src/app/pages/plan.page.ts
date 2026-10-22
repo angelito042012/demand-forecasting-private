@@ -50,6 +50,7 @@ const SORTS: { value: string; label: string }[] = [
               No se puede planificar todavía: falta {{ !i.dataset ? 'cargar las ventas' : 'cargar el conteo de inventario' }}.
             </p>
           }
+          <div class="plan-top">
           <section class="toolbar plan-picker" aria-label="Elegir el plan" data-testid="plan-picker">
             <div class="filters">
               <label>Mes
@@ -67,12 +68,13 @@ const SORTS: { value: string; label: string }[] = [
             </div>
           </section>
           @if (cutoff(); as c) {
-            <p class="notice warn compact" data-testid="plan-cutoff" role="note">
+            <p class="notice warn compact plan-cutoff" data-testid="plan-cutoff" role="note">
               <strong data-testid="plan-band">Plan de compra bajo supuestos</strong>, no es un pedido ejecutado.
               Ventas registradas hasta el <strong>{{ longDate(c) }}</strong>; lo posterior{{ gapMonth() ? ' (por ejemplo ' + gapMonth() + ')' : '' }} es desconocido, no es cero.
               @if (!planId() && pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
             </p>
           }
+          </div>
         }
       </app-state-panel>
 
@@ -91,6 +93,7 @@ const SORTS: { value: string; label: string }[] = [
                 </dl>
               </section>
 
+              <div class="plan-info">
               <section class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
                 <p data-testid="src-params"><strong>Configuración de reposición</strong>
                   (parámetros configurados, no condiciones confirmadas del proveedor):
@@ -119,6 +122,7 @@ const SORTS: { value: string; label: string }[] = [
                   <p class="muted">Las diferencias de inventario y las llegadas tardías se marcan en cada producto afectado de la tabla.</p>
                 </details>
               }
+              </div>
             }
           </app-state-panel>
 
@@ -186,7 +190,9 @@ const SORTS: { value: string; label: string }[] = [
                                 @if (buy(sc); as b) { <strong>{{ b }}</strong><br /> }
                                 <span [attr.class]="'chip ' + tone(sc.status)" [attr.data-status]="sc.status">{{ stat(sc) }}</span>
                               </td>
-                              <td class="num" [attr.data-col]="'short-' + l">{{ shortages(sc) }}</td>
+                              <td class="num short-cell" [attr.data-col]="'short-' + l">
+                                @for (line of shortLines(sc); track line) { <span>{{ line }}</span> }
+                              </td>
                             } @else {
                               <td colspan="4" class="lead-start" [attr.data-col]="'none-' + l">{{ NOT_COMPUTABLE }}</td>
                             }
@@ -395,7 +401,13 @@ const SORTS: { value: string; label: string }[] = [
   styles: `
     .plan-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin: 1rem 0; }
     td, th { vertical-align: top; }
-    .plan-picker { margin: 0 0 0.6rem; }
+    .plan-top { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: stretch; margin: 0 0 0.5rem; }
+    .plan-picker { margin: 0; flex: 0 1 auto; }
+    .plan-top .plan-cutoff { flex: 1 1 24rem; margin: 0; display: flex; align-items: center; }
+    .plan-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0.5rem 0; align-items: start; }
+    @media (min-width: 1100px) { .plan-info:has(.fold) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+    .plan-info > * { margin: 0; }
+    .short-cell span { display: block; }
     .compact { padding: 0.5rem 0.9rem; margin: 0.5rem 0; }
     .plan-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.5rem 1.5rem; margin: 0; padding: 0.7rem 1rem;
       background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
@@ -408,6 +420,10 @@ const SORTS: { value: string; label: string }[] = [
     .link-like { text-decoration: underline; color: var(--link); }
     .table-meta { margin: 0.4rem 0; }
     .plan-table { width: max-content; min-width: 100%; font-size: 0.95rem; }
+    .plan-table thead th { white-space: normal; vertical-align: bottom; }
+    .plan-table td.num { white-space: normal; }
+    .plan-table td.num strong, .plan-table td.num > .chip { white-space: nowrap; }
+    .plan-table td[data-col^='arrival'] { white-space: nowrap; }
     .plan-table th, .plan-table td { padding: 0.5rem 0.7rem; }
     .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); min-width: 17rem; max-width: 22rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
     .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
@@ -570,12 +586,13 @@ export class PlanPage {
   /** Estado en palabras sencillas del escenario. */
   stat(sc: Parameters<typeof statusText>[0]) { return statusText(sc, this.planMonth()); }
   buy = purchaseText;
-  shortages(sc: { shortage_before_month: string | null; shortage_month: string | null }): string {
-    if (sc.shortage_month === null && sc.shortage_before_month === null) return NOT_COMPUTABLE;
+  /** Faltantes en líneas separadas (antes del mes / en el mes); sin dato ⇒ «No se puede calcular», nunca 0. */
+  shortLines(sc: { shortage_before_month: string | null; shortage_month: string | null }): string[] {
+    if (sc.shortage_month === null && sc.shortage_before_month === null) return [NOT_COMPUTABLE];
     const parts: string[] = [];
     if (sc.shortage_before_month !== null) parts.push(`Antes del mes: ${qtyText(sc.shortage_before_month)}`);
     if (sc.shortage_month !== null) parts.push(`En el mes: ${qtyText(sc.shortage_month)}`);
-    return parts.join(' · ');
+    return parts;
   }
   leadsOf(x: PlanResultDetail): string[] { return Object.keys(x.scenarios).sort((a, b) => Number(a) - Number(b)); }
   stepsFor(x: PlanResultDetail, l: string): PlanStep[] { return x.scenarios[l]?.explanation ?? []; }
