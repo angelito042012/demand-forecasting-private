@@ -96,7 +96,7 @@ describe('T20 Compra recomendada con existencia reconstruida', () => {
     expect(src).not.toContain('Conteo reportado por la empresa:');
     expect(src).toContain('21/10/2026 a las 16:26');
     expect(txt(el, 'src-params')).toContain('Configuración de reposición');
-    expect(txt(el, 'src-params')).toContain('no confirmada por el proveedor');
+    expect(txt(el, 'src-params')).toContain('sin confirmar con el proveedor');
   });
 
   it('el supuesto de pedidos es el texto de la API (sin afirmar que no existen pedidos)', async () => {

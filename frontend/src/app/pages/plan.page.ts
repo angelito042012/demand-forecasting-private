@@ -88,8 +88,8 @@ const SORTS: { value: string; label: string }[] = [
                     <dd data-testid="head-stock">{{ reconstructed() ? 'cierre del ' + countDay() + ' · reconstruida (conteo informado ' + baseStampShort() + ' + movimientos del sistema)' : 'conteo informado ' + countStamp() }}</dd></div>
                 </dl>
               <div class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
-                <p class="params-line"><span data-testid="src-params"><strong>Configuración de reposición</strong>{{ ' ' }}<span class="muted">(configurada; no confirmada por el proveedor)</span>:
-                  plazos de entrega de {{ leadText() }} días
+                <p class="params-line"><span data-testid="src-params"><strong>Configuración de reposición</strong>{{ ' ' }}<span class="muted">(sin confirmar con el proveedor)</span>:
+                  plazos de entrega {{ leadText() }} días
                   @if (h.params; as p) {
                     · reserva {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
                   }</span>
