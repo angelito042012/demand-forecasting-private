@@ -101,7 +101,7 @@ describe('T20 Compra recomendada con existencia reconstruida', () => {
   it('el supuesto de pedidos es el texto de la API (sin afirmar que no existen pedidos)', async () => {
     const { el } = await openPlan();
     expect(txt(el, 'src-orders')).toContain(ORDERS_TEXT);
-    expect(txt(el, 'plan-cutoff')).toContain(ORDERS_TEXT);
+    expect(txt(el, 'src-orders')).toContain(ORDERS_TEXT);
     expect(el.textContent).not.toContain('En este escenario no llegan otros pedidos');
   });
 
@@ -267,5 +267,81 @@ describe('T20 rutas', () => {
     expect(get('planificar').title).toBe('Compra recomendada');
     expect(get('recomendaciones').title).toContain('Evaluación académica');
     expect(get('inventario').loadComponent).toBeTruthy();
+  });
+});
+
+describe('Piloto de presentación de «Compra recomendada» (22/10)', () => {
+  const before = (a: HTMLElement | null, b: HTMLElement | null) => !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('orden: cabecera, parámetros, pendientes, filtros y tabla antes que las explicaciones desplegables', async () => {
+    const { f, el } = await openPlan();
+    (el.querySelector('tr[data-sku="1000001"] [data-testid="plan-understand"]') as HTMLElement).click();
+    await settle(f);
+    await ok(f, at(`/plans/${V2}/results/1000001`), item('1000001', null));
+    const order = ['plan-head', 'plan-params', 'plan-confirmations', 'plan-filters', 'plan-table', 'plan-explain', 'plan-source'].map((id) => q(el, id));
+    order.forEach((n, i) => { expect(n).not.toBeNull(); if (i) expect(before(order[i - 1], n)).toBe(true); });
+    expect(before(q(el, 'plan-table'), q(el, 'plan-compare'))).toBe(true);
+  });
+
+  it('cabecera breve: mes, versión, decisión, fecha de ventas y existencias con procedencia', async () => {
+    const { el } = await openPlan();
+    expect(txt(el, 'head-month')).toBe('noviembre de 2026');
+    expect(txt(el, 'head-version')).toContain('v2');
+    expect(txt(el, 'head-decision')).toBe('21/10/2026');
+    expect(txt(el, 'head-sales')).toBe('20/10/2026');
+    expect(txt(el, 'head-stock')).toContain('Cierre del 20/10/2026');
+    expect(txt(el, 'head-stock')).toContain('reconstruida');
+  });
+
+  it('explicaciones largas, comparación y pendientes cerradas por defecto; el aviso de supuestos es uno solo', async () => {
+    const { el } = await openPlan();
+    for (const id of ['plan-source', 'plan-compare', 'plan-confirmations']) {
+      const d = q(el, id) as HTMLDetailsElement;
+      expect(d.tagName).toBe('DETAILS');
+      expect(d.open).toBe(false);
+    }
+    expect((el.textContent ?? '').match(/Plan de compra bajo supuestos/g)?.length).toBe(1);
+    expect(txt(el, 'plan-confirmations')).toContain('2 pendientes de confirmar con la empresa');
+    expect(txt(el, 'plan-confirmations')).toContain('1 diferencia de inventario');
+    expect(txt(el, 'src-orders')).toContain('Supuesto');
+    expect(txt(el, 'src-orders')).toContain('Pendiente de confirmar con la empresa');
+  });
+
+  it('singular y legible: «1 producto» y la aclaración de decimales y miles', async () => {
+    const { f, el } = await openPlan();
+    const one = { ...results(V2), items: [item('1000001', null)], total: 1 };
+    (q(el, 'plan-search') as HTMLElement).click();
+    await settle(f);
+    await ok(f, at(`/plans/${V2}/results`), one);
+    expect(txt(el, 'plan-summary')).toContain('1 producto en este plan');
+    expect(txt(el, 'plan-summary')).not.toContain('1 productos');
+    expect(txt(el, 'plan-summary')).toContain('Decimales con punto');
+  });
+
+  it('«Entender la compra» da primero compra, llegada y faltantes y después el cálculo; el foco pasa al título', async () => {
+    const { f, el } = await openPlan();
+    (el.querySelector('tr[data-sku="1000001"] [data-testid="plan-understand"]') as HTMLElement).click();
+    await settle(f);
+    const d = item('1000001', null);
+    d.scenarios['7'] = { ...d.scenarios['7'], explanation: [{ label: 'Paso', text: 'x', value: '1' }] } as never;
+    await ok(f, at(`/plans/${V2}/results/1000001`), d);
+    const card = q(el, 'ex-lead-7')!;
+    expect(before(q(card, 'ex-buy'), q(card, 'ex-served'))).toBe(true);
+    expect(before(q(card, 'ex-served'), q(card, 'ex-steps-7'))).toBe(true);
+    expect(card.textContent).toContain('Llega el');
+    expect(before(card.querySelector('.verdict'), q(card, 'ex-buy'))).toBe(true);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(document.activeElement?.id).toBe('h-explain');
+  });
+
+  it('la pantalla usa todo el ancho (clase wide en <main>) solo mientras está abierta', async () => {
+    const main = document.createElement('main');
+    document.body.appendChild(main);
+    try {
+      const { f } = await openPlan();
+      expect(main.classList.contains('wide')).toBe(true);
+      f.destroy();
+      expect(main.classList.contains('wide')).toBe(false);
+    } finally { main.remove(); }
   });
 });

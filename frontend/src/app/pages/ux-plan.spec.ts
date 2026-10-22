@@ -130,7 +130,7 @@ describe('Planificar compras: lectura', () => {
     expect(txt(el, 'plan-table')).toContain('sin limitar por stock');
     expect(el.textContent).not.toMatch(/simulad/i);
     expect(el.textContent).not.toMatch(/Total general:|Total:|PEN|S\//);
-    expect(txt(el, 'plan-units-note')).toContain('no se muestra un total general de unidades');
+    expect(txt(el, 'plan-units-note')).toContain('no se suman entre productos');
     expect(el.querySelector('.table-wrap table')).toBeTruthy();
     expect(el.querySelectorAll('.btn:not(.secondary)').length).toBe(1);   // lector: solo «Buscar»
     expect(el.querySelector('app-plan-form')).toBeNull();
@@ -141,7 +141,7 @@ describe('Planificar compras: lectura', () => {
     expect(txt(el, 'plan-cutoff')).toContain('30 de septiembre de 2026');
     expect(txt(el, 'plan-cutoff')).toContain('desconocido, no es cero');
     expect(txt(el, 'plan-cutoff')).toContain('octubre');
-    expect(txt(el, 'plan-cutoff')).toContain('En este escenario no llegan otros pedidos (supuesto)');
+    expect(txt(el, 'src-orders')).toContain('En este escenario no llegan otros pedidos (supuesto)');
     expect(txt(el, 'src-sales')).toContain('30 de septiembre de 2026');
     expect(txt(el, 'src-count')).toContain('18/10/2026 a las 17:00');
     expect(txt(el, 'src-count')).toContain('Almacén Principal (almacén 1)');

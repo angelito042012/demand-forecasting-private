@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { map, tap } from 'rxjs';
@@ -37,10 +38,7 @@ const SORTS: { value: string; label: string }[] = [
   imports: [FormsModule, PageHeader, StatePanel, Pager, PlanForm],
   template: `
     <app-page-header title="Compra recomendada"
-      lead="Revisa cuántas unidades comprar de cada producto para cubrir un mes, a partir de las ventas previstas, las existencias y el plazo de entrega." />
-
-    <p class="notice warn" data-testid="plan-band" role="note"><strong>Plan de compra bajo supuestos.</strong>
-      No es un pedido ejecutado ni una mejora comprobada: son unidades propuestas con datos hasta una fecha de corte, un conteo informado y parámetros que se pueden cambiar.</p>
+      lead="Cuánto comprar de cada producto, cuándo llega y qué productos requieren atención." />
 
     @if (forbidden()) {
       <p class="notice danger" role="alert" data-testid="plan-forbidden">No tienes permiso para ver los planes de compra. Ingresa con otro usuario o avisa al administrador.</p>
@@ -52,13 +50,7 @@ const SORTS: { value: string; label: string }[] = [
               No se puede planificar todavía: falta {{ !i.dataset ? 'cargar las ventas' : 'cargar el conteo de inventario' }}.
             </p>
           }
-          @if (cutoff(); as c) {
-            <p class="notice warn" data-testid="plan-cutoff">
-              Las ventas registradas terminan el <strong>{{ longDate(c) }}</strong>. Lo ocurrido después de esa fecha{{ gapMonth() ? ' (por ejemplo ' + gapMonth() + ')' : '' }} es desconocido, no es cero.
-              @if (pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
-            </p>
-          }
-          <section class="toolbar" aria-label="Elegir el plan" data-testid="plan-picker">
+          <section class="toolbar plan-picker" aria-label="Elegir el plan" data-testid="plan-picker">
             <div class="filters">
               <label>Mes
                 <select name="month" data-testid="plan-month" [ngModel]="month()" (ngModelChange)="setMonth($event)">
@@ -74,6 +66,13 @@ const SORTS: { value: string; label: string }[] = [
               }
             </div>
           </section>
+          @if (cutoff(); as c) {
+            <p class="notice warn compact" data-testid="plan-cutoff" role="note">
+              <strong data-testid="plan-band">Plan de compra bajo supuestos</strong>, no es un pedido ejecutado.
+              Ventas registradas hasta el <strong>{{ longDate(c) }}</strong>; lo posterior{{ gapMonth() ? ' (por ejemplo ' + gapMonth() + ')' : '' }} es desconocido, no es cero.
+              @if (!planId() && pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
+            </p>
+          }
         }
       </app-state-panel>
 
@@ -81,68 +80,213 @@ const SORTS: { value: string; label: string }[] = [
         @if (planId()) {
           <app-state-panel [state]="hdr.state()" (retry)="hdr.reload()">
             @if (header(); as h) {
-              <section class="surface" aria-labelledby="h-src" data-testid="plan-source">
-                <h2 id="h-src">De dónde sale este plan</h2>
-                <ul class="plain">
-                  <li data-testid="src-sales"><strong>Ventas reales:</strong> registradas hasta el {{ longDate(cutoff()) }}.</li>
-                  @if (reconstructed()) {
-                    <li data-testid="src-count"><strong>Existencia reconstruida al cierre del {{ countDay() }} (conteo reportado {{ baseStamp() }} + movimientos del sistema)</strong>{{ warehouseName() ? ' · ' + warehouseName() : '' }}.
-                      El conteo lo informó la empresa y no se verificó de forma independiente; los movimientos vienen del sistema{{ lastMovement() ? ' hasta el ' + lastMovement() : '' }}.</li>
-                  } @else {
-                    <li data-testid="src-count"><strong>Conteo reportado por la empresa:</strong> {{ countStamp() }}{{ warehouseName() ? ' · ' + warehouseName() : '' }}. Lo informó la empresa y no se verificó de forma independiente.</li>
-                  }
-                  <li data-testid="src-projection"><strong>Proyección posterior:</strong> calculada con el promedio de los últimos 28 días de ventas; no son ventas observadas. Estima ventas registradas, que pueden haber estado limitadas por falta de stock.</li>
-                  <li data-testid="src-params"><strong>Configuración de reposición</strong> (parámetros configurados por el administrador, no condiciones confirmadas del proveedor):
-                    decisión de compra el {{ longDate(h.params?.decision_date ?? h.decision_date) }} · plazos de entrega de {{ leadText() }} días
-                    @if (h.params; as p) {
-                      · reserva de {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
-                    }
-                  </li>
-                  <li data-testid="src-orders"><strong>Pedidos por recibir:</strong> {{ pendingNote() }}
-                    @if (pendingOrders().length) {
-                      <ul class="plain" data-testid="src-pending">
-                        @for (o of pendingOrders(); track $index) {
-                          <li data-testid="src-pending-item">Producto <strong>{{ o.producto_id }}</strong> · {{ o.units }} unidades · llega el {{ shortDate(o.arrival_date) }} · {{ pendingNature(o.nature) }}</li>
-                        }
-                      </ul>
-                    }
-                  </li>
-                </ul>
-                @if (h.distances; as d) {
-                  <p class="muted" data-testid="src-distance">
-                    Distancia desde el último día con ventas:
-                    @if (d.cutoff_to_count !== undefined) { el conteo es {{ d.cutoff_to_count }} días posterior; }
-                    @if (d.cutoff_to_month_start !== undefined) { el mes empieza {{ d.cutoff_to_month_start }} días después; }
-                    @if (d.cutoff_to_month_end !== undefined) { termina {{ d.cutoff_to_month_end }} días después. }
-                    Cuanto más lejos del último dato, más incierta es la previsión.
-                  </p>
-                }
-                @if (h.warnings?.length) {
-                  <ul class="plain" data-testid="plan-warnings">@for (w of h.warnings; track w) { <li>{{ w }}</li> }</ul>
-                }
-                @if (pendingConfirmations().length) {
-                  <div class="notice warn" role="status" data-testid="plan-confirmations">
-                    <strong>Pendiente de confirmar con la empresa</strong>
-                    <ul class="plain">@for (c of pendingConfirmations(); track c.code) { <li [attr.data-code]="c.code">{{ c.text }}</li> }</ul>
-                  </div>
-                }
-                <details class="help" data-testid="plan-tech">
-                  <summary>Detalles técnicos del plan</summary>
-                  <ul class="plain">
-                    <li>Identificador: {{ h.plan_id }}</li>
-                    <li>Creado: {{ stampOf(h.created_at) }} · versión de datos: {{ h.dataset_id || 'no informada' }} · conteo: {{ h.snapshot_id || 'no informado' }}</li>
-                    @for (a of h.assumptions ?? []; track a.text) { <li>Supuesto{{ a.nature ? ' (' + a.nature + ')' : '' }}: {{ a.text }}</li> }
-                  </ul>
-                </details>
+              <section class="plan-head" aria-label="Resumen del plan" data-testid="plan-head">
+                <dl class="plan-facts">
+                  <div><dt>Mes</dt><dd data-testid="head-month">{{ monthLabel(planMonth()) }}</dd></div>
+                  <div><dt>Versión</dt><dd data-testid="head-version">{{ h.version ? 'v' + h.version + ' · ' : '' }}{{ stampOf(h.created_at) }}</dd></div>
+                  <div><dt>Decisión de compra</dt><dd data-testid="head-decision">{{ shortDate(h.params?.decision_date ?? h.decision_date) }}</dd></div>
+                  <div><dt>Ventas registradas hasta</dt><dd data-testid="head-sales">{{ shortDate(cutoff()) }}</dd></div>
+                  <div class="wide"><dt>Existencias</dt>
+                    <dd data-testid="head-stock">{{ reconstructed() ? 'Cierre del ' + countDay() + ' · reconstruida: conteo informado ' + baseStamp() + ' más movimientos del sistema' : 'Conteo informado ' + countStamp() }}</dd></div>
+                </dl>
               </section>
+
+              <section class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
+                <p data-testid="src-params"><strong>Configuración de reposición</strong>
+                  (parámetros configurados, no condiciones confirmadas del proveedor):
+                  decisión de compra el {{ longDate(h.params?.decision_date ?? h.decision_date) }} · plazos de entrega de {{ leadText() }} días
+                  @if (h.params; as p) {
+                    · reserva de {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
+                  }
+                </p>
+                <p data-testid="src-orders"><span class="chip warn">Supuesto</span> <strong>Pedidos por recibir:</strong> {{ pendingNote() }}
+                  @if (!pendingOrders().length) { <span class="muted">Pendiente de confirmar con la empresa.</span> }
+                </p>
+                @if (pendingOrders().length) {
+                  <ul class="plain" data-testid="src-pending">
+                    @for (o of pendingOrders(); track $index) {
+                      <li data-testid="src-pending-item">Producto <strong>{{ o.producto_id }}</strong> · {{ o.units }} unidades · llega el {{ shortDate(o.arrival_date) }} · {{ pendingNature(o.nature) }}</li>
+                    }
+                  </ul>
+                }
+              </section>
+
+              @if (pendingConfirmations().length) {
+                <details class="notice warn compact fold" data-testid="plan-confirmations">
+                  <summary><strong>{{ pendingConfirmations().length }} {{ pendingConfirmations().length === 1 ? 'pendiente' : 'pendientes' }} de confirmar con la empresa:</strong>
+                    {{ pendingSummary() }}. <span class="link-like">Ver detalle</span></summary>
+                  <ul class="plain">@for (c of pendingConfirmations(); track c.code) { <li [attr.data-code]="c.code">{{ c.text }}</li> }</ul>
+                  <p class="muted">Las diferencias de inventario y las llegadas tardías se marcan en cada producto afectado de la tabla.</p>
+                </details>
+              }
             }
           </app-state-panel>
 
           @if (notCurrent()) {
             <p class="notice info" role="note" data-testid="plan-not-current">Estás viendo una versión que no es la vigente. «Inicio» y «Ventas previstas» siguen mostrando la versión vigente ({{ versionLabel(versions()[0]) }}).</p>
           }
+          <section class="toolbar" aria-label="Filtros de la tabla de compras" data-testid="plan-filters">
+            <form class="filters" (ngSubmit)="search()" aria-label="Buscar en el plan">
+              <label>Código o nombre <input name="q" [(ngModel)]="draft" autocomplete="off" maxlength="100" data-testid="plan-q" /></label>
+              <label>Estado
+                <select name="status" data-testid="plan-status" [ngModel]="status()" (ngModelChange)="setStatus($event)">
+                  @for (s of statusFilters; track s.value) { <option [value]="s.value">{{ s.label }}{{ countOf(s.value) }}</option> }
+                </select>
+              </label>
+              <label>Ordenar por
+                <select name="sort" data-testid="plan-sort" [ngModel]="sort()" (ngModelChange)="setSort($event)">
+                  @for (o of sorts; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
+                </select>
+              </label>
+              <button type="submit" class="small" [class.btn]="!isAdmin" [class.secondary]="isAdmin" data-testid="plan-search">Buscar</button>
+            </form>
+          </section>
+
+          <app-state-panel [state]="res.state()" emptyText="Este plan no tiene productos." (retry)="res.reload()">
+            @if (results(); as d) {
+              @if (d.items.length === 0) {
+                <p class="state" data-testid="plan-no-match">Ningún producto coincide con la búsqueda o el estado elegido.</p>
+              } @else {
+                <p class="muted table-meta" data-testid="plan-summary">{{ d.total }} {{ d.total === 1 ? 'producto' : 'productos' }} en este plan. Cantidades en la presentación de cada producto. Decimales con punto: 18.214 son 18 unidades y 214 milésimas; miles con coma: 1,250.</p>
+                <div class="table-wrap plan-table-wrap" tabindex="0" role="region" aria-label="Tabla del plan de compra. Desplázate hacia los lados para ver todas las columnas.">
+                  <table data-testid="plan-table" class="plan-table">
+                    <thead>
+                      <tr>
+                        <th scope="col" rowspan="2" class="sticky-col">Producto y presentación</th>
+                        <th scope="col" rowspan="2" class="num">Ventas previstas <small>(mes, sin limitar por stock)</small></th>
+                        <th scope="col" rowspan="2" class="num">{{ reconstructed() ? 'Existencias' : 'Stock del conteo' }} <small>({{ reconstructed() ? 'cierre ' : '' }}{{ countDay() }})</small></th>
+                        @for (l of leads(); track l; let i = $index) { <th scope="colgroup" colspan="4" [attr.data-lead]="l" class="lead-group" [class.lead-b]="i % 2 === 1">Plazo de entrega de {{ l }} días</th> }
+                      </tr>
+                      <tr>
+                        @for (l of leads(); track l; let i = $index) {
+                          <th scope="col" class="lead-start" [class.lead-b]="i % 2 === 1">Llega el</th><th scope="col" class="num" [class.lead-b]="i % 2 === 1">Stock al inicio del mes</th>
+                          <th scope="col" class="num" [class.lead-b]="i % 2 === 1">Compra recomendada</th><th scope="col" class="num" [class.lead-b]="i % 2 === 1">Faltantes</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (r of d.items; track r.producto_id) {
+                        <tr [attr.data-sku]="r.producto_id">
+                          <td data-col="product" class="sticky-col">
+                            <strong data-col="code">{{ r.producto_id }}</strong> {{ r.producto }}
+                            <span class="muted" data-col="unit"> · {{ r.unidad_descripcion || NOT_REPORTED }}</span><br />
+                            @if (r.stock_provenance?.discrepancy; as dx) {
+                              <span class="chip warn" data-testid="plan-diff-chip">Diferencia con el sistema</span>
+                              <span class="muted" data-testid="plan-diff-text"> {{ discText(dx) }}</span><br />
+                            }
+                            <button type="button" class="secondary small" data-testid="plan-understand" [attr.aria-label]="'Entender la compra de ' + r.producto" (click)="pick(r.producto_id)">Entender la compra</button>
+                          </td>
+                          <td class="num" data-col="forecast">{{ qty(r.forecast?.month_total) }}</td>
+                          <td class="num" data-col="count">{{ qty(r.count_stock.libre, NOT_REPORTED) }}</td>
+                          @for (l of leads(); track l) {
+                            @if (r.scenarios[l]; as sc) {
+                              <td class="lead-start" [attr.data-col]="'arrival-' + l">{{ sc.arrival_date ? shortDate(sc.arrival_date) : 'No llega en el mes' }}</td>
+                              <td class="num" [attr.data-col]="'start-' + l">{{ qty(sc.stock_month_start) }}</td>
+                              <td class="num" [attr.data-col]="'buy-' + l">
+                                @if (buy(sc); as b) { <strong>{{ b }}</strong><br /> }
+                                <span [attr.class]="'chip ' + tone(sc.status)" [attr.data-status]="sc.status">{{ stat(sc) }}</span>
+                              </td>
+                              <td class="num" [attr.data-col]="'short-' + l">{{ shortages(sc) }}</td>
+                            } @else {
+                              <td colspan="4" class="lead-start" [attr.data-col]="'none-' + l">{{ NOT_COMPUTABLE }}</td>
+                            }
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+              <app-pager [page]="d.page" [pageSize]="d.page_size" [total]="d.total" [hasMore]="d.has_more" (go)="go($event)" />
+              <p class="muted" data-testid="plan-units-note">Las cantidades no se suman entre productos (caja, pack, frasco) y no hay valores en dinero. «Ventas previstas» es lo que se estima vender sin limitar por stock; lo que podría atenderse con cada plazo está en «Entender la compra».</p>
+            }
+          </app-state-panel>
+
+          @if (sel(); as code) {
+            <section class="surface explain" aria-labelledby="h-explain" data-testid="plan-explain">
+              <h2 id="h-explain" tabindex="-1">Entender la compra</h2>
+              <app-state-panel [state]="det.state()" (retry)="det.reload()">
+                @if (detail(); as x) {
+                  <p class="explain-product"><strong>{{ x.producto_id }}</strong> {{ x.producto }} <span class="muted">· {{ x.unidad_descripcion || NOT_REPORTED }}</span></p>
+                  <div class="plan-cols">
+                    @for (l of leadsOf(x); track l) {
+                      @if (x.scenarios[l]; as sc) {
+                        <article class="card" [attr.data-testid]="'ex-lead-' + l">
+                          <h3>Plazo de {{ l }} días</h3>
+                          <p class="verdict"><span [attr.class]="'chip ' + tone(sc.status)">{{ stat(sc) }}</span>
+                            {{ sc.arrival_date ? 'Llega el ' + longDate(sc.arrival_date) : 'No llega dentro del mes' }}</p>
+                          <p class="buy-line" data-testid="ex-buy">Compra recomendada: <strong>{{ buy(sc) ?? NOT_COMPUTABLE }}</strong></p>
+                          @if (sc.status === 'NO_LLEGA_A_TIEMPO' && sc.required_arrival_date) {
+                            <p data-testid="ex-decide">Para que llegue el primer día del mes habría que decidir la compra el {{ longDate(sc.required_arrival_date) }}.</p>
+                          }
+                          <ul class="plain" data-testid="ex-served">
+                            <li>Ventas previstas sin limitar por stock: {{ qty(x.forecast?.month_total) }}</li>
+                            <li>Ventas que podrían atenderse en este escenario: <strong>{{ qty(sc.served_month) }}</strong></li>
+                            @if (sc.shortage_before_month !== null && sc.shortage_before_month !== undefined) { <li>Faltante antes de que empiece el mes: {{ qty(sc.shortage_before_month) }}</li> }
+                            <li>Faltante en el mes: {{ qty(sc.shortage_month) }}</li>
+                          </ul>
+                          @if (stepsFor(x, l); as steps) {
+                            <h4>Cómo se calculó</h4>
+                            @if (steps.length) {
+                              <ol class="steps" [attr.data-testid]="'ex-steps-' + l">
+                                @for (s of steps; track $index) {
+                                  <li><strong>{{ s.label }}</strong>@if (s.text) { : {{ s.text }} }@if (val(s.value)) { <span class="num"> = <strong>{{ val(s.value) }}</strong></span> }</li>
+                                }
+                              </ol>
+                            } @else {
+                              <p class="muted">La API no entregó el desglose de este plazo.</p>
+                            }
+                          }
+                          <details class="help" [attr.data-testid]="'ex-daily-' + l">
+                            <summary>Ver el día a día del plazo de {{ l }} días</summary>
+                            @if (dailyFor(x, l); as rows) {
+                              @if (rows.length) {
+                                <div class="table-wrap" tabindex="0" role="region" [attr.aria-label]="'Serie diaria del plazo de ' + l + ' días'">
+                                  <table>
+                                    <caption class="muted">Cada día primero llegan los pedidos y después se consume la demanda.</caption>
+                                    <thead><tr><th scope="col">Día</th><th scope="col" class="num">Al inicio</th><th scope="col" class="num">Llega</th>@if (hasAvailable(rows)) { <th scope="col" class="num">Disponible</th> }<th scope="col" class="num">Demanda</th><th scope="col" class="num">Atendida</th><th scope="col" class="num">Faltante</th><th scope="col" class="num">Al cierre</th></tr></thead>
+                                    <tbody>
+                                      @for (r of rows; track r.fecha) {
+                                        <tr><th scope="row">{{ shortDate(r.fecha) }}</th><td class="num">{{ qty(r.inicio) }}</td><td class="num">{{ qty(r.recepciones) }}</td>@if (hasAvailable(rows)) { <td class="num">{{ qty(r.disponible) }}</td> }<td class="num">{{ qty(r.demanda) }}</td><td class="num">{{ qty(r.atendida) }}</td><td class="num">{{ qty(r.faltante) }}</td><td class="num">{{ qty(r.fin) }}</td></tr>
+                                      }
+                                    </tbody>
+                                  </table>
+                                </div>
+                              } @else { <p class="muted">La API no entregó la serie diaria de este plazo.</p> }
+                            }
+                          </details>
+                        </article>
+                      }
+                    }
+                  </div>
+                  <h3>Datos de partida</h3>
+                  <ul class="plain" data-testid="ex-forecast">
+                    <li>Ventas previstas del mes, sin limitar por stock: <strong>{{ qty(x.forecast?.month_total) }}</strong>
+                      @if (x.forecast; as fc) {
+                        @if (fc.daily !== null && fc.daily !== undefined) { ({{ qty(fc.daily) }} por día }
+                        @if (fc.sum_28 !== undefined && fc.days_valid !== undefined) { = {{ qty(fc.sum_28) }} unidades vendidas en {{ fc.days_valid }} días válidos }
+                        @if (fc.daily !== null && fc.daily !== undefined) { ) }
+                      }
+                    </li>
+                    <li>{{ reconstructed() ? 'Existencia inicial (cierre del ' + countDay() + ')' : 'Stock del conteo' }}: <strong>{{ qty(x.count_stock.libre, NOT_REPORTED) }}</strong>{{ reconstructed() ? '' : ' (' + countDay() + ')' }}.
+                      @if (x.stock_provenance; as sp) {
+                        @if (sp.base_count !== undefined && sp.base_count !== null) { <span data-testid="ex-prov">Conteo base {{ qty(sp.base_count) }}{{ sp.movements_net_to_closing !== undefined && sp.movements_net_to_closing !== null ? ' y movimientos netos hasta el cierre ' + qty(sp.movements_net_to_closing) : '' }}.</span> }
+                      }
+                    </li>
+                    @if (x.stock_provenance?.discrepancy; as dx) {
+                      <li data-testid="ex-diff"><span class="chip warn">Diferencia con el sistema</span> {{ discText(dx) }}</li>
+                    }
+                    @for (o of x.pending_orders ?? []; track $index) {
+                      <li data-testid="ex-pending">Pedido por recibir de este producto: {{ o.units }} unidades el {{ shortDate(o.arrival_date) }}.</li>
+                    }
+                  </ul>
+                }
+              </app-state-panel>
+            </section>
+          }
           @if (versions().length > 1) {
-            <section class="surface" aria-label="Comparar versiones" data-testid="plan-compare">
+            <details class="help fold" data-testid="plan-compare">
+              <summary>Comparar con otra versión del plan</summary>
               <form class="filters" (submit)="$event.preventDefault(); compare()">
                 <label>Versión con la que comparar
                   <select name="cmp" data-testid="plan-compare-with" [ngModel]="otherId() || otherVersions()[0]?.plan_id" (ngModelChange)="otherId.set($event)">
@@ -181,165 +325,41 @@ const SORTS: { value: string; label: string }[] = [
                   }
                 </app-state-panel>
               }
-            </section>
+            </details>
           }
 
-          <section class="toolbar" aria-label="Filtros de la tabla de compras" data-testid="plan-filters">
-            <form class="filters" (ngSubmit)="search()" aria-label="Buscar en el plan">
-              <label>Código o nombre <input name="q" [(ngModel)]="draft" autocomplete="off" maxlength="100" data-testid="plan-q" /></label>
-              <label>Estado
-                <select name="status" data-testid="plan-status" [ngModel]="status()" (ngModelChange)="setStatus($event)">
-                  @for (s of statusFilters; track s.value) { <option [value]="s.value">{{ s.label }}{{ countOf(s.value) }}</option> }
-                </select>
-              </label>
-              <label>Ordenar por
-                <select name="sort" data-testid="plan-sort" [ngModel]="sort()" (ngModelChange)="setSort($event)">
-                  @for (o of sorts; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
-                </select>
-              </label>
-              <button type="submit" class="small" [class.btn]="!isAdmin" [class.secondary]="isAdmin" data-testid="plan-search">Buscar</button>
-            </form>
-          </section>
 
-          <app-state-panel [state]="res.state()" emptyText="Este plan no tiene productos." (retry)="res.reload()">
-            @if (results(); as d) {
-              @if (d.items.length === 0) {
-                <p class="state" data-testid="plan-no-match">Ningún producto coincide con la búsqueda o el estado elegido.</p>
-              } @else {
-                <p class="muted" data-testid="plan-summary">{{ d.total }} productos en este plan.</p>
-                <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla del plan de compra">
-                  <table data-testid="plan-table">
-                    <thead>
-                      <tr>
-                        <th scope="col" rowspan="2">Producto y presentación</th>
-                        <th scope="col" rowspan="2" class="num">Ventas previstas <small>(mes, sin limitar por stock)</small></th>
-                        <th scope="col" rowspan="2" class="num">{{ reconstructed() ? 'Existencias' : 'Stock del conteo' }} <small>({{ reconstructed() ? 'cierre ' : '' }}{{ countDay() }})</small></th>
-                        @for (l of leads(); track l) { <th scope="colgroup" colspan="4" [attr.data-lead]="l">Plazo de entrega de {{ l }} días</th> }
-                      </tr>
-                      <tr>
-                        @for (l of leads(); track l) {
-                          <th scope="col">Llega el</th><th scope="col" class="num">Stock al inicio del mes</th>
-                          <th scope="col" class="num">Compra recomendada</th><th scope="col" class="num">Faltantes</th>
-                        }
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (r of d.items; track r.producto_id) {
-                        <tr [attr.data-sku]="r.producto_id">
-                          <td data-col="product">
-                            <strong data-col="code">{{ r.producto_id }}</strong> {{ r.producto }}
-                            <span class="muted" data-col="unit"> · {{ r.unidad_descripcion || NOT_REPORTED }}</span><br />
-                            @if (r.stock_provenance?.discrepancy; as dx) {
-                              <span class="chip warn" data-testid="plan-diff-chip">Diferencia con el sistema</span>
-                              <span class="muted" data-testid="plan-diff-text"> {{ discText(dx) }}</span><br />
-                            }
-                            <button type="button" class="secondary small" data-testid="plan-understand" [attr.aria-label]="'Entender la compra de ' + r.producto" (click)="pick(r.producto_id)">Entender la compra</button>
-                          </td>
-                          <td class="num" data-col="forecast">{{ qty(r.forecast?.month_total) }}</td>
-                          <td class="num" data-col="count">{{ qty(r.count_stock.libre, NOT_REPORTED) }}</td>
-                          @for (l of leads(); track l) {
-                            @if (r.scenarios[l]; as sc) {
-                              <td [attr.data-col]="'arrival-' + l">{{ sc.arrival_date ? shortDate(sc.arrival_date) : 'No llega en el mes' }}</td>
-                              <td class="num" [attr.data-col]="'start-' + l">{{ qty(sc.stock_month_start) }}</td>
-                              <td class="num" [attr.data-col]="'buy-' + l">
-                                @if (buy(sc); as b) { <strong>{{ b }}</strong><br /> }
-                                <span [attr.class]="'chip ' + tone(sc.status)" [attr.data-status]="sc.status">{{ stat(sc) }}</span>
-                              </td>
-                              <td class="num" [attr.data-col]="'short-' + l">{{ shortages(sc) }}</td>
-                            } @else {
-                              <td colspan="4" [attr.data-col]="'none-' + l">{{ NOT_COMPUTABLE }}</td>
-                            }
-                          }
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              }
-              <app-pager [page]="d.page" [pageSize]="d.page_size" [total]="d.total" [hasMore]="d.has_more" (go)="go($event)" />
-              <p class="muted" data-testid="plan-units-note">Las cantidades están en la presentación indicada de cada producto (caja, pack, frasco); no se multiplicaron. Por eso no se muestra un total general de unidades ni valores en dinero.</p>
-              <p class="muted" data-testid="plan-forecast-note">«Ventas previstas del mes» es lo que se estima vender sin limitar por stock. Lo que sí podría atenderse con las existencias de cada plazo está en «Entender la compra».</p>
-            }
-          </app-state-panel>
-
-          @if (sel(); as code) {
-            <section class="surface" aria-labelledby="h-explain" data-testid="plan-explain">
-              <h2 id="h-explain">Entender la compra</h2>
-              <app-state-panel [state]="det.state()" (retry)="det.reload()">
-                @if (detail(); as x) {
-                  <p><strong>{{ x.producto_id }}</strong> {{ x.producto }} <span class="muted">· {{ x.unidad_descripcion || NOT_REPORTED }}</span></p>
-                  <ul class="plain" data-testid="ex-forecast">
-                    <li>Ventas previstas del mes, sin limitar por stock: <strong>{{ qty(x.forecast?.month_total) }}</strong>
-                      @if (x.forecast; as fc) {
-                        @if (fc.daily !== null && fc.daily !== undefined) { ({{ qty(fc.daily) }} por día }
-                        @if (fc.sum_28 !== undefined && fc.days_valid !== undefined) { = {{ qty(fc.sum_28) }} unidades vendidas en {{ fc.days_valid }} días válidos }
-                        @if (fc.daily !== null && fc.daily !== undefined) { ) }
-                      }
-                    </li>
-                    <li>{{ reconstructed() ? 'Existencia inicial (cierre del ' + countDay() + ')' : 'Stock del conteo' }}: <strong>{{ qty(x.count_stock.libre, NOT_REPORTED) }}</strong>{{ reconstructed() ? '' : ' (' + countDay() + ')' }}.
-                      @if (x.stock_provenance; as sp) {
-                        @if (sp.base_count !== undefined && sp.base_count !== null) { <span data-testid="ex-prov">Conteo base {{ qty(sp.base_count) }}{{ sp.movements_net_to_closing !== undefined && sp.movements_net_to_closing !== null ? ' y movimientos netos hasta el cierre ' + qty(sp.movements_net_to_closing) : '' }}.</span> }
-                      }
-                    </li>
-                    @if (x.stock_provenance?.discrepancy; as dx) {
-                      <li data-testid="ex-diff"><span class="chip warn">Diferencia con el sistema</span> {{ discText(dx) }}</li>
-                    }
-                    @for (o of x.pending_orders ?? []; track $index) {
-                      <li data-testid="ex-pending">Pedido por recibir de este producto: {{ o.units }} unidades el {{ shortDate(o.arrival_date) }}.</li>
-                    }
-                  </ul>
-                  <div class="plan-cols">
-                    @for (l of leadsOf(x); track l) {
-                      @if (x.scenarios[l]; as sc) {
-                        <article class="card" [attr.data-testid]="'ex-lead-' + l">
-                          <h3>Plazo de {{ l }} días</h3>
-                          <p><span [attr.class]="'chip ' + tone(sc.status)">{{ stat(sc) }}</span>
-                            {{ sc.arrival_date ? 'Llega el ' + longDate(sc.arrival_date) : 'No llega dentro del mes' }}</p>
-                          @if (sc.status === 'NO_LLEGA_A_TIEMPO' && sc.required_arrival_date) {
-                            <p data-testid="ex-decide">Para que llegue el primer día del mes habría que decidir la compra el {{ longDate(sc.required_arrival_date) }}.</p>
-                          }
-                          <p data-testid="ex-buy">Compra recomendada: <strong>{{ buy(sc) ?? NOT_COMPUTABLE }}</strong></p>
-                          @if (stepsFor(x, l); as steps) {
-                            @if (steps.length) {
-                              <ol class="steps" [attr.data-testid]="'ex-steps-' + l">
-                                @for (s of steps; track $index) {
-                                  <li><strong>{{ s.label }}</strong>@if (s.text) { : {{ s.text }} }@if (val(s.value)) { <span class="num"> = <strong>{{ val(s.value) }}</strong></span> }</li>
-                                }
-                              </ol>
-                            } @else {
-                              <p class="muted">La API no entregó el desglose de este plazo.</p>
-                            }
-                          }
-                          <ul class="plain" data-testid="ex-served">
-                            <li>Ventas previstas sin limitar por stock: {{ qty(x.forecast?.month_total) }}</li>
-                            <li>Ventas que podrían atenderse en este escenario: <strong>{{ qty(sc.served_month) }}</strong></li>
-                            <li>Faltante en el mes: {{ qty(sc.shortage_month) }}</li>
-                          </ul>
-                          <details class="help" [attr.data-testid]="'ex-daily-' + l">
-                            <summary>Ver el día a día del plazo de {{ l }} días</summary>
-                            @if (dailyFor(x, l); as rows) {
-                              @if (rows.length) {
-                                <div class="table-wrap" tabindex="0" role="region" [attr.aria-label]="'Serie diaria del plazo de ' + l + ' días'">
-                                  <table>
-                                    <caption class="muted">Cada día primero llegan los pedidos y después se consume la demanda.</caption>
-                                    <thead><tr><th scope="col">Día</th><th scope="col" class="num">Al inicio</th><th scope="col" class="num">Llega</th>@if (hasAvailable(rows)) { <th scope="col" class="num">Disponible</th> }<th scope="col" class="num">Demanda</th><th scope="col" class="num">Atendida</th><th scope="col" class="num">Faltante</th><th scope="col" class="num">Al cierre</th></tr></thead>
-                                    <tbody>
-                                      @for (r of rows; track r.fecha) {
-                                        <tr><th scope="row">{{ shortDate(r.fecha) }}</th><td class="num">{{ qty(r.inicio) }}</td><td class="num">{{ qty(r.recepciones) }}</td>@if (hasAvailable(rows)) { <td class="num">{{ qty(r.disponible) }}</td> }<td class="num">{{ qty(r.demanda) }}</td><td class="num">{{ qty(r.atendida) }}</td><td class="num">{{ qty(r.faltante) }}</td><td class="num">{{ qty(r.fin) }}</td></tr>
-                                      }
-                                    </tbody>
-                                  </table>
-                                </div>
-                              } @else { <p class="muted">La API no entregó la serie diaria de este plazo.</p> }
-                            }
-                          </details>
-                        </article>
-                      }
-                    }
-                  </div>
+          @if (header(); as h) {
+              <details class="help fold" data-testid="plan-source">
+                <summary>De dónde sale este plan (fuentes, método y detalles técnicos)</summary>
+                <ul class="plain">
+                  <li data-testid="src-sales"><strong>Ventas reales:</strong> registradas hasta el {{ longDate(cutoff()) }}.</li>
+                  @if (reconstructed()) {
+                    <li data-testid="src-count"><strong>Existencia reconstruida al cierre del {{ countDay() }} (conteo reportado {{ baseStamp() }} + movimientos del sistema)</strong>{{ warehouseName() ? ' · ' + warehouseName() : '' }}.
+                      El conteo lo informó la empresa y no se verificó de forma independiente; los movimientos vienen del sistema{{ lastMovement() ? ' hasta el ' + lastMovement() : '' }}.</li>
+                  } @else {
+                    <li data-testid="src-count"><strong>Conteo reportado por la empresa:</strong> {{ countStamp() }}{{ warehouseName() ? ' · ' + warehouseName() : '' }}. Lo informó la empresa y no se verificó de forma independiente.</li>
+                  }
+                  <li data-testid="src-projection"><strong>Proyección posterior:</strong> calculada con el promedio de los últimos 28 días de ventas; no son ventas observadas. Estima ventas registradas, que pueden haber estado limitadas por falta de stock.</li>
+                </ul>
+                @if (h.distances; as d) {
+                  <p class="muted" data-testid="src-distance">
+                    Distancia desde el último día con ventas:
+                    @if (d.cutoff_to_count !== undefined) { el conteo es {{ d.cutoff_to_count }} días posterior; }
+                    @if (d.cutoff_to_month_start !== undefined) { el mes empieza {{ d.cutoff_to_month_start }} días después; }
+                    @if (d.cutoff_to_month_end !== undefined) { termina {{ d.cutoff_to_month_end }} días después. }
+                    Cuanto más lejos del último dato, más incierta es la previsión.
+                  </p>
                 }
-              </app-state-panel>
-            </section>
+                @if (uniqueWarnings().length) {
+                  <ul class="plain" data-testid="plan-warnings">@for (w of uniqueWarnings(); track w) { <li>{{ w }}</li> }</ul>
+                }
+                <ul class="plain" data-testid="plan-tech">
+                  <li>Identificador: {{ h.plan_id }}</li>
+                  <li>Creado: {{ stampOf(h.created_at) }} · versión de datos: {{ h.dataset_id || 'no informada' }} · conteo: {{ h.snapshot_id || 'no informado' }}</li>
+                  @for (a of h.assumptions ?? []; track a.text) { <li>Supuesto{{ a.nature ? ' (' + a.nature + ')' : '' }}: {{ a.text }}</li> }
+                </ul>
+              </details>
           }
         }
       </app-state-panel>
@@ -373,8 +393,35 @@ const SORTS: { value: string; label: string }[] = [
     }
   `,
   styles: `
-    .plan-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 1rem; margin: 1rem 0; }
+    .plan-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin: 1rem 0; }
     td, th { vertical-align: top; }
+    .plan-picker { margin: 0 0 0.6rem; }
+    .compact { padding: 0.5rem 0.9rem; margin: 0.5rem 0; }
+    .plan-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.5rem 1.5rem; margin: 0; padding: 0.7rem 1rem;
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+    .plan-facts .wide { grid-column: 1 / -1; }
+    .plan-facts dt { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+    .plan-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .plan-params { margin: 0.5rem 0; padding: 0.1rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+    .plan-params p { margin: 0.4rem 0; }
+    .fold > summary { cursor: pointer; }
+    .link-like { text-decoration: underline; color: var(--link); }
+    .table-meta { margin: 0.4rem 0; }
+    .plan-table { width: max-content; min-width: 100%; font-size: 0.95rem; }
+    .plan-table th, .plan-table td { padding: 0.5rem 0.7rem; }
+    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); min-width: 17rem; max-width: 22rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
+    .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
+    .plan-table .lead-start { border-left: 2px solid #9aa3b0; }
+    .plan-table th.lead-group { text-align: center; background: #dde7f3; }
+    .plan-table th.lead-group.lead-b, .plan-table th.lead-b { background: #e6e2f1; }
+    .plan-table th[scope=col]:not(.sticky-col) { background: #e8ecf2; }
+    .plan-table th.lead-b[scope=col] { background: #ece9f5; }
+    .plan-table td .chip { white-space: normal; display: inline-block; }
+    .explain h3 { margin-top: 0; }
+    .explain h4 { margin: 0.9rem 0 0.3rem; font-size: 1rem; }
+    .explain .verdict { margin: 0.2rem 0; }
+    .explain .buy-line { font-size: 1.25rem; margin: 0.3rem 0 0.6rem; }
+    #h-explain:focus { outline: 3px solid var(--accent); outline-offset: 3px; }
   `,
 })
 export class PlanPage {
@@ -383,6 +430,13 @@ export class PlanPage {
   private destroyRef = inject(DestroyRef);
   private current = inject(CurrentPlanStore);
   private route = inject(ActivatedRoute);
+  private doc = inject(DOCUMENT);
+  constructor() {
+    // Piloto: esta pantalla usa todo el ancho disponible. Solo añade una clase al <main> mientras está abierta; las demás pantallas no cambian.
+    const main = this.doc.querySelector('main');
+    main?.classList.add('wide');
+    this.destroyRef.onDestroy(() => main?.classList.remove('wide'));
+  }
   /** Solo orientación: el servidor decide los permisos. */
   isAdmin = this.auth.isAdmin;
 
@@ -458,6 +512,14 @@ export class PlanPage {
   baseStamp = computed(() => stampWords(this.header()?.snapshot?.base_count_as_of_local));
   lastMovement = computed(() => { const m = this.header()?.snapshot?.last_movement_local; return m ? stampWords(m) : ''; });
   pendingConfirmations = computed(() => (this.header()?.confirmations ?? []).filter((c) => c.status === 'PENDIENTE'));
+  /** Frase breve de los pendientes (el texto completo está en el detalle desplegable). */
+  pendingSummary = computed(() => this.pendingConfirmations().map((c) => {
+    if (c.code === 'COMPRAS_11452_11455') return 'compras 11452 y 11455 sin sumar';
+    if (c.code === 'DIFERENCIAS_INVENTARIO') { const n = c.products?.length ?? 0; return n ? `${n} ${n === 1 ? 'diferencia' : 'diferencias'} de inventario` : 'diferencias de inventario'; }
+    return c.text.length > 70 ? c.text.slice(0, 67) + '…' : c.text;
+  }).join(' · '));
+  /** Advertencias de la API sin repeticiones. */
+  uniqueWarnings = computed(() => [...new Set((this.header()?.warnings ?? []).map((w) => w.trim()).filter(Boolean))]);
   discText(d: StockDiscrepancyPlan): string {
     const when = d.compared_at_local ? stampWords(d.compared_at_local) : 'la fecha del último movimiento';
     return `Al ${when} el sistema indica ${qtyText(d.system_stock, NOT_REPORTED)} y la existencia reconstruida es ${qtyText(d.reconstructed, NOT_REPORTED)} `
@@ -570,7 +632,11 @@ export class PlanPage {
   setStatus(v: string) { this.status.set(v); this.page.set(1); this.res.reload(); }
   setSort(v: string) { this.sort.set(v); this.page.set(1); this.res.reload(); }
   go(p: number) { this.page.set(p); this.res.reload(); }
-  pick(code: string) { this.sel.set(code); this.det.reload(); }
+  pick(code: string) {
+    this.sel.set(code); this.det.reload();
+    // Teclado y lectores de pantalla: el foco pasa al título de la explicación en cuanto aparece.
+    setTimeout(() => { const h = this.doc.getElementById('h-explain'); h?.focus({ preventScroll: true }); h?.scrollIntoView?.({ block: 'start' }); }, 0);
+  }
 
   // ---- administrador: generar plan ----
   sending = signal(false);

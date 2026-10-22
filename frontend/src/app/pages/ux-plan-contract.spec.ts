@@ -151,9 +151,9 @@ describe('Planificar compras · contrato real (R20)', () => {
 
   it('4. con un pedido declarado el aviso lo dice, lo lista con su naturaleza y NO afirma «no llegan otros pedidos» a secas', async () => {
     const { el } = await open([planA()]);
-    expect(txt(el, 'plan-cutoff')).not.toContain('En este escenario no llegan otros pedidos');
-    expect(txt(el, 'plan-pending-note')).toContain('Se considera 1 pedido por recibir declarado');
-    expect(txt(el, 'plan-pending-note')).toContain('no llegan otros adicionales (supuesto)');
+    expect(txt(el, 'src-orders')).not.toContain('En este escenario no llegan otros pedidos');
+    expect(txt(el, 'src-orders')).toContain('Se considera 1 pedido por recibir declarado');
+    expect(txt(el, 'src-orders')).toContain('no llegan otros adicionales (supuesto)');
     const list = txt(el, 'src-pending');
     expect(list).toContain('1000001');
     expect(list).toContain('30 unidades');
@@ -164,7 +164,7 @@ describe('Planificar compras · contrato real (R20)', () => {
 
   it('4b. un plan sin pedidos dice que no llegan otros (supuesto) y no muestra lista', async () => {
     const { el } = await open([planB()]);
-    expect(txt(el, 'plan-cutoff')).toContain('En este escenario no llegan otros pedidos (supuesto)');
+    expect(txt(el, 'src-orders')).toContain('En este escenario no llegan otros pedidos (supuesto)');
     expect(q(el, 'src-pending')).toBeNull();
   });
 
@@ -217,7 +217,7 @@ describe('Planificar compras · contrato real (R20)', () => {
     expect(txt(el, 'src-params')).toContain('compra mínima 1');
     expect(q(el, 'src-pending')).toBeNull();
     expect(txt(el, 'plan-cutoff')).toContain('31 de julio de 2026');
-    expect(txt(el, 'plan-cutoff')).toContain('En este escenario no llegan otros pedidos (supuesto)');
+    expect(txt(el, 'src-orders')).toContain('En este escenario no llegan otros pedidos (supuesto)');
     expect(el.querySelector('tr[data-sku="1000001"]')).toBeNull();
     expect(el.querySelector('tr[data-sku="2000001"]')).toBeTruthy();
     expect(q(el, 'plan-explain')).toBeNull();
