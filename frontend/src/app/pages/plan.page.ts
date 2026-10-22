@@ -56,24 +56,43 @@ const SORTS: { value: string; label: string }[] = [
               @if (!planId() && pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
             </p>
           }
-          @if (header(); as h) {
-            <section class="plan-summary" aria-label="Resumen del plan" data-testid="plan-summary-card">
-              <dl class="plan-facts" data-testid="plan-head">
-                @if (versions().length <= 1) {
-                  <div><dt>Versión</dt><dd data-testid="head-version">{{ h.version ? 'v' + h.version + ' · ' : '' }}{{ stampOf(h.created_at) }}</dd></div>
+          <section class="plan-summary" aria-label="Resumen del plan" data-testid="plan-summary-card">
+              <div class="plan-line1">
+              <div class="filters picks" data-testid="plan-picker">
+              <label>Mes
+                <select name="month" data-testid="plan-month" [ngModel]="month()" (ngModelChange)="setMonth($event)">
+                  @for (m of monthOptions(); track m) { <option [value]="m">{{ monthLabel(m) }}</option> }
+                </select>
+              </label>
+              @if (versions().length > 1) {
+                <label>Versión
+                  <select name="ver" data-testid="plan-version" [ngModel]="planId()" (ngModelChange)="pickPlan($event)">
+                    @for (v of versions(); track v.plan_id) { <option [value]="v.plan_id">{{ versionShort(v) }}</option> }
+                  </select>
+                </label>
+              }
+              </div>
+                @if (header(); as h) {
+                  <dl class="plan-facts" data-testid="plan-head">
+                    @if (versions().length <= 1) {
+                      <div><dt>Versión</dt><dd data-testid="head-version">{{ h.version ? 'v' + h.version + ' · ' : '' }}{{ stampOf(h.created_at) }}</dd></div>
+                    }
+                    <div><dt>Decisión de compra</dt><dd data-testid="head-decision">{{ shortDate(h.params?.decision_date ?? h.decision_date) }}</dd></div>
+                    <div><dt>Ventas hasta</dt><dd data-testid="head-sales">{{ shortDate(cutoff()) }}</dd></div>
+                  </dl>
                 }
-                <div><dt>Decisión de compra</dt><dd data-testid="head-decision">{{ shortDate(h.params?.decision_date ?? h.decision_date) }}</dd></div>
-                <div><dt>Ventas hasta</dt><dd data-testid="head-sales">{{ shortDate(cutoff()) }}</dd></div>
-                <div class="grow"><dt>Existencias</dt>
-                  <dd data-testid="head-stock">{{ reconstructed() ? 'cierre del ' + countDay() + ' · reconstruida (conteo informado ' + baseStampShort() + ' + movimientos del sistema)' : 'conteo informado ' + countStamp() }}</dd></div>
-              </dl>
+              </div>
+              @if (header(); as h) {
+                <dl class="plan-facts" data-testid="plan-head-stock">
+                  <div class="grow"><dt>Existencias</dt>
+                    <dd data-testid="head-stock">{{ reconstructed() ? 'cierre del ' + countDay() + ' · reconstruida (conteo informado ' + baseStampShort() + ' + movimientos del sistema)' : 'conteo informado ' + countStamp() }}</dd></div>
+                </dl>
               <div class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
                 <p class="params-line"><span data-testid="src-params"><strong>Configuración de reposición</strong>{{ ' ' }}<span class="muted">(configurada; no confirmada por el proveedor)</span>:
                   plazos de entrega de {{ leadText() }} días
                   @if (h.params; as p) {
                     · reserva {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
                   }</span>
-                  <button type="button" class="link-btn" data-testid="plan-legend-open" (click)="showLegend()">Cómo leer la tabla</button>
                 </p>
                 <div class="orders-row">
                   <p data-testid="src-orders"><span class="chip warn">Supuesto</span>{{ ' ' }}<strong>Pedidos por recibir:</strong> {{ pendingNote() }}
@@ -96,38 +115,25 @@ const SORTS: { value: string; label: string }[] = [
                   </ul>
                 }
               </div>
-            </section>
-          }
-          <section class="toolbar plan-toolbar" aria-label="Plan y filtros" data-testid="plan-filters">
-            <div class="filters picks" data-testid="plan-picker">
-              <label>Mes
-                <select name="month" data-testid="plan-month" [ngModel]="month()" (ngModelChange)="setMonth($event)">
-                  @for (m of monthOptions(); track m) { <option [value]="m">{{ monthLabel(m) }}</option> }
-                </select>
-              </label>
-              @if (versions().length > 1) {
-                <label>Versión
-                  <select name="ver" data-testid="plan-version" [ngModel]="planId()" (ngModelChange)="pickPlan($event)">
-                    @for (v of versions(); track v.plan_id) { <option [value]="v.plan_id">{{ versionShort(v) }}</option> }
-                  </select>
-                </label>
               }
-            </div>
+          </section>
+          <section class="toolbar plan-toolbar" aria-label="Plan y filtros" data-testid="plan-filters">
             @if (planId()) {
             <form class="filters" (ngSubmit)="search()" aria-label="Buscar en el plan">
-              <label>Código o nombre <input name="q" [(ngModel)]="draft" autocomplete="off" maxlength="100" data-testid="plan-q" /></label>
+              <label><span class="sr-only">Código o nombre</span><input name="q" [(ngModel)]="draft" autocomplete="off" maxlength="100" placeholder="Código o nombre…" data-testid="plan-q" /></label>
               <label>Estado
                 <select name="status" data-testid="plan-status" [ngModel]="status()" (ngModelChange)="setStatus($event)">
                   @for (s of statusFilters; track s.value) { <option [value]="s.value">{{ s.label }}{{ countOf(s.value) }}</option> }
                 </select>
               </label>
-              <label>Ordenar por
+              <label>Orden
                 <select name="sort" data-testid="plan-sort" [ngModel]="sort()" (ngModelChange)="setSort($event)">
                   @for (o of sorts; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
                 </select>
               </label>
               <button type="submit" class="small" [class.btn]="!isAdmin" [class.secondary]="isAdmin" data-testid="plan-search">Buscar</button>
             </form>
+              <button type="button" class="link-btn legend-link" data-testid="plan-legend-open" (click)="showLegend()">Cómo leer la tabla</button>
             }
           </section>
         }
@@ -420,6 +426,9 @@ const SORTS: { value: string; label: string }[] = [
     .picks { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; align-items: center; margin: 0; }
     .picks label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.95rem; }
     .picks select { min-height: 2.2rem; padding: 0.2rem 0.5rem; }
+    .plan-line1 { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 1.5rem; }
+    .plan-line1 .plan-facts { margin: 0; }
+    .legend-link { margin-left: auto; }
     .plan-summary .plan-facts { display: flex; flex-wrap: wrap; gap: 0.1rem 1.4rem; border: 0; padding: 0; background: none; margin: 0.1rem 0; }
     .plan-facts > div { display: flex; gap: 0.35rem; align-items: baseline; }
     .plan-facts > div.grow { flex: 1 1 auto; }
@@ -455,7 +464,8 @@ const SORTS: { value: string; label: string }[] = [
     .plan-table td.num { white-space: normal; }
     .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); width: 12.5rem; min-width: 11rem; max-width: 14rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
     .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
-    .plan-table .unit { display: block; font-size: 0.9rem; }
+    .plan-table .unit { font-size: 0.9rem; }
+    .plan-table td .small { padding: 0.1rem 0.55rem; min-height: 1.9rem; font-size: 0.9rem; margin-top: 0.15rem; }
     .plan-table .c-forecast { width: 6rem; min-width: 5.8rem; }
     .plan-table .c-count { width: 5.4rem; min-width: 5.2rem; }
     .plan-table .c-arrival { width: 4.4rem; min-width: 4rem; }
