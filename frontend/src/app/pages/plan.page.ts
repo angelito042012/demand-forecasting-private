@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { map, tap } from 'rxjs';
 import { ApiService } from '../core/api.service';
@@ -507,6 +507,16 @@ export class PlanPage {
     const main = this.doc.querySelector('main');
     main?.classList.add('wide');
     this.destroyRef.onDestroy(() => main?.classList.remove('wide'));
+    // «Entender la compra»: cuando el detalle ya está pintado, el título de la sección queda arriba y con el foco.
+    effect(() => {
+      if (this.detail() && this.scrollPending) { this.scrollPending = false; setTimeout(() => this.focusExplain(), 0); }
+    });
+  }
+  private scrollPending = false;
+  private focusExplain() {
+    const h = this.doc.getElementById('h-explain');
+    h?.focus({ preventScroll: true });
+    h?.scrollIntoView?.({ block: 'start' });
   }
   /** Solo orientación: el servidor decide los permisos. */
   isAdmin = this.auth.isAdmin;
@@ -753,8 +763,9 @@ export class PlanPage {
   go(p: number) { this.page.set(p); this.res.reload(); }
   pick(code: string) {
     this.sel.set(code); this.det.reload();
-    // Teclado y lectores de pantalla: el foco pasa al título de la explicación en cuanto aparece.
-    setTimeout(() => { const h = this.doc.getElementById('h-explain'); h?.focus({ preventScroll: true }); h?.scrollIntoView?.({ block: 'start' }); }, 0);
+    // Teclado y lectores de pantalla: el foco pasa al título de la explicación (de inmediato y de nuevo cuando llega el detalle).
+    this.scrollPending = true;
+    setTimeout(() => this.focusExplain(), 0);
   }
 
   // ---- administrador: generar plan ----
