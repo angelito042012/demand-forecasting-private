@@ -196,7 +196,7 @@ resource envStorageRef 'Microsoft.App/managedEnvironments/storages@2024-03-01' =
   }
 }
 
-var commonEnv = [
+var baseEnv = [
   { name: 'APP_ENV', value: 'production' }
   { name: 'APP_TIMEZONE', value: 'America/Lima' }
   { name: 'MONGODB_DATABASE', value: mongodbDatabase }
@@ -205,7 +205,12 @@ var commonEnv = [
   { name: 'ALLOWED_ORIGINS', value: 'https://${appHost}' }
   { name: 'TRUSTED_PROXIES', value: trustedProxies }
   { name: 'DF_UPLOADS_DIR', value: useFiles ? '/data/uploads' : '/tmp/uploads' }
+  { name: 'PYTHONDONTWRITEBYTECODE', value: '1' }
+  { name: 'TMPDIR', value: '/tmp' }
 ]
+// Entorno express (sin Azure Files): las subidas viajan por GridFS de la base de la app (compartidas y durables)
+var storeEnv = useFiles ? [] : [{ name: 'DF_UPLOADS_STORE', value: 'mongo' }]
+var commonEnv = concat(baseEnv, storeEnv)
 var commonSecrets = [
   { name: 'mongodb-uri', value: mongodbUri }
   { name: 'auth-secret', value: authSecret }
@@ -230,7 +235,10 @@ var refVolume = {
 }
 var workerVolumes = useFiles ? concat(volumes, [refVolume]) : volumes
 var workerMounts = useFiles ? concat(volumeMounts, [{ volumeName: 'reference', mountPath: '/reference' }]) : volumeMounts
-var workerEnv = useFiles ? concat(commonEnv, [{ name: 'DF_RUNTIME_REFERENCE_DIR', value: '/reference' }]) : commonEnv
+var workerEnv = useFiles ? concat(commonEnv, [{ name: 'DF_RUNTIME_REFERENCE_DIR', value: '/reference' }]) : concat(commonEnv, [
+  { name: 'DF_RUNTIME_REFERENCE_DIR', value: '/tmp/ref/runtime_reference' }
+  { name: 'DF_RUNTIME_REFERENCE_STORE', value: 'mongo' }
+])
 
 resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
   name: apiName
