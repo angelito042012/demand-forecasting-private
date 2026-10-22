@@ -408,3 +408,7 @@ Planificación de compras para noviembre bajo supuestos (commits 2e99534, 7dbb30
 
 **21/10 — revision Codex T20:** checkpoint 3c94ab8/8a66457 revisado en alcance dirigido: 54 pruebas propias aprobadas y 100 compras sin diferencias al repetir recalculo contra evidencia guardada. Pendiente R21: Inicio y Ventas previstas aun llevan al ejemplo historico; conectar al plan v2 y preservar historicos en apartado academico. Leer REVISION_CODEX_20.md. Preparacion de nube puede continuar; presupuesto concreto, saldo de credito, publicacion verificada y aceptacion humana pendientes.
 
+
+
+**21/10 — R21 cerrado por Codex (ffa877f/5a3d535):** rutas y flujo del plan vigente revisados; 8 pruebas frontend dirigidas propias aprobadas. Sigue despliegue condicionado a presupuesto concreto, credito y accesos Atlas; verificar capacidad real con indices y mantener acceso limitado. Publicacion HTTPS y aceptacion humana aun pendientes. Ver cierre en REVISION_CODEX_20.md.
+

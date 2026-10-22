@@ -20,3 +20,12 @@ Correccion acotada: Inicio y Ventas previstas deben consultar/presentar el plan 
 ## Continuacion
 
 Datos y calculo base sin discrepancias en las comprobaciones ejecutadas; cerrar R21 antes de presentar la interfaz publica como terminada. Claude puede continuar preparando la nube mientras corrige este flujo. Autorizacion humana de integrar/publicar existe desde 21/10; presupuesto concreto todavia pendiente, no inferirlo de la captura. Saldo de credito pendiente de lectura humana del portal. No se auditaron tarifas ni se confirma un techo automatico de gasto. Aceptacion humana y comprobacion HTTPS real siguen pendientes.
+
+
+## Cierre R21 — 21/10/2026, ffa877f + 5a3d535
+
+Revisadas rutas, CurrentPlanStore, nueva PlanForecastsPage y enlace a Compra recomendada. /pronosticos ahora lee los resultados del plan y el historico conserva ruta /evaluacion/ventas-previstas. Ejecutada suite dirigida t21-current-plan.spec.ts: 8/8 aprobadas (incluye recorrido entre las tres pantallas, cantidades, corte, versiones, errores y vacio). R21 cerrado en alcance local revisado. 302 pruebas y navegador9/9 son evidencia del ejecutor, no comprobaciones en vivo de Codex. No se tocaron servicios ni datos.
+
+Puede continuar la publicacion una vez autorizado el presupuesto y disponibles accesos/credito. No equivale a publicacion o aceptacion humana completadas. Las lecturas independientes de resultados no justifican por si solas diferencias: comprobar en nube mismo plan_id y version ante recargas y nuevas generaciones.
+
+Observaciones al plan de nube (preparacion, no fallo local): el tamano del paquete no acredita ocupacion de Atlas incluyendo indices y margen para trabajos nuevos; verificar tras restauracion. No abrir acceso global a Atlas por mero aviso: mantener alcance limitado y solicitar decision expresa si existe impedimento tecnico. Si se propone omitir historia por capacidad, identificar el contenido y las funciones afectadas antes de cambiar el alcance; conservar fuentes y respaldos locales. Las cifras de costo no fueron auditadas por Codex en esta revision.
