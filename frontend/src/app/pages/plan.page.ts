@@ -409,7 +409,8 @@ const SORTS: { value: string; label: string }[] = [
     .plan-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0.5rem 0; align-items: start; }
     @media (min-width: 1100px) { .plan-info:has(.fold) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
     .plan-info > * { margin: 0; }
-    .short-cell span { display: block; }
+    .short-cell span { display: block; white-space: nowrap; }
+    .plan-table th[data-col-h], .plan-table td[data-col='forecast'], .plan-table td[data-col='count'] { min-width: 6.5rem; }
     .compact { padding: 0.5rem 0.9rem; margin: 0.5rem 0; }
     .plan-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.5rem 1.5rem; margin: 0; padding: 0.7rem 1rem;
       background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
