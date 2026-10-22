@@ -84,8 +84,9 @@ const SORTS: { value: string; label: string }[] = [
             @if (header(); as h) {
               <section class="plan-head" aria-label="Resumen del plan" data-testid="plan-head">
                 <dl class="plan-facts">
-                  <div><dt>Mes</dt><dd data-testid="head-month">{{ monthLabel(planMonth()) }}</dd></div>
-                  <div><dt>Versión</dt><dd data-testid="head-version">{{ h.version ? 'v' + h.version + ' · ' : '' }}{{ stampOf(h.created_at) }}</dd></div>
+                  @if (versions().length <= 1) {
+                    <div><dt>Versión</dt><dd data-testid="head-version">{{ h.version ? 'v' + h.version + ' · ' : '' }}{{ stampOf(h.created_at) }}</dd></div>
+                  }
                   <div><dt>Decisión de compra</dt><dd data-testid="head-decision">{{ shortDate(h.params?.decision_date ?? h.decision_date) }}</dd></div>
                   <div><dt>Ventas registradas hasta</dt><dd data-testid="head-sales">{{ shortDate(cutoff()) }}</dd></div>
                   <div class="wide"><dt>Existencias</dt>
@@ -103,7 +104,7 @@ const SORTS: { value: string; label: string }[] = [
                   }
                 </p>
                 <p data-testid="src-orders"><span class="chip warn">Supuesto</span> <strong>Pedidos por recibir:</strong> {{ pendingNote() }}
-                  @if (!pendingOrders().length) { <span class="muted">Pendiente de confirmar con la empresa.</span> }
+                  @if (!pendingOrders().length && !/confirmar/i.test(pendingNote() ?? '')) { <span class="muted">Pendiente de confirmar con la empresa.</span> }
                 </p>
                 @if (pendingOrders().length) {
                   <ul class="plain" data-testid="src-pending">
@@ -403,6 +404,7 @@ const SORTS: { value: string; label: string }[] = [
     td, th { vertical-align: top; }
     .plan-top { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: stretch; margin: 0 0 0.5rem; }
     .plan-picker { margin: 0; flex: 0 1 auto; }
+    .plan-picker .filters { gap: 0.5rem 1rem; }
     .plan-top .plan-cutoff { flex: 1 1 24rem; margin: 0; }
     .plan-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0.5rem 0; align-items: start; }
     @media (min-width: 1100px) { .plan-info:has(.fold) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }

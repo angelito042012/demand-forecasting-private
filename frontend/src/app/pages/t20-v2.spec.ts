@@ -285,8 +285,9 @@ describe('Piloto de presentación de «Compra recomendada» (22/10)', () => {
 
   it('cabecera breve: mes, versión, decisión, fecha de ventas y existencias con procedencia', async () => {
     const { el } = await openPlan();
-    expect(txt(el, 'head-month')).toBe('noviembre de 2026');
-    expect(txt(el, 'head-version')).toContain('v2');
+    expect((q(el, 'plan-month') as HTMLSelectElement).selectedOptions[0].textContent?.trim()).toBe('noviembre de 2026');
+    expect(q(el, 'plan-version')).not.toBeNull();   // con varias versiones el selector ya muestra la versión: no se repite en la cabecera
+    expect(q(el, 'head-version')).toBeNull();
     expect(txt(el, 'head-decision')).toBe('21/10/2026');
     expect(txt(el, 'head-sales')).toBe('20/10/2026');
     expect(txt(el, 'head-stock')).toContain('Cierre del 20/10/2026');
@@ -304,7 +305,7 @@ describe('Piloto de presentación de «Compra recomendada» (22/10)', () => {
     expect(txt(el, 'plan-confirmations')).toContain('2 pendientes de confirmar con la empresa');
     expect(txt(el, 'plan-confirmations')).toContain('1 diferencia de inventario');
     expect(txt(el, 'src-orders')).toContain('Supuesto');
-    expect(txt(el, 'src-orders')).toContain('Pendiente de confirmar con la empresa');
+    expect(txt(el, 'src-orders')).toContain('sin confirmar con la empresa');
   });
 
   it('singular y legible: «1 producto» y la aclaración de decimales y miles', async () => {
