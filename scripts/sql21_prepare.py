@@ -239,6 +239,66 @@ def prepare_sales(sql: Sql, out: Path) -> dict:
     return {"octubre_normalizado": summ, "parcial_21_lineas": len(partial), "parcial_21_ultima_hora_documento": last[11:]}
 
 
+# ------------------------------------------------------------------ 6. paquete de existencia reconstruida (contrato T20 §2)
+CLOSING = "20261021"            # movimientos < 21/10 00:00 => hasta el cierre del 20/10
+
+
+def reconstructed_package(sql: Sql, out: Path, report_sha: str) -> dict:
+    cnt = count_rows()
+    sql_id = {c: c.zfill(8) for c in cnt}
+    inn = ",".join(f"'{v}'" for v in sql_id.values())
+    stock = {r[0]: (dec(r[1]), dec(r[2])) for r in sql.rows(
+        f"SELECT ID_ARTICULO, STOCK_CANTIDAD, STOCK_CANTRESERVADA FROM INV_STOCK_ARTICULOS WHERE ID_ALMACEN = '001' AND ID_ARTICULO IN ({inn})")}
+    mv = defaultdict(list)
+    for r in sql.rows("SELECT ID_ARTICULO, CONVERT(varchar(23), KAR_FECHA, 121), KAR_ECANTIDAD, KAR_SCANTIDAD, KAR_EQUIVALENCIA FROM KARDEX "
+                      f"WHERE ID_ALMACEN = '001' AND KAR_FECHA > '{COUNT_AT}' AND ID_ARTICULO IN ({inn})"):
+        if dec(r[4]) != D(1):
+            raise RuntimeError("equivalencia distinta de 1 en el kardex; requiere conversion explicita")
+        mv[r[0]].append((r[1], dec(r[2]), dec(r[3])))
+    last_ts = sql.rows("SELECT CONVERT(varchar(23), MAX(KAR_FECHA), 121) FROM KARDEX")[0][0]
+
+    def whole(x: Decimal, what: str) -> int:
+        if x != x.to_integral_value():
+            raise RuntimeError(f"cantidad no entera en {what}: {x}")
+        return int(x)
+
+    rows, disc = [], 0
+    for pid, c in cnt.items():
+        sid = sql_id[pid]
+        libre = whole(dec(c["cantidad_libre_reportada"]), pid)
+        ms = mv.get(sid, [])
+        ent_c = whole(sum((e for ts, e, s_ in ms if ts[:10] < "2026-10-21"), D(0)), pid)
+        sal_c = whole(sum((s_ for ts, e, s_ in ms if ts[:10] < "2026-10-21"), D(0)), pid)
+        ent_l = whole(sum((e for _, e, _ in ms), D(0)), pid)
+        sal_l = whole(sum((s_ for _, _, s_ in ms), D(0)), pid)
+        sis, res = stock[sid]
+        ult = libre + ent_l - sal_l
+        diff = whole(sis, pid) - ult
+        disc += diff != 0
+        rows.append([pid, c["producto"], c["unidad_reporte"], c["unidad_descripcion_reportada"], libre, ent_c, sal_c, libre + ent_c - sal_c,
+                     ent_l, sal_l, ult, whole(sis, pid), whole(res, pid), diff, "COINCIDE" if diff == 0 else "DISCREPANTE"])
+    pkg = out.parent / "existencias_reconstruidas_20261020"
+    pkg.mkdir(parents=True, exist_ok=True)
+    hdr = ["producto_id", "producto", "unidad_reporte", "unidad_descripcion", "conteo_libre", "entradas_hasta_cierre", "salidas_hasta_cierre",
+           "existencia_cierre_20_10", "entradas_hasta_ultimo_mov", "salidas_hasta_ultimo_mov", "existencia_ultimo_mov",
+           "stock_sistema_ultimo_mov", "reservado_sistema", "diferencia", "estado"]
+    write_csv(pkg / "existencias.csv", hdr, rows)
+    base = json.loads(Path("artifacts/private/conteo_recibido_20261018_v2/verification.json").read_text(encoding="utf-8"))         if Path("artifacts/private/conteo_recibido_20261018_v2/verification.json").is_file() else {}
+    manifest = {"kind": "EXISTENCIA_RECONSTRUIDA", "warehouse": {"id": "1", "name": "Almacen Principal"},
+                "as_of_local": "2026-10-20T23:59:59-05:00",
+                "base_count": {"as_of_local": "2026-10-18T17:00:00-05:00", "csv_sha256": sha256_file(COUNT_CSV),
+                               "verification": base.get("status", None)},
+                "movements": {"from_local": "2026-10-18T17:00:00-05:00", "closing_local": "2026-10-20T23:59:59-05:00",
+                              "last_movement_local": last_ts[:19].replace(" ", "T") + "-05:00"},
+                "rule": "Existencia al cierre del 20/10 = conteo fisico reportado del 18/10 17:00 + entradas - salidas del kardex del almacen 001 "
+                        "posteriores a esa hora y hasta el cierre del 20/10. La diferencia con el stock del sistema se calcula con los movimientos "
+                        "hasta el ultimo movimiento disponible (misma fecha que el stock del sistema).",
+                "csv_sha256": sha256_file(pkg / "existencias.csv"), "sql_report_sha256": report_sha,
+                "generated_at": datetime.now().isoformat(timespec="seconds"), "products": len(rows), "discrepancies": int(disc)}
+    (pkg / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
+    return {"paquete": str(pkg), "productos": len(rows), "discrepancias": int(disc), "ultimo_movimiento": manifest["movements"]["last_movement_local"]}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--server", default="Rogelio")
@@ -259,6 +319,8 @@ def main() -> None:
     report["compras_11452_11455"] = purchases(sql, out, group)
     report["datos_preparados"] = prepare_sales(sql, out)
     (out / "informe.json").write_text(json.dumps(report, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    report["existencia_reconstruida"] = reconstructed_package(sql, out, sha256_file(out / "informe.json"))
+    (out / "informe_paquete.json").write_text(json.dumps(report["existencia_reconstruida"], ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps({k: v for k, v in report.items() if k != "datos_preparados"}, ensure_ascii=False, indent=1, default=str)[:6000])
 
 

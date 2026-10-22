@@ -255,6 +255,38 @@ def cmd_import_plan_data(a) -> int:
     return r.returncode
 
 
+def cmd_import_update_v2(a) -> int:
+    """T20: dataset v2 (octubre como fuente 15) y existencia reconstruida en la base de ESTE entorno, dentro de la imagen."""
+    st = state()
+    pkg, stock = Path(a.package).resolve(), Path(a.stock_package).resolve()
+    upd = Path(a.update_dir).resolve()      # carpeta con octubre.xlsx, informe.json y ventas_20261021_parcial_sql.csv
+    for f in (pkg / "manifest.json", upd / "octubre.xlsx", upd / "informe.json", upd / "ventas_20261021_parcial_sql.csv",
+              stock / "existencias.csv", stock / "manifest.json"):
+        if not f.exists():
+            print(f"Falta {f.name}.")
+            return 1
+    e = env(st)
+    base = ["docker", "run", "--rm", "--network", f"{st['project']}_data", "-e", "MONGODB_URI", "-e", "MONGODB_DATABASE"]
+    img = st.get("image") or DEFAULT_IMAGE
+    run_env = {**os.environ, "MONGODB_URI": e["MONGODB_URI"], "MONGODB_DATABASE": st["db"]}
+    audit = pkg.parent / "auditoria_14_excel" / "audit.json"
+    c1 = base + ["-v", f"{pkg}:/pkg:ro", "-v", f"{upd}:/upd:ro"] + (["-v", f"{audit.parent}:/audit:ro"] if audit.exists() else []) + [
+        "--entrypoint", "python", img, "-m", "pipeline.plan.dataset_v2", "--package", "/pkg", "--october", "/upd/octubre.xlsx",
+        "--sql-report", "/upd/informe.json", "--partial-csv", "/upd/ventas_20261021_parcial_sql.csv", "--db", st["db"]]
+    if audit.exists():
+        c1 += ["--audit", "/audit/audit.json"]
+    c2 = base + ["-v", f"{stock}:/stock:ro", "-v", f"{upd}:/upd:ro", "--entrypoint", "python", img, "-m", "pipeline.inventory.reconstructed",
+                 "--package", "/stock", "--db", st["db"], "--sql-report", "/upd/informe.json"]
+    rc = 0
+    for cmd in (c1, c2):
+        if a.dry_run:
+            cmd.append("--dry-run")
+        r = subprocess.run(cmd, env=run_env, check=False, capture_output=True, text=True)
+        print(mask((r.stdout + r.stderr)[-1800:], st).strip())
+        rc = rc or r.returncode
+    return rc
+
+
 def cmd_stop(a) -> int:
     st = state()
     r = dc(st, "stop")
@@ -292,6 +324,11 @@ def main(argv=None) -> int:
     ip = sub.add_parser("import-plan-data")
     ip.add_argument("--package", required=True)
     ip.add_argument("--dry-run", action="store_true")
+    iu = sub.add_parser("import-update-v2")
+    iu.add_argument("--package", required=True)
+    iu.add_argument("--update-dir", required=True)
+    iu.add_argument("--stock-package", required=True)
+    iu.add_argument("--dry-run", action="store_true")
     sub.add_parser("stop")
     sub.add_parser("down")
     a = ap.parse_args(argv)
@@ -303,7 +340,8 @@ def main(argv=None) -> int:
         return 2
     CFG.update({"name": a.env, "port": a.port or 8443, "image": a.image, "edge_prefix": a.edge_prefix})
     return {"up": cmd_up, "status": cmd_status, "create-user": cmd_create_user, "stop": cmd_stop, "down": cmd_down,
-            "import-count": cmd_import_count, "import-plan-data": cmd_import_plan_data}[a.cmd](a)
+            "import-count": cmd_import_count, "import-plan-data": cmd_import_plan_data,
+            "import-update-v2": cmd_import_update_v2}[a.cmd](a)
 
 
 if __name__ == "__main__":

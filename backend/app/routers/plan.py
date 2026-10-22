@@ -75,3 +75,10 @@ def get_results(plan_id: Annotated[str, Path(pattern=RUN_ID_RE)], _: User, db: D
 def get_result(plan_id: Annotated[str, Path(pattern=RUN_ID_RE)], producto_id: Annotated[str, Path(pattern=SKU_RE)],
                _: User, db: Db):
     return plan.get_result(db, plan_id, producto_id)
+
+
+@router.get("/plans/{plan_id}/compare/{other_id}", dependencies=[Depends(strict_params())])
+def compare_plans(plan_id: Annotated[str, Path(pattern=RUN_ID_RE)], other_id: Annotated[str, Path(pattern=RUN_ID_RE)],
+                  _: User, db: Db):
+    """Comparacion producto a producto de dos planes completados (lector y administrador)."""
+    return plan.compare(db, plan_id, other_id)

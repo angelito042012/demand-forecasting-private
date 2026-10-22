@@ -72,6 +72,8 @@ def _item(d: dict, detail: bool) -> dict:
            "status": d["status"], "reason": d.get("reason"), "forecast": _forecast(d.get("forecast"), detail),
            "count_stock": d["count_stock"],
            "scenarios": {k: _scenario(v, detail) for k, v in d["scenarios"].items()}}
+    if d.get("stock_provenance") is not None:          # solo planes con existencia reconstruida (T20)
+        out["stock_provenance"] = d["stock_provenance"]
     if detail:
         out.update(plan_id=d["plan_id"], pending_orders=d.get("pending_orders", []), statuses=d.get("statuses", []))
     return out
@@ -107,6 +109,8 @@ def list_plans(db, month: str | None, page: int, page_size: int) -> dict:
 def get_plan(db, plan_id: str) -> dict:
     p = _readable_plan(db, plan_id)
     out = _plan_summary(p)
+    if p.get("confirmations") is not None:
+        out["confirmations"] = p["confirmations"]
     out.update(dates=p["dates"], distances=p["distances"], params=p["params"], dataset={**p["dataset"],
                "imported_at": iso_utc(p["dataset"].get("imported_at"))}, snapshot=p["snapshot"],
                method=p["method"], engine_version=p["engine_version"], contract_version=p["contract_version"],
@@ -167,6 +171,72 @@ def get_result(db, plan_id: str, producto_id: str) -> dict:
     return {**_item(d, True), "label": LABEL}
 
 
+# ------------------------------------------------------------------ comparacion v1/v2 (T20)
+def _plan_brief(p: dict) -> dict:
+    sn = p["snapshot"]
+    return {**_plan_summary(p), "snapshot_kind": sn.get("kind") or "INFORMADO", "snapshot_as_of_local": sn["as_of_local"],
+            "sales_cutoff": p["dates"]["sales_cutoff"], "count_date": p["dates"]["count_date"]}
+
+
+def _side(d: dict | None) -> dict | None:
+    if d is None:
+        return None
+    fc = d.get("forecast")
+    return {"forecast_daily": None if fc is None else _d(fc["daily_exact"]),
+            "month_total": None if fc is None else _d(fc["month_total_exact"]),
+            "libre": d["count_stock"]["libre"],
+            "purchase": {k: v["purchase_qty"] for k, v in d["scenarios"].items()}, "status": d["status"]}
+
+
+def _delta(a: dict | None, b: dict | None, da: dict | None, db_: dict | None) -> dict | None:
+    if a is None or b is None:
+        return None
+    def sub(x, y):
+        return None if x is None or y is None else engine.dec(engine.parse_exact(y) - engine.parse_exact(x))
+    fa, fb = da.get("forecast"), db_.get("forecast")
+    pur = {}
+    for lead in sorted(set(a["purchase"]) & set(b["purchase"]), key=int):
+        x, y = a["purchase"][lead], b["purchase"][lead]
+        pur[lead] = None if x is None or y is None else y - x
+    return {"daily": sub(None if fa is None else fa["daily_exact"], None if fb is None else fb["daily_exact"]),
+            "month_total": sub(None if fa is None else fa["month_total_exact"], None if fb is None else fb["month_total_exact"]),
+            "libre": None if a["libre"] is None or b["libre"] is None else b["libre"] - a["libre"],
+            "purchase": pur}
+
+
+def compare(db, plan_id: str, other_id: str) -> dict:
+    """Compara dos planes completados producto a producto (delta = other - base). Solo lectura."""
+    pa, pb = _readable_plan(db, plan_id), _readable_plan(db, other_id)
+    docs = []
+    for p in (pa, pb):
+        docs.append({d["producto_id"]: d for d in db[store.RESULTS].find(store.children_filter(p), {"_id": 0})})
+    da, dbb = docs
+    items, changed, only_a, only_b = [], {}, 0, 0
+    for pid in sorted(set(da) | set(dbb)):
+        x, y = da.get(pid), dbb.get(pid)
+        a, b = _side(x), _side(y)
+        only_a += y is None
+        only_b += x is None
+        delta = _delta(a, b, x, y)
+        if delta:
+            for lead, v in delta["purchase"].items():
+                if v:
+                    changed[lead] = changed.get(lead, 0) + 1
+        items.append({"producto_id": pid, "producto": (x or y)["producto"], "a": a, "b": b, "delta": delta})
+    base, other = _plan_brief(pa), _plan_brief(pb)
+    same_stock = base["snapshot_as_of_local"] == other["snapshot_as_of_local"]
+    note = ("Las existencias iniciales de los dos planes corresponden a fechas distintas "
+            f"({base['snapshot_as_of_local']} y {other['snapshot_as_of_local']}); las diferencias de compra mezclan el cambio de "
+            "existencia, de ventas observadas y de parámetros. Delta = segundo plan menos primero."
+            if not same_stock else "Los dos planes parten de la misma fecha de existencias. Delta = segundo plan menos primero.")
+    return {"base": base, "other": other,
+            "summary": {"products": len(items), "only_in_base": only_a, "only_in_other": only_b,
+                        "purchase_changed_by_lead": changed,
+                        "status_changed": sum(1 for i in items if i["a"] and i["b"] and i["a"]["status"] != i["b"]["status"]),
+                        "same_stock_date": same_stock},
+            "items": items, "note": note, "label": LABEL}
+
+
 # ------------------------------------------------------------------ entradas disponibles
 def inputs(db) -> dict:
     ds, sn = sales.get_dataset(db), store.get_snapshot(db)
@@ -177,11 +247,19 @@ def inputs(db) -> dict:
         reason = "SIN_INVENTARIO_INFORMADO"
     dataset = None if ds is None else {
         "dataset_id": ds["dataset_id"], "sales_cutoff": str(ds["sales_cutoff"])[:10], "source_rows": ds.get("source_rows"),
-        "classes": dict(ds.get("counts", {})), "imported_at": iso_utc(ds.get("imported_at"))}
+        "classes": dict(ds.get("counts", {})), "imported_at": iso_utc(ds.get("imported_at")),
+        **{k: ds[k] for k in ("base_dataset_id", "october_verification", "partial") if k in ds}}
+    kind = None if sn is None else store.snapshot_kind(sn)
     snapshot = None if sn is None else {
-        "snapshot_id": sn["snapshot_id"], "as_of_local": sn["as_of_local"],
+        "snapshot_id": sn["snapshot_id"], "kind": kind, "as_of_local": sn["as_of_local"],
         "warehouse": {"id": sn["warehouse"]["id"], "name": sn["warehouse"]["name"]},
-        "products": db[store.ITEM_COLL].count_documents({"snapshot_id": sn["snapshot_id"]})}
+        "products": db[store.items_collection(sn)].count_documents({"snapshot_id": sn["snapshot_id"]})}
+    if kind == store.RECONSTRUIDO:
+        disc = sorted(d["producto_id"] for d in db[store.REC_ITEM_COLL].find(
+            {"snapshot_id": sn["snapshot_id"], "discrepancy": {"$ne": None}}, {"producto_id": 1, "_id": 0}))
+        snapshot.update(base_count_as_of_local=(sn.get("base_count") or {}).get("as_of_local"),
+                        last_movement_local=(sn.get("movements") or {}).get("last_movement_local"),
+                        discrepancy_products=disc, confirmations=store.build_confirmations(disc))
     out = {"label": LABEL, "dataset": dataset, "snapshot": snapshot,
            "defaults": {"month": "2026-11", "decision_date": "2026-10-18", "lead_days": [7, 14], "reserve_days": 7,
                         "min_order": 1, "order_multiple": 1, "pending_orders": []},
@@ -201,7 +279,9 @@ def inputs(db) -> dict:
         s, e = engine.month_bounds(m)
         detail.append({"month": m, "start": s.isoformat(), "end": e.isoformat(), "decision_max": e.isoformat(),
                        "extrapolation_days_to_start": (s - cutoff).days, "extrapolation_days_to_end": (e - cutoff).days})
-    out["defaults"]["decision_date"] = count.isoformat()
+    out["defaults"]["decision_date"] = (count + timedelta(days=1) if kind == store.RECONSTRUIDO else count).isoformat()
+    if kind == store.RECONSTRUIDO:
+        out["assumptions"][0] = {"code": "PEDIDOS_PENDIENTES", "nature": "SUPUESTO", "text": store.NO_PENDING_TEXT}
     if months:
         out["defaults"]["month"] = months[0]
     out["limits"] = {"decision_min": count.isoformat(), "decision_max": detail[-1]["decision_max"] if detail else None,
@@ -238,4 +318,4 @@ def create_plan(db, raw: dict, created_by: str) -> dict:
     raise ApiError(409, "REINTENTOS_AGOTADOS", "El plan falló repetidamente; revise los trabajos.")
 
 
-__all__ = ["create_plan", "get_plan", "get_result", "get_results", "inputs", "list_plans"]
+__all__ = ["compare", "create_plan", "get_plan", "get_result", "get_results", "inputs", "list_plans"]

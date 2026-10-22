@@ -11,7 +11,13 @@ SNAPSHOT_ID = "invrep-20261018T1700-a1-608d15a74a58"
 AS_OF = "2026-10-18T17:00:00-05:00"
 RAW = {"month": "2026-11", "decision_date": "2026-10-18", "lead_days": [7, 14], "reserve_days": 7, "min_order": 1,
        "order_multiple": 1, "pending_orders": []}
+REC_SNAPSHOT_ID = "invrec-20261020-b2c3d4e5f6a7"
+DATASET_V2_ID = "plds-test00000002"
+REC_AS_OF = "2026-10-20T23:59:59-05:00"
+LAST_MOVEMENT = "2026-10-21T16:26:38-05:00"
+RAW_V2 = {**RAW, "decision_date": "2026-10-21"}
 UNTOUCHED = ("recommendations", "runs", "inventory_snapshot", "inventory_reported_snapshots", "inventory_reported_items",
+             "inventory_reconstructed_snapshots", "inventory_reconstructed_items",
              "plan_sales", "plan_datasets", "plan_purchases", "plan_credits", "plan_quarantine")
 
 # producto -> (libre, unidad_reporte, ventas_por_dia_en_septiembre, caso)
@@ -35,20 +41,20 @@ def _sale(dataset_id, n, pid, day, qty, unit="UND"):
             "hoja": "H", "fila": n, "sha256_origen": "0" * 64}
 
 
-def seed_dataset(db, dataset_id=DATASET_ID, *, noise=True, status="current", version=1) -> None:
+def seed_dataset(db, dataset_id=DATASET_ID, *, noise=True, status="current", version=1, cutoff=CUTOFF) -> None:
     rows, n = [], 0
     for pid, (_libre, _u, spec, _c) in PRODUCTS.items():
         if spec in ("2",):
             for k in range(28):
                 n += 1
-                rows.append(_sale(dataset_id, n, pid, date(2026, 9, 3) + timedelta(days=k), "2"))
+                rows.append(_sale(dataset_id, n, pid, cutoff - timedelta(days=27) + timedelta(days=k), "2"))
         elif spec == "AUG":
             n += 1
             rows.append(_sale(dataset_id, n, pid, date(2026, 8, 10), "5"))
         elif spec == "CAJA":
             for k in range(28):
                 n += 1
-                rows.append(_sale(dataset_id, n, pid, date(2026, 9, 3) + timedelta(days=k), "1", unit="CAJA"))
+                rows.append(_sale(dataset_id, n, pid, cutoff - timedelta(days=27) + timedelta(days=k), "1", unit="CAJA"))
     if noise:       # fuera de la ventana o posterior al corte: no debe cambiar nada
         n += 1
         rows.append(_sale(dataset_id, n, "1000001", date(2026, 8, 1), "999"))
@@ -56,8 +62,8 @@ def seed_dataset(db, dataset_id=DATASET_ID, *, noise=True, status="current", ver
         rows.append(_sale(dataset_id, n, "1000001", date(2026, 9, 2), "999"))
     db.plan_sales.insert_many(rows)
     db.plan_datasets.insert_one({
-        "dataset_id": dataset_id, "version": version, "status": status, "sales_cutoff": CUTOFF.isoformat(),
-        "window_start": "2026-03-01", "window_end": "2026-09-30", "source_rows": len(rows), "counts": {"VENTA": len(rows)},
+        "dataset_id": dataset_id, "version": version, "status": status, "sales_cutoff": cutoff.isoformat(),
+        "window_start": "2026-03-01", "window_end": cutoff.isoformat(), "source_rows": len(rows), "counts": {"VENTA": len(rows)},
         "imported_at": datetime(2026, 10, 18, 12, 0, 0), "schema_version": 1})
     db.plan_purchases.insert_one({"dataset_id": dataset_id, "registro_id": "c1", "producto_id": "1000001", "cantidad": "50"})
 
@@ -76,6 +82,49 @@ def seed_snapshot(db, snapshot_id=SNAPSHOT_ID, *, version=1, status="current", s
          "unidad_reporte": "UND", "unidad_descripcion": f"Unidad {pid}",
          "libre": libres.get(pid, libre), "reservada": 0, "no_vendible": 0, "fisica_total": libres.get(pid, libre),
          "source_row": 9} for pid, (libre, _u, _s, _c) in PRODUCTS.items()])
+
+
+# producto -> libre al cierre (existencia reconstruida). 1000005 (sin cantidad en el conteo informado) no existe en v2.
+REC_NET = {"entradas_cierre": 5, "salidas_cierre": 2}
+
+
+def seed_reconstructed(db, snapshot_id=REC_SNAPSHOT_ID, *, version=1, status="current", libres=None,
+                       discrepancies=None) -> None:
+    """Existencia reconstruida SINTETICA (T20). `discrepancies` = {producto_id: diferencia}; el resto coincide con el sistema."""
+    libres, discrepancies = libres or {}, discrepancies if discrepancies is not None else {"1000003": -3}
+    items = []
+    for pid, (libre, _u, _s, _c) in PRODUCTS.items():
+        libre = libres.get(pid, libre)
+        if libre is None:
+            continue
+        net = REC_NET if libre >= 3 else {"entradas_cierre": 0, "salidas_cierre": 0}
+        diff = discrepancies.get(pid)
+        items.append({
+            "snapshot_id": snapshot_id, "producto_id": pid, "producto": f"PRODUCTO {pid}", "categoria": "CAT",
+            "unidad_reporte": "UND", "unidad_descripcion": f"Unidad {pid}", "libre": libre,
+            "base_count": libre - net["entradas_cierre"] + net["salidas_cierre"],
+            "movements": {**net, "entradas_ultimo_mov": net["entradas_cierre"], "salidas_ultimo_mov": net["salidas_cierre"]},
+            "reconstructed_at_last_movement": libre, "system_stock_at_last_movement": libre + (diff or 0),
+            "system_reserved": 0, "discrepancy": None if not diff else {"difference": diff, "compared_at_local": LAST_MOVEMENT}})
+    db.inventory_reconstructed_snapshots.insert_one({
+        "snapshot_id": snapshot_id, "kind": "EXISTENCIA_RECONSTRUIDA", "version": version, "status": status, "supersedes": None,
+        "as_of_utc": datetime(2026, 10, 21, 4, 59, 59), "as_of_local": REC_AS_OF, "warehouse": {"id": "1", "name": "Almacen 1"},
+        "source": {"sha256": "b2c3d4e5f6a7" + "0" * 52, "csv_sha256": "d" * 64},
+        "base_count": {"snapshot_id": SNAPSHOT_ID, "as_of_local": AS_OF, "csv_sha256": "c" * 64},
+        "movements": {"from_local": AS_OF, "closing_local": REC_AS_OF, "last_movement_local": LAST_MOVEMENT},
+        "counts": {"products": len(items), "discrepancies": sum(1 for i in items if i["discrepancy"])},
+        "rule": "existencia_cierre = conteo + entradas - salidas", "imported_at": datetime(2026, 10, 21, 18, 0, 0)})
+    db.inventory_reconstructed_items.insert_many(items)
+
+
+def seed_v2(db, **kw) -> None:
+    """Dataset v2 (corte 20/10) y existencia reconstruida; el dataset v1 pasa a `superseded` (se lee por id)."""
+    db.plan_datasets.update_many({"dataset_id": DATASET_ID}, {"$set": {"status": "superseded"}})
+    seed_dataset(db, DATASET_V2_ID, version=2, cutoff=date(2026, 10, 20))
+    db.plan_datasets.update_one({"dataset_id": DATASET_V2_ID}, {"$set": {
+        "base_dataset_id": DATASET_ID, "october_verification": {"sql_match": True, "lines": 10, "documents": 5},
+        "partial": {"date": "2026-10-21", "used_for_forecast": False}}})
+    seed_reconstructed(db, **kw)
 
 
 def seed_other(db) -> None:

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import {
   BacktestDetail, BacktestItem, BacktestView, ForecastPage, GroupBy, Health, ImportDetail, ImportItem, Page,
   ImportAccepted, JobType, ReportedInventoryPage, ReportedSnapshotRef, ReportedView, PublicJob, Recommendation, RecoPage, RunAccepted, RunDetail, RunOptions, RunSummary, SalesSummary, JobStatus,
-  PlanInputs, PlanList, PlanRef, PlanHeader, PlanResultsPage, PlanResultDetail, PlanCreateBody, PlanAccepted,
+  PlanInputs, PlanList, PlanRef, PlanHeader, PlanResultsPage, PlanResultDetail, PlanCreateBody, PlanAccepted, PlanCompareResponse, StockPage,
 } from './models';
 
 const BASE = '/api/v1';
@@ -34,6 +34,7 @@ export interface RecoQuery {
 
 export interface PlanQuery { q?: string; status?: string; sort?: string; page: number; page_size: number }
 
+export interface StockQuery { snapshot_id?: string; q?: string; view?: 'discrepancias'; sort?: string; page: number; page_size: number }
 export interface ReportedQuery { snapshot_id?: string; q?: string; view?: ReportedView; sort?: string; page: number; page_size: number }
 
 @Injectable({ providedIn: 'root' })
@@ -87,6 +88,12 @@ export class ApiService {
   planResult(id: string, producto_id: string) {
     return this.get<PlanResultDetail>(`/plans/${encodeURIComponent(id)}/results/${encodeURIComponent(producto_id)}`);
   }
+  /** T20: comparación de dos versiones (a = base, b = otra). */
+  comparePlans(a: string, b: string) {
+    return this.get<PlanCompareResponse>(`/plans/${encodeURIComponent(a)}/compare/${encodeURIComponent(b)}`);
+  }
+  /** T20: existencia reconstruida. */
+  stock(q: StockQuery) { return this.get<StockPage>('/stock', { ...q }); }
   createPlan(body: PlanCreateBody): Observable<PlanAccepted> {
     return this.http.post<PlanAccepted>(`${BASE}/plans`, body, { withCredentials: true });
   }

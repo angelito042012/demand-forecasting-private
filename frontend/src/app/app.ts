@@ -23,6 +23,11 @@ export class App {
   /** T19: Planificar compras tampoco puede hablar de inventario simulado. */
   protected readonly onPlan = computed(() => /^\/planificar(\/|\?|$)/.test(this.url()));
 
+  /** T20: «Existencias» (existencia reconstruida). */
+  protected readonly onStock = computed(() => /^\/existencias(\/|\?|$)/.test(this.url()));
+  /** T20: la evaluación histórica con inventario simulado está separada del flujo principal. */
+  protected readonly onAcademic = computed(() => /^\/recomendaciones(\/|\?|$)/.test(this.url()));
+
   constructor() {
     this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => { this.menuOpen.set(false); this.url.set(e.urlAfterRedirects); });
   }

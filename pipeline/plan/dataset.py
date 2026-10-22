@@ -61,6 +61,7 @@ class ImportRejected(Exception):
 class Prepared:
     header: dict                                   # cabecera sellada sin version/status/supersedes/imported_at
     docs: dict[str, list[dict]] = field(default_factory=dict)   # coleccion -> documentos (sin dataset_id)
+    extra: dict[str, list[dict]] = field(default_factory=dict)  # colecciones adicionales (v2: plan_sales_partial); clave unica `linea`
 
 
 def _mismatch(what: str) -> ImportRejected:
@@ -267,22 +268,26 @@ def prepare(package: Path, audit_path: Path | None = None) -> Prepared:
     return Prepared(header, docs)
 
 
-def ensure_indexes(db) -> None:
+def ensure_indexes(db, extra=()) -> None:
     db[HEADER_COLL].create_index([("dataset_id", 1)], name="dataset_id_unique", unique=True)
     db[HEADER_COLL].create_index([("status", 1), ("version", -1)], name="status_version")
     for coll in COLLECTIONS.values():
         db[coll].create_index([("dataset_id", 1), ("registro_id", 1)], name="dataset_registro_unique", unique=True)
         db[coll].create_index([("dataset_id", 1), ("producto_id", 1), ("fecha", 1)], name="dataset_producto_fecha")
+    for coll in extra:
+        db[coll].create_index([("dataset_id", 1), ("linea", 1)], name="dataset_linea_unique", unique=True)
 
 
-def _result(action: str, header: dict, version: int | None) -> dict:
+def _result(action: str, header: dict, version: int | None, extra: dict | None = None) -> dict:
     return {"action": action, "dataset_id": header["dataset_id"], "version": version, "source_rows": header["source_rows"],
-            "counts": header["counts"], "collections": {p["collection"]: p["count"] for p in header["partitions"].values()},
+            "counts": header["counts"],
+            "collections": {**{p["collection"]: p["count"] for p in header["partitions"].values()},
+                            **{k: len(v) for k, v in (extra or {}).items()}},
             "sales_cutoff": header["sales_cutoff"], "audit_checked": header["audit_checked"]}
 
 
-def _cleanup(db, dataset_id: str) -> None:
-    for coll in COLLECTIONS.values():
+def _cleanup(db, dataset_id: str, extra=()) -> None:
+    for coll in (*COLLECTIONS.values(), *extra):
         db[coll].delete_many({"dataset_id": dataset_id})
     db[HEADER_COLL].delete_many({"dataset_id": dataset_id, "status": "staging"})
 
@@ -294,7 +299,7 @@ def write_dataset(db, prep: Prepared, dry_run: bool = False) -> dict:
     did = h["dataset_id"]
     same = heads.find_one({"dataset_id": did}, {"_id": 0})
     if same and same["status"] == "current":
-        return _result("unchanged", h, same["version"])
+        return _result("unchanged", h, same["version"], prep.extra)
     if same and same["status"] == "superseded":
         raise ImportRejected("VERSION_SUSTITUIDA", "Ese contenido ya fue sustituido por una version posterior.")
     cur = heads.find_one({"status": "current"}, {"_id": 0}, sort=[("version", -1)])
@@ -302,26 +307,26 @@ def write_dataset(db, prep: Prepared, dry_run: bool = False) -> dict:
     version = (last["version"] if last else 0) + 1
     action = "created" if last is None else "new_version"
     if dry_run:
-        return _result("would_" + action, h, version)
-    ensure_indexes(db)
-    _cleanup(db, did)               # intento interrumpido de este mismo dataset: se limpia por su propio id (nunca otros)
+        return _result("would_" + action, h, version, prep.extra)
+    ensure_indexes(db, tuple(prep.extra))
+    _cleanup(db, did, tuple(prep.extra))               # intento interrumpido de este mismo dataset: se limpia por su propio id (nunca otros)
     imported_at = datetime.now(UTC).replace(tzinfo=None, microsecond=0)
     heads.insert_one({**h, "version": version, "status": "staging", "supersedes": cur["dataset_id"] if cur else None,
                       "imported_at": imported_at})
     try:
-        for part in COLLECTIONS.values():
-            docs = prep.docs[part]
+        for part in (*COLLECTIONS.values(), *prep.extra):
+            docs = prep.docs[part] if part in prep.docs else prep.extra[part]
             for i in range(0, len(docs), BATCH):
                 db[part].insert_many([{"dataset_id": did, **d} for d in docs[i:i + BATCH]], ordered=False)
             if db[part].count_documents({"dataset_id": did}) != len(docs):
                 raise ImportRejected("ESCRITURA_INCOMPLETA", "El numero de documentos escritos no coincide.")
     except BaseException:
-        _cleanup(db, did)
+        _cleanup(db, did, tuple(prep.extra))
         raise
     heads.update_one({"dataset_id": did, "status": "staging"}, {"$set": {"status": "current"}})
     if cur:
         heads.update_one({"dataset_id": cur["dataset_id"], "status": "current"}, {"$set": {"status": "superseded"}})
-    return _result(action, h, version)
+    return _result(action, h, version, prep.extra)
 
 
 def default_audit(package: Path) -> Path:

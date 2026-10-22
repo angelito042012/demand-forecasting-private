@@ -42,6 +42,9 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
   imports: [StatePanel, Pager, FormsModule, SimNotice, RouterLink, PageHeader, AnalysisBar, RecoReplacedNotice],
   template: `
     <app-page-header title="Reposición simulada" lead="Cuántas unidades se sugeriría reponer de cada producto en el ejemplo, y cómo se calculó esa cantidad." />
+    <p class="notice info" role="note" data-testid="acad-header"><strong>Evaluación académica.</strong>
+      Esta pantalla es una evaluación histórica con inventario simulado, separada del flujo principal (Ventas previstas, Existencias y Compra recomendada).
+      Para decidir una compra real use «Compra recomendada».</p>
     <app-analysis-bar [runId]="choice.id()" />
     @if (!barShowsReplaced()) { <app-reco-replaced-notice [run]="data()?.run" /> }
     <app-sim-notice [scenarioId]="scenarioId()" />

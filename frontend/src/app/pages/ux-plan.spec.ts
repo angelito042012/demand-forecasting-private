@@ -121,7 +121,7 @@ describe('Planificar compras: lectura', () => {
     expect(pr.request.params.get('month')).toBe('2026-11');
     expect(rr!.request.params.get('page_size')).toBe('50');
     expect(el.querySelectorAll('h1').length).toBe(1);
-    expect(txt(el, 'page-title')).toBe('Planificar compras');
+    expect(txt(el, 'page-title')).toBe('Compra recomendada');
     expect(txt(el, 'plan-band')).toContain('Plan de compra bajo supuestos');
     expect(el.querySelectorAll('[data-testid="plan-table"] tbody tr').length).toBe(50);
     expect(cell(el, '003230000', 'code')).toBe('003230000');      // código como texto con ceros
@@ -220,8 +220,8 @@ describe('Planificar compras: lectura', () => {
     expect(Number(values[0]) - Number(values[1])).toBe(Number(values[2]));
     expect(Number(values[3]) + Number(values[4]) + Number(values[5])).toBe(Number(values[6]));
     expect(Number(values[6]) - Number(values[7])).toBe(Number(values[8]));
-    expect(txt(q(panel, 'ex-lead-7')!, 'ex-buy')).toBe('Compra propuesta: 60');
-    expect(txt(q(panel, 'ex-lead-14')!, 'ex-buy')).toBe('Compra propuesta: 60');
+    expect(txt(q(panel, 'ex-lead-7')!, 'ex-buy')).toBe('Compra recomendada: 60');
+    expect(txt(q(panel, 'ex-lead-14')!, 'ex-buy')).toBe('Compra recomendada: 60');
     expect(q(panel, 'ex-lead-14')!.textContent).toContain('Llega el 1 de noviembre de 2026');
     expect(txt(q(panel, 'ex-lead-7')!, 'ex-served')).toContain('Ventas que podrían atenderse en este escenario: 60');
     expect(txt(q(panel, 'ex-lead-7')!, 'ex-served')).toContain('Ventas previstas sin limitar por stock: 60');
@@ -280,9 +280,9 @@ describe('Planificar compras: lectura', () => {
     expect(el.querySelector('table')).toBeNull();
   });
 
-  it('la ruta existe, es perezosa y se llama «Planificar compras»', () => {
+  it('la ruta existe, es perezosa y se llama «Compra recomendada»', () => {
     const r = routes.find((x) => x.canActivate)!.children!.find((x) => x.path === 'planificar')!;
-    expect(r.title).toBe('Planificar compras');
+    expect(r.title).toBe('Compra recomendada');
     expect(typeof r.loadComponent).toBe('function');
   });
 });

@@ -23,6 +23,7 @@ from backend.app.routers import (
     recommendations,
     runs,
     sales,
+    stock,
 )
 
 API_VERSION = "0.1.0"
@@ -47,7 +48,7 @@ def create_app() -> FastAPI:
     app.add_middleware(TrustedProxyMiddleware, trusted=settings.proxies)
     app.add_middleware(SecurityHeadersMiddleware, hsts=prod)
     install_error_handlers(app)
-    for module in (auth, admin, imports, sales, runs, jobs, forecasts, recommendations, backtests, inventory, plan):
+    for module in (auth, admin, imports, sales, runs, jobs, forecasts, recommendations, backtests, inventory, plan, stock):
         app.include_router(module.router, prefix="/api/v1")
 
     @app.get("/api/v1/health")

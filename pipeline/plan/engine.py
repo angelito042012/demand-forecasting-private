@@ -284,12 +284,12 @@ def _sum(rows, attr: str, pred=lambda r: True) -> Fraction:
 
 def calc_scenario(*, m: Fraction, libre: int, count_date: date, decision_date: date, lead: int, reserve_days: int,
                   min_order: int, order_multiple: int, month_start: date, month_end: date,
-                  pending: Mapping[date, Fraction] | None = None) -> dict:
+                  pending: Mapping[date, Fraction] | None = None, kind: str = "INFORMADO") -> dict:
     """Escenario de un plazo (contrato §4). Devuelve Fractions y filas; `serialize_scenario` lo convierte a JSON."""
     pending = {d: Fraction(q) for d, q in (pending or {}).items()}
     A = decision_date + timedelta(days=lead)
     day0, E, R = count_date + timedelta(days=1), month_end, reserve_days * m
-    out: dict = {"lead_days": lead, "decision_date": decision_date, "arrival_date": A, "m": m, "libre": libre,
+    out: dict = {"kind": kind, "lead_days": lead, "decision_date": decision_date, "arrival_date": A, "m": m, "libre": libre,
                  "reserve_days": reserve_days, "reserve_qty": R, "count_date": count_date, "month_start": month_start,
                  "month_end": month_end, "min_order": min_order, "order_multiple": order_multiple,
                  "pending": pending, "required_arrival_date": None, "stock_at_arrival": None, "qty": None,
@@ -351,6 +351,19 @@ def calc_scenario(*, m: Fraction, libre: int, count_date: date, decision_date: d
     return out
 
 
+RECONSTRUIDO = "RECONSTRUIDO"
+
+
+def _initial_stock_texts(c: dict) -> tuple[str, str, str]:
+    """(etiqueta, texto del paso, nota del evento) de la existencia inicial segun el tipo de snapshot (T20 §3)."""
+    cd = _dmy(c["count_date"])
+    if c.get("kind") == RECONSTRUIDO:
+        return ("Existencia inicial (cierre)",
+                f"Existencia reconstruida al cierre del {cd}: conteo físico más entradas menos salidas registradas hasta ese cierre.",
+                "Existencia reconstruida al cierre del día")
+    return ("Stock del conteo", f"Stock libre reportado el {cd} a las 17:00.", "Stock libre reportado (17:00)")
+
+
 def _step(key: str, label: str, text: str, value: Fraction | int | None) -> dict:
     v = None if value is None else Fraction(value)
     return {"key": key, "label": label, "text": text, "value": None if v is None else dec(v),
@@ -364,9 +377,11 @@ def _explain(c: dict) -> tuple[dict, list[dict]]:
     pre_rows = [r for r in c["rows"] if r.day < A]
     rec_to_A = sum((q for d, q in c["pending"].items() if d <= A), Fraction(0))
     r_days = c["reserve_days"]
+    stock_label, stock_text, _note = _initial_stock_texts(c)
     if c["status"] == "NO_LLEGA_A_TIEMPO":
         steps = [
-            _step("stock_count", "Stock del conteo", f"Stock libre reportado el {_dmy(cd)}.", c["libre"]),
+            _step("stock_count", stock_label,
+                  f"Stock libre reportado el {_dmy(cd)}." if c.get("kind") != RECONSTRUIDO else stock_text, c["libre"]),
             _step("arrival", "Llegada de la orden", f"Con decisión el {_dmy(c['decision_date'])} y {c['lead_days']} días, "
                   f"llegaría el {_dmy(A)}, después del {_dmy(E)}: no sirve para este mes.", None),
             _step("required_date", "Fecha requerida", f"Para llegar el {_dmy(ms)} habría que decidir el "
@@ -390,7 +405,7 @@ def _explain(c: dict) -> tuple[dict, list[dict]]:
           "order_multiple": c["order_multiple"], "purchase_qty": c["qty"]}
     first_pre = cd + timedelta(days=1)
     steps = [
-        _step("stock_count", "Stock del conteo", f"Stock libre reportado el {_dmy(cd)} a las 17:00.", c["libre"]),
+        _step("stock_count", stock_label, stock_text, c["libre"]),
         _step("consumed_before_arrival", "Ventas atendidas antes de llegar",
               f"Del {_dmy(first_pre)} al {_dmy(A - timedelta(days=1))} se atiende la demanda prevista mientras haya stock."
               if pre_rows else "La orden llega el primer día simulado: no hay consumo previo.", c["consumed_before_arrival"]),
@@ -425,7 +440,7 @@ def _explain(c: dict) -> tuple[dict, list[dict]]:
 
 
 def _events(c: dict) -> list[dict]:
-    ev = [(c["count_date"], 0, "CONTEO", Fraction(c["libre"]), "Stock libre reportado (17:00)")]
+    ev = [(c["count_date"], 0, "CONTEO", Fraction(c["libre"]), _initial_stock_texts(c)[2])]
     for d, q in sorted(c["pending"].items()):
         ev.append((d, 2, "RECEPCION_PENDIENTE", q, "Pedido por recibir (recepción al inicio del día)"))
     if c["qty"] is not None:
@@ -478,7 +493,8 @@ def worst_status(statuses) -> str:
 
 def compute_product(*, params: PlanParams, count_date: date, sales_cutoff: date, libre: int | None,
                     unidad_reporte: str | None, by_day: Mapping[date, Fraction], window_units: frozenset,
-                    history_units: frozenset, history_rows: int, pending: Mapping[date, Fraction] | None) -> dict:
+                    history_units: frozenset, history_rows: int, pending: Mapping[date, Fraction] | None,
+                    kind: str = "INFORMADO") -> dict:
     """Resultado de un producto: `forecast`, `scenarios` por plazo, `status` (el peor), `statuses`, `reason`.
     NO_CALCULABLE (nunca 0) si falta conteo, la unidad no es UND o no hay señal de ventas."""
     month_start, month_end = month_bounds(params.month)
@@ -512,7 +528,7 @@ def compute_product(*, params: PlanParams, count_date: date, sales_cutoff: date,
             calc = calc_scenario(m=fc.m, libre=libre, count_date=count_date, decision_date=params.decision_date,
                                  lead=lead, reserve_days=params.reserve_days, min_order=params.min_order,
                                  order_multiple=params.order_multiple, month_start=month_start, month_end=month_end,
-                                 pending=pending)
+                                 pending=pending, kind=kind)
             scenarios[str(lead)] = serialize_scenario(calc)
     statuses = [s["status"] for s in scenarios.values()]
     return {"forecast": forecast, "scenarios": scenarios, "status": worst_status(statuses),

@@ -182,7 +182,7 @@ describe('Planificar compras · contrato real (R20)', () => {
     expect(txt(el, 'ex-forecast')).toContain('Ventas previstas del mes, sin limitar por stock: No se puede calcular');
     expect(p).not.toMatch(/stock: 0\b/);
     expect(txt(q(el, 'ex-lead-7')!, 'ex-served')).toContain('Ventas previstas sin limitar por stock: No se puede calcular');
-    expect(txt(q(el, 'ex-lead-7')!, 'ex-buy')).toBe('Compra propuesta: No se puede calcular');
+    expect(txt(q(el, 'ex-lead-7')!, 'ex-buy')).toBe('Compra recomendada: No se puede calcular');
   });
 
   it('6. NO_LLEGA_A_TIEMPO muestra la fecha de decisión que entrega el servidor', async () => {
@@ -192,7 +192,7 @@ describe('Planificar compras · contrato real (R20)', () => {
     await openProduct(f, el, ID_A, '1000001', d);
     expect(txt(q(el, 'ex-lead-14')!, 'ex-decide')).toBe('Para que llegue el primer día del mes habría que decidir la compra el 18 de octubre de 2026.');
     expect(q(q(el, 'ex-lead-7')!, 'ex-decide')).toBeNull();
-    expect(txt(q(el, 'ex-lead-14')!, 'ex-buy')).toBe('Compra propuesta: No se puede calcular');
+    expect(txt(q(el, 'ex-lead-14')!, 'ex-buy')).toBe('Compra recomendada: No se puede calcular');
   });
 
   it('7. dos planes con cortes distintos: al cambiar de versión nada del plan anterior sobrevive', async () => {

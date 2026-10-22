@@ -6,7 +6,7 @@ import { AuthService } from '../core/auth.service';
 import { JobBoard, STAGE_LABELS } from '../core/jobs';
 import { load } from '../core/load';
 import {
-  AppError, JobType, PlanAccepted, PlanCreateBody, PlanDailyRow, PlanHeader, PlanInputs, PlanList, PlanRef, PlanResultDetail,
+  AppError, JobType, PlanAccepted, PlanCompareResponse, StockDiscrepancyPlan, PlanCreateBody, PlanDailyRow, PlanHeader, PlanInputs, PlanList, PlanRef, PlanResultDetail,
   PlanResultsPage, PlanStep,
 } from '../core/models';
 import { fmtDate } from '../core/format';
@@ -16,6 +16,7 @@ import { StatePanel } from '../ui/state-panel';
 import { Pager } from '../ui/pager';
 import { PlanForm } from './plan-form';
 import { localDay, localStamp, zoneLabel } from './inventory.page';
+import { stampWords } from './stock.page';
 import {
   NOT_COMPUTABLE, NOT_REPORTED, PENDING_NATURE, STATUS_FILTERS, purchaseText, qtyText, statusText, statusTone, stepValue,
 } from './plan-text';
@@ -33,8 +34,8 @@ const SORTS: { value: string; label: string }[] = [
   selector: 'app-plan-page',
   imports: [FormsModule, PageHeader, StatePanel, Pager, PlanForm],
   template: `
-    <app-page-header title="Planificar compras"
-      lead="Revisa cuántas unidades comprar de cada producto para cubrir un mes, según el plazo de entrega y los supuestos que ves abajo." />
+    <app-page-header title="Compra recomendada"
+      lead="Revisa cuántas unidades comprar de cada producto para cubrir un mes, a partir de las ventas previstas, las existencias y el plazo de entrega." />
 
     <p class="notice warn" data-testid="plan-band" role="note"><strong>Plan de compra bajo supuestos.</strong>
       No es un pedido ejecutado ni una mejora comprobada: son unidades propuestas con datos hasta una fecha de corte, un conteo informado y parámetros que se pueden cambiar.</p>
@@ -82,9 +83,14 @@ const SORTS: { value: string; label: string }[] = [
                 <h2 id="h-src">De dónde sale este plan</h2>
                 <ul class="plain">
                   <li data-testid="src-sales"><strong>Ventas reales:</strong> registradas hasta el {{ longDate(cutoff()) }}.</li>
-                  <li data-testid="src-count"><strong>Conteo reportado por la empresa:</strong> {{ countStamp() }}{{ warehouseName() ? ' · ' + warehouseName() : '' }}. Lo informó la empresa y no se verificó de forma independiente.</li>
+                  @if (reconstructed()) {
+                    <li data-testid="src-count"><strong>Existencia reconstruida al cierre del {{ countDay() }} (conteo reportado {{ baseStamp() }} + movimientos del sistema)</strong>{{ warehouseName() ? ' · ' + warehouseName() : '' }}.
+                      El conteo lo informó la empresa y no se verificó de forma independiente; los movimientos vienen del sistema{{ lastMovement() ? ' hasta el ' + lastMovement() : '' }}.</li>
+                  } @else {
+                    <li data-testid="src-count"><strong>Conteo reportado por la empresa:</strong> {{ countStamp() }}{{ warehouseName() ? ' · ' + warehouseName() : '' }}. Lo informó la empresa y no se verificó de forma independiente.</li>
+                  }
                   <li data-testid="src-projection"><strong>Proyección posterior:</strong> calculada con el promedio de los últimos 28 días de ventas; no son ventas observadas. Estima ventas registradas, que pueden haber estado limitadas por falta de stock.</li>
-                  <li data-testid="src-params"><strong>Parámetros (supuestos que se pueden cambiar):</strong>
+                  <li data-testid="src-params"><strong>Configuración de reposición</strong> (parámetros configurados por el administrador, no condiciones confirmadas del proveedor):
                     decisión de compra el {{ longDate(h.params?.decision_date ?? h.decision_date) }} · plazos de entrega de {{ leadText() }} días
                     @if (h.params; as p) {
                       · reserva de {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
@@ -112,6 +118,12 @@ const SORTS: { value: string; label: string }[] = [
                 @if (h.warnings?.length) {
                   <ul class="plain" data-testid="plan-warnings">@for (w of h.warnings; track w) { <li>{{ w }}</li> }</ul>
                 }
+                @if (pendingConfirmations().length) {
+                  <div class="notice warn" role="status" data-testid="plan-confirmations">
+                    <strong>Pendiente de confirmar con la empresa</strong>
+                    <ul class="plain">@for (c of pendingConfirmations(); track c.code) { <li [attr.data-code]="c.code">{{ c.text }}</li> }</ul>
+                  </div>
+                }
                 <details class="help" data-testid="plan-tech">
                   <summary>Detalles técnicos del plan</summary>
                   <ul class="plain">
@@ -123,6 +135,49 @@ const SORTS: { value: string; label: string }[] = [
               </section>
             }
           </app-state-panel>
+
+          @if (versions().length > 1) {
+            <section class="surface" aria-label="Comparar versiones" data-testid="plan-compare">
+              <form class="filters" (submit)="$event.preventDefault(); compare()">
+                <label>Versión con la que comparar
+                  <select name="cmp" data-testid="plan-compare-with" [ngModel]="otherId() || otherVersions()[0]?.plan_id" (ngModelChange)="otherId.set($event)">
+                    @for (v of otherVersions(); track v.plan_id) { <option [value]="v.plan_id">{{ versionLabel(v) }}</option> }
+                  </select>
+                </label>
+                <button type="submit" class="secondary small" data-testid="plan-compare-btn" [disabled]="!otherVersions().length">Comparar con otra versión</button>
+              </form>
+              @if (compareOpen()) {
+                <app-state-panel [state]="cmp.state()" emptyText="No hay productos para comparar." (retry)="cmp.reload()">
+                  @if (compared(); as c) {
+                    <p class="notice warn" data-testid="cmp-note" role="note">Las existencias de las dos versiones son de fechas distintas: cada una parte del cierre de su propia fecha de existencias, así que las diferencias de compra no se deben solo a la previsión.{{ c.note ? ' ' + c.note : '' }}</p>
+                    <div class="table-wrap" tabindex="0" role="region" aria-label="Comparación de versiones del plan">
+                      <table data-testid="cmp-table">
+                        <caption class="muted">A = {{ sideLabel(c.base) }} · B = {{ sideLabel(c.other) }}</caption>
+                        <thead><tr>
+                          <th scope="col">Producto</th>
+                          <th scope="col" class="num">Ventas previstas del mes (A → B)</th>
+                          <th scope="col" class="num">Existencias (A → B)</th>
+                          @for (l of cmpLeads(c); track l) { <th scope="col" class="num">Compra a {{ l }} días (A → B)</th> }
+                        </tr></thead>
+                        <tbody>
+                          @for (r of c.items; track r.producto_id) {
+                            <tr [attr.data-sku]="r.producto_id">
+                              <td data-col="product"><strong>{{ r.producto_id }}</strong> {{ r.producto }}</td>
+                              <td class="num" data-col="forecast">{{ pair(r.a?.month_total, r.b?.month_total) }}</td>
+                              <td class="num" data-col="stock">{{ pair(r.a?.libre, r.b?.libre) }}</td>
+                              @for (l of cmpLeads(c); track l) {
+                                <td class="num" [attr.data-col]="'buy-' + l">{{ pair(r.a?.purchase?.[l], r.b?.purchase?.[l]) }}</td>
+                              }
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                </app-state-panel>
+              }
+            </section>
+          }
 
           <section class="toolbar" aria-label="Filtros de la tabla de compras" data-testid="plan-filters">
             <form class="filters" (ngSubmit)="search()" aria-label="Buscar en el plan">
@@ -152,14 +207,14 @@ const SORTS: { value: string; label: string }[] = [
                     <thead>
                       <tr>
                         <th scope="col" rowspan="2">Producto y presentación</th>
-                        <th scope="col" rowspan="2" class="num">Ventas previstas del mes <small>(sin limitar por stock)</small></th>
-                        <th scope="col" rowspan="2" class="num">Stock del conteo <small>({{ countDay() }})</small></th>
+                        <th scope="col" rowspan="2" class="num">Ventas previstas <small>(mes, sin limitar por stock)</small></th>
+                        <th scope="col" rowspan="2" class="num">{{ reconstructed() ? 'Existencias' : 'Stock del conteo' }} <small>({{ reconstructed() ? 'cierre ' : '' }}{{ countDay() }})</small></th>
                         @for (l of leads(); track l) { <th scope="colgroup" colspan="4" [attr.data-lead]="l">Plazo de entrega de {{ l }} días</th> }
                       </tr>
                       <tr>
                         @for (l of leads(); track l) {
                           <th scope="col">Llega el</th><th scope="col" class="num">Stock al inicio del mes</th>
-                          <th scope="col" class="num">Compra propuesta</th><th scope="col" class="num">Faltantes</th>
+                          <th scope="col" class="num">Compra recomendada</th><th scope="col" class="num">Faltantes</th>
                         }
                       </tr>
                     </thead>
@@ -169,6 +224,10 @@ const SORTS: { value: string; label: string }[] = [
                           <td data-col="product">
                             <strong data-col="code">{{ r.producto_id }}</strong> {{ r.producto }}
                             <span class="muted" data-col="unit"> · {{ r.unidad_descripcion || NOT_REPORTED }}</span><br />
+                            @if (r.stock_provenance?.discrepancy; as dx) {
+                              <span class="chip warn" data-testid="plan-diff-chip">Diferencia con el sistema</span>
+                              <span class="muted" data-testid="plan-diff-text"> {{ discText(dx) }}</span><br />
+                            }
                             <button type="button" class="secondary small" data-testid="plan-understand" [attr.aria-label]="'Entender la compra de ' + r.producto" (click)="pick(r.producto_id)">Entender la compra</button>
                           </td>
                           <td class="num" data-col="forecast">{{ qty(r.forecast?.month_total) }}</td>
@@ -212,7 +271,14 @@ const SORTS: { value: string; label: string }[] = [
                         @if (fc.daily !== null && fc.daily !== undefined) { ) }
                       }
                     </li>
-                    <li>Stock del conteo: <strong>{{ qty(x.count_stock.libre, NOT_REPORTED) }}</strong> ({{ countDay() }}).</li>
+                    <li>{{ reconstructed() ? 'Existencia inicial (cierre del ' + countDay() + ')' : 'Stock del conteo' }}: <strong>{{ qty(x.count_stock.libre, NOT_REPORTED) }}</strong>{{ reconstructed() ? '' : ' (' + countDay() + ')' }}.
+                      @if (x.stock_provenance; as sp) {
+                        @if (sp.base_count !== undefined && sp.base_count !== null) { <span data-testid="ex-prov">Conteo base {{ qty(sp.base_count) }}{{ sp.movements_net_to_closing !== undefined && sp.movements_net_to_closing !== null ? ' y movimientos netos hasta el cierre ' + qty(sp.movements_net_to_closing) : '' }}.</span> }
+                      }
+                    </li>
+                    @if (x.stock_provenance?.discrepancy; as dx) {
+                      <li data-testid="ex-diff"><span class="chip warn">Diferencia con el sistema</span> {{ discText(dx) }}</li>
+                    }
                     @for (o of x.pending_orders ?? []; track $index) {
                       <li data-testid="ex-pending">Pedido por recibir de este producto: {{ o.units }} unidades el {{ shortDate(o.arrival_date) }}.</li>
                     }
@@ -227,7 +293,7 @@ const SORTS: { value: string; label: string }[] = [
                           @if (sc.status === 'NO_LLEGA_A_TIEMPO' && sc.required_arrival_date) {
                             <p data-testid="ex-decide">Para que llegue el primer día del mes habría que decidir la compra el {{ longDate(sc.required_arrival_date) }}.</p>
                           }
-                          <p data-testid="ex-buy">Compra propuesta: <strong>{{ buy(sc) ?? NOT_COMPUTABLE }}</strong></p>
+                          <p data-testid="ex-buy">Compra recomendada: <strong>{{ buy(sc) ?? NOT_COMPUTABLE }}</strong></p>
                           @if (stepsFor(x, l); as steps) {
                             @if (steps.length) {
                               <ol class="steps" [attr.data-testid]="'ex-steps-' + l">
@@ -378,12 +444,25 @@ export class PlanPage {
     return this.inputs()?.dataset?.sales_cutoff ?? null;
   });
   pendingOrders = computed(() => this.header()?.params?.pending_orders ?? []);
+  /** T20: la existencia inicial es reconstruida (conteo base + movimientos del sistema). Solo lo dice la cabecera del plan. */
+  reconstructed = computed(() => (this.planId() ? this.header()?.snapshot?.kind : this.inputs()?.snapshot?.kind) === 'RECONSTRUIDO');
+  baseStamp = computed(() => stampWords(this.header()?.snapshot?.base_count_as_of_local));
+  lastMovement = computed(() => { const m = this.header()?.snapshot?.last_movement_local; return m ? stampWords(m) : ''; });
+  pendingConfirmations = computed(() => (this.header()?.confirmations ?? []).filter((c) => c.status === 'PENDIENTE'));
+  discText(d: StockDiscrepancyPlan): string {
+    const when = d.compared_at_local ? stampWords(d.compared_at_local) : 'la fecha del último movimiento';
+    return `Al ${when} el sistema indica ${qtyText(d.system_stock, NOT_REPORTED)} y la existencia reconstruida es ${qtyText(d.reconstructed, NOT_REPORTED)} `
+      + `(diferencia ${qtyText(d.difference, NOT_REPORTED)}). Pendiente de confirmar; no se ajustó ninguna cantidad.`;
+  }
+  /** Texto del supuesto de pedidos tal como lo entrega la API (solo existencia reconstruida y sin pedidos declarados). */
+  private apiOrdersAssumption = computed(() => this.header()?.assumptions?.find((a) => a.code === 'PEDIDOS_PENDIENTES')?.text ?? null);
   /** Aviso de pedidos por recibir DERIVADO del plan elegido; null mientras el plan elegido no se cargó. */
   pendingNote = computed((): string | null => {
     if (!this.planId()) return 'En este escenario no llegan otros pedidos (supuesto).';
     const h = this.header();
     if (!h?.params) return null;
     const n = h.params.pending_orders.length;
+    if (n === 0 && this.reconstructed() && this.apiOrdersAssumption()) return this.apiOrdersAssumption();
     if (n === 0) return 'En este escenario no llegan otros pedidos (supuesto).';
     const who = n === 1 ? 'Se considera 1 pedido por recibir declarado' : `Se consideran ${n} pedidos por recibir declarados`;
     return `${who} (producto, unidades, fecha de llegada y si es reportado o asumido) y no llegan otros adicionales (supuesto).`;
@@ -432,11 +511,43 @@ export class PlanPage {
   dailyFor(x: PlanResultDetail, l: string): PlanDailyRow[] { return x.scenarios[l]?.series ?? []; }
   hasAvailable(rows: PlanDailyRow[]): boolean { return rows.some((r) => r.disponible !== undefined && r.disponible !== null); }
 
+  // ---- T20: comparar versiones ----
+  otherId = signal<string>('');
+  compareOpen = signal(false);
+  otherVersions = computed(() => this.versions().filter((v) => v.plan_id !== this.planId()));
+  cmp = load<PlanCompareResponse>(() => this.api.comparePlans(this.planId()!, this.otherId()), (r) => !r.items?.length, false);
+  compared = computed(() => { const s = this.cmp.state(); return s.kind === 'data' ? s.data : null; });
+  compare() {
+    if (!this.planId()) return;
+    const other = this.otherId() || this.otherVersions()[0]?.plan_id;
+    if (!other) return;
+    this.otherId.set(other);
+    this.compareOpen.set(true);
+    this.cmp.reload();
+  }
+  sideLabel(s: PlanCompareResponse['base']): string {
+    if (!s) return 'versión no informada';
+    const v = s.version ? `v${s.version}` : (s.plan_id ?? '');
+    return `${v}${s.created_at ? ' del ' + this.stampOf(s.created_at) : ''}`;
+  }
+  cmpLeads(c: PlanCompareResponse): string[] {
+    const set = new Set<string>();
+    for (const r of c.items) { Object.keys(r.a?.purchase ?? {}).forEach((k) => set.add(k)); Object.keys(r.b?.purchase ?? {}).forEach((k) => set.add(k)); }
+    return [...set].sort((x, y) => Number(x) - Number(y));
+  }
+  /** «A → B»; un lado ausente o null se dice «No se puede calcular» (nunca 0). */
+  pair(a: unknown, b: unknown): string {
+    const f = (v: unknown) => qtyText(v as string | number | null | undefined);
+    return `${f(a)} → ${f(b)}`;
+  }
+
   // ---- acciones de lectura ----
   loadInputs() { this.inp.reload(); }
   /** Nada del plan anterior sobrevive: producto abierto, detalle, cabecera y resultados. */
   private clearPlan() {
     this.sel.set(null);
+    this.compareOpen.set(false);
+    this.otherId.set('');
     this.hdr.state.set({ kind: 'loading' });
     this.res.state.set({ kind: 'loading' });
     this.det.state.set({ kind: 'loading' });

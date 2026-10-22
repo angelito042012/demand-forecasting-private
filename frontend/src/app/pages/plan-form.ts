@@ -12,8 +12,9 @@ const INT = /^\d+$/;
   selector: 'app-plan-form',
   template: `
     <section class="surface" aria-labelledby="h-plan-form" data-testid="plan-form">
-      <h2 id="h-plan-form">Generar o cambiar un plan</h2>
-      <p class="muted">Cambia los supuestos y genera un plan nuevo. Si los datos son idénticos a un plan existente, se reutiliza ese plan.</p>
+      <h2 id="h-plan-form">Configuración de reposición</h2>
+      <p class="muted" data-testid="pf-config-note">Son parámetros configurados por el administrador, no condiciones confirmadas del proveedor.
+        Cambia los supuestos y genera un plan nuevo. Si los datos son idénticos a un plan existente, se reutiliza ese plan.</p>
       <form class="filters" (submit)="$event.preventDefault(); submit()" aria-label="Generar plan de compra">
         <label>Mes a cubrir
           <select name="month" data-testid="pf-month" [value]="month()" (change)="month.set($any($event.target).value)">

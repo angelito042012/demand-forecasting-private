@@ -20,8 +20,10 @@ export const routes: Routes = [
       { path: 'crear-analisis', title: 'Crear análisis', loadComponent: () => import('./pages/create-run.page').then((m) => m.CreateRunPage) },
       { path: 'corridas', title: 'Mis análisis', loadComponent: () => import('./pages/runs.page').then((m) => m.RunsPage) },
       { path: 'pronosticos', title: 'Ventas previstas', loadComponent: () => import('./pages/forecasts.page').then((m) => m.ForecastsPage) },
-      { path: 'recomendaciones', title: 'Reposición simulada', loadComponent: () => import('./pages/recommendations.page').then((m) => m.RecommendationsPage) },
-      { path: 'planificar', title: 'Planificar compras', loadComponent: () => import('./pages/plan.page').then((m) => m.PlanPage) },
+      { path: 'recomendaciones', title: 'Evaluación académica: reposición simulada', loadComponent: () => import('./pages/recommendations.page').then((m) => m.RecommendationsPage) },
+      { path: 'planificar', title: 'Compra recomendada', loadComponent: () => import('./pages/plan.page').then((m) => m.PlanPage) },
+      { path: 'existencias', title: 'Existencias', loadComponent: () => import('./pages/stock.page').then((m) => m.StockPage) },
+      // «inventario» = conteo informado (T18), enlazado desde «Existencias»
       { path: 'inventario', title: 'Inventario informado', loadComponent: () => import('./pages/inventory.page').then((m) => m.InventoryPage) },
       { path: 'comparacion', title: 'Evaluación de resultados', loadComponent: () => import('./pages/comparison.page').then((m) => m.ComparisonPage) },
       { path: 'sistema', title: 'Estado del sistema', loadComponent: () => import('./pages/system.page').then((m) => m.SystemPage) },

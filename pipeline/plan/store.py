@@ -1,7 +1,7 @@
 """T19 — Persistencia del plan: identidad, staging -> completed, idempotencia y recuperacion (contrato §5).
 
 Colecciones propias `plan_runs` (cabecera) y `plan_results` (un documento por plan x producto). Solo LEE `plan_sales`,
-`plan_datasets` e `inventory_reported_*`; no escribe en `recommendations`, `runs`, `inventory_snapshot` ni en T12.
+`plan_datasets`, `inventory_reported_*` e `inventory_reconstructed_*` (T20); no escribe en `recommendations`, `runs`, `inventory_snapshot` ni en T12.
 Un resultado incompleto (staging) nunca es visible; un fallo conserva el ultimo plan completado.
 
 R19 (REVISION_CODEX_19): PROPIEDAD POR INTENTO con fencing, como el publicador historico (`pipeline/publish/protocol.py`):
@@ -30,6 +30,9 @@ RUNS = "plan_runs"
 RESULTS = "plan_results"
 SNAP_COLL = "inventory_reported_snapshots"
 ITEM_COLL = "inventory_reported_items"
+REC_SNAP_COLL = "inventory_reconstructed_snapshots"        # T20: existencia reconstruida al cierre (no toca las informadas)
+REC_ITEM_COLL = "inventory_reconstructed_items"
+INFORMADO, RECONSTRUIDO = "INFORMADO", "RECONSTRUIDO"
 PROTECTED_DBS = frozenset({"demand_forecasting_dev", "demand_forecasting_v2", "demand_forecasting_pub"})
 SCHEMA_VERSION = 1
 BATCH = 25
@@ -63,16 +66,56 @@ def _now() -> datetime:
 
 
 # ------------------------------------------------------------------ entradas
-def get_snapshot(db, snapshot_id: str | None = None) -> dict | None:
-    """Snapshot T18: el `current` mas reciente, o el indicado (current/superseded). Solo lectura."""
-    coll = db[SNAP_COLL]
-    if snapshot_id:
-        return coll.find_one({"snapshot_id": snapshot_id, "status": {"$in": ["current", "superseded"]}}, {"_id": 0})
+VISIBLE = ["current", "superseded"]
+
+
+def snapshot_kind(snapshot: dict) -> str:
+    """`RECONSTRUIDO` si el snapshot viene de la existencia reconstruida (T20); si no, `INFORMADO` (conteo T18)."""
+    if str(snapshot.get("kind", "")).startswith("EXISTENCIA_RECONSTRUIDA") or str(snapshot.get("snapshot_id", "")).startswith("invrec-"):
+        return RECONSTRUIDO
+    return INFORMADO
+
+
+def _latest(coll) -> dict | None:
     return coll.find_one({"status": "current"}, {"_id": 0}, sort=[("as_of_utc", -1), ("version", -1)])
 
 
+def get_snapshot(db, snapshot_id: str | None = None) -> dict | None:
+    """Snapshot de existencias. Con id: el indicado (current/superseded) en cualquiera de las dos colecciones. Sin id: el
+    reconstruido `current` si existe; si no, el informado `current` mas reciente (T20 §3). Solo lectura."""
+    rec, inf = db[REC_SNAP_COLL], db[SNAP_COLL]
+    if snapshot_id:
+        flt = {"snapshot_id": snapshot_id, "status": {"$in": VISIBLE}}
+        return rec.find_one(flt, {"_id": 0}) or inf.find_one(flt, {"_id": 0})
+    return _latest(rec) or _latest(inf)
+
+
 def snapshot_items(db, snapshot_id: str) -> list[dict]:
+    items = list(db[REC_ITEM_COLL].find({"snapshot_id": snapshot_id}, {"_id": 0}).sort("producto_id", 1))
+    if items:
+        return items
     return list(db[ITEM_COLL].find({"snapshot_id": snapshot_id}, {"_id": 0}).sort("producto_id", 1))
+
+
+def items_collection(snapshot: dict) -> str:
+    return REC_ITEM_COLL if snapshot_kind(snapshot) == RECONSTRUIDO else ITEM_COLL
+
+
+def discrepancy_ids(items) -> list[str]:
+    return sorted(i["producto_id"] for i in items if i.get("discrepancy"))
+
+
+def build_confirmations(products: list[str]) -> list[dict]:
+    """Confirmaciones PENDIENTES del plan con existencia reconstruida (T20 §3). No se suman las compras ni se ajustan cantidades."""
+    return [
+        {"code": "COMPRAS_11452_11455", "status": "PENDIENTE",
+         "text": ("Las compras 11452 y 11455 no se suman como pedidos por recibir ni se ajustan cantidades: "
+                  "falta confirmar con la empresa si corresponden a mercadería por recibir y en qué fecha.")},
+        {"code": "DIFERENCIAS_INVENTARIO", "status": "PENDIENTE",
+         "text": (f"{len(products)} producto(s) muestran diferencia entre la existencia reconstruida y el stock del sistema "
+                  "en la fecha del último movimiento; falta confirmarlas con la empresa. No se corrigen cantidades."
+                  if products else "No se registran diferencias entre la existencia reconstruida y el stock del sistema."),
+         "products": list(products)}]
 
 
 def count_date_of(snapshot: dict) -> date:
@@ -112,34 +155,55 @@ ASSUMPTIONS = [
 ]
 
 
-def _assumptions(params: PlanParams) -> list[dict]:
+NO_PENDING_TEXT = ("No hay pedidos adicionales por recibir registrados en este plan; "
+                   "se supone que no llegan otros (supuesto, sin confirmar con la empresa).")
+
+
+def _assumptions(params: PlanParams, kind: str = INFORMADO) -> list[dict]:
     out = [{"code": c, "text": t, "nature": "SUPUESTO"} for c, t in ASSUMPTIONS]
+    if kind == RECONSTRUIDO:
+        out[0] = {"code": "SIN_MOVIMIENTOS_TRAS_CONTEO", "nature": "SUPUESTO",
+                  "text": ("La existencia inicial es la reconstruida al cierre del día del corte (conteo físico más movimientos "
+                           "registrados); la simulación empieza el día siguiente. Los movimientos posteriores no se usan.")}
+        out[5] = {"code": "RESERVA", "nature": "SUPUESTO",
+                  "text": "La reserva (días de ventas previstas) es un parámetro configurado; no es una garantía estadística de servicio."}
     if params.pending:
         out.insert(0, {"code": "PEDIDOS_PENDIENTES", "nature": "DECLARADO",
                        "text": f"Pedidos por recibir declarados: {len(params.pending)} (con fecha de llegada y naturaleza)."})
+    elif kind == RECONSTRUIDO:
+        out.insert(0, {"code": "PEDIDOS_PENDIENTES", "nature": "SUPUESTO", "text": NO_PENDING_TEXT})
     else:
         out.insert(0, {"code": "PEDIDOS_PENDIENTES", "nature": "SUPUESTO",
                        "text": "En este escenario no llegan otros pedidos (0 asumido; no es un dato informado por la empresa)."})
-    out += [{"code": "PLAZOS", "nature": "SUPUESTO",
-             "text": f"Plazos de entrega supuestos en días naturales: {', '.join(str(x) for x in params.lead_days)}."},
-            {"code": "MINIMO_MULTIPLO", "nature": "SUPUESTO",
-             "text": f"Mínimo {params.min_order} y múltiplo {params.order_multiple} (unidades de reporte)."}]
+    leads = ", ".join(str(x) for x in params.lead_days)
+    if kind == RECONSTRUIDO:
+        out += [{"code": "PLAZOS", "nature": "SUPUESTO",
+                 "text": f"Plazos de entrega configurados en días naturales: {leads} (parámetros, no condiciones confirmadas del proveedor)."},
+                {"code": "MINIMO_MULTIPLO", "nature": "SUPUESTO",
+                 "text": f"Mínimo {params.min_order} y múltiplo {params.order_multiple} (parámetros configurados, unidades de reporte)."}]
+    else:
+        out += [{"code": "PLAZOS", "nature": "SUPUESTO",
+                 "text": f"Plazos de entrega supuestos en días naturales: {leads}."},
+                {"code": "MINIMO_MULTIPLO", "nature": "SUPUESTO",
+                 "text": f"Mínimo {params.min_order} y múltiplo {params.order_multiple} (unidades de reporte)."}]
     return out
 
 
-def _header(plan_id, params, dataset, snapshot, token, job_id, version, ident) -> dict:
+def _header(plan_id, params, dataset, snapshot, token, job_id, version, ident, items=()) -> dict:
     cutoff, count = sales.cutoff_of(dataset), count_date_of(snapshot)
+    kind = snapshot_kind(snapshot)
     ms, me = engine.month_bounds(params.month)
     src = snapshot.get("source", {})
-    return {
+    head = {
         "plan_id": plan_id, "status": "staging", "attempt": token, "label": LABEL, "version": version,
         "month": params.month, "method": engine.METHOD, "engine_version": engine.ENGINE_VERSION,
         "contract_version": engine.CONTRACT_VERSION, "schema_version": SCHEMA_VERSION, "job_id": job_id,
         "created_at": _now(), "completed_at": None, "identity": ident,
         "dataset": {"dataset_id": dataset["dataset_id"], "version": dataset.get("version"), "sales_cutoff": cutoff.isoformat(),
                     "source_rows": dataset.get("source_rows"), "classes": dict(dataset.get("counts", {})),
-                    "imported_at": dataset.get("imported_at")},
-        "snapshot": {"snapshot_id": snapshot["snapshot_id"], "version": snapshot.get("version"),
+                    "imported_at": dataset.get("imported_at"),
+                    **{k: dataset[k] for k in ("base_dataset_id", "october_verification", "partial") if k in dataset}},
+        "snapshot": {"snapshot_id": snapshot["snapshot_id"], "version": snapshot.get("version"), "kind": kind,
                      "as_of_local": snapshot["as_of_local"], "warehouse": dict(snapshot.get("warehouse", {})),
                      "sha256_short": str(src.get("sha256", ""))[:12], "csv_sha256_short": str(src.get("csv_sha256", ""))[:12]},
         "dates": {"sales_cutoff": cutoff.isoformat(), "count_date": count.isoformat(),
@@ -149,7 +213,7 @@ def _header(plan_id, params, dataset, snapshot, token, job_id, version, ident) -
         "distances": {"cutoff_to_count": (count - cutoff).days, "cutoff_to_month_start": (ms - cutoff).days,
                       "cutoff_to_month_end": (me - cutoff).days, "count_to_decision": (params.decision_date - count).days,
                       "horizon_limit_days": engine.HORIZON_DAYS},
-        "params": params.to_dict(), "assumptions": _assumptions(params),
+        "params": params.to_dict(), "assumptions": _assumptions(params, kind),
         "warnings": [("Planificación con información desactualizada: las ventas reales terminan el "
                       f"{cutoff.isoformat()}; el período entre ese corte y el mes objetivo es desconocido, no cero."),
                      "Plan de compra bajo supuestos; no es un pedido ejecutado ni una mejora comprobada."],
@@ -157,24 +221,47 @@ def _header(plan_id, params, dataset, snapshot, token, job_id, version, ident) -
                        "initial_stock": f"CONTEO_REPORTADO_{snapshot['as_of_local']}",
                        "projection": "CALCULADA_PROMEDIO_28", "parameters": "SUPUESTO_EDITABLE"},
         "counts": None}
+    if kind == RECONSTRUIDO:
+        disc = discrepancy_ids(items)
+        mv = snapshot.get("movements", {})
+        head["snapshot"].update(base_count_as_of_local=(snapshot.get("base_count") or {}).get("as_of_local"),
+                                last_movement_local=mv.get("last_movement_local"), discrepancy_products=disc)
+        head["provenance"]["initial_stock"] = f"EXISTENCIA_RECONSTRUIDA_CIERRE_{count.isoformat()}"
+        head["confirmations"] = build_confirmations(disc)
+    return head
 
 
-def _product_doc(plan_id, item, params, count_date, cutoff, ps, pending, as_of_local) -> dict:
+def _stock_provenance(item: dict, snapshot: dict) -> dict:
+    mv = item.get("movements", {})
+    net = int(mv.get("entradas_cierre", 0)) - int(mv.get("salidas_cierre", 0))
+    disc = item.get("discrepancy")
+    return {"kind": RECONSTRUIDO, "base_count": item.get("base_count"), "movements_net_to_closing": net,
+            "discrepancy": None if not disc else {
+                "difference": disc.get("difference"), "system_stock": item.get("system_stock_at_last_movement"),
+                "reconstructed": item.get("reconstructed_at_last_movement"),
+                "compared_at_local": disc.get("compared_at_local") or snapshot.get("movements", {}).get("last_movement_local")}}
+
+
+def _product_doc(plan_id, item, params, count_date, cutoff, ps, pending, as_of_local, snapshot=None) -> dict:
+    kind = snapshot_kind(snapshot) if snapshot else INFORMADO
     res = engine.compute_product(params=params, count_date=count_date, sales_cutoff=cutoff, libre=item.get("libre"),
                                  unidad_reporte=item.get("unidad_reporte"), by_day=ps.by_day,
                                  window_units=ps.window_units, history_units=ps.history_units,
-                                 history_rows=ps.history_rows, pending=pending)
+                                 history_rows=ps.history_rows, pending=pending, kind=kind)
     sortkeys = {"libre": item.get("libre"),
                 "forecast": float(engine.parse_exact(res["forecast"]["month_total_exact"])) if res["forecast"] else None}
     for lead, sc in res["scenarios"].items():
         sortkeys[f"purchase_{lead}"] = sc["purchase_qty"]
-    return {"plan_id": plan_id, "producto_id": item["producto_id"], "producto": item["producto"],
+    doc = {"plan_id": plan_id, "producto_id": item["producto_id"], "producto": item["producto"],
             "categoria": item.get("categoria", ""), "unidad_reporte": item.get("unidad_reporte"),
             "unidad_descripcion": item.get("unidad_descripcion", ""), "status": res["status"],
             "statuses": res["statuses"], "reason": res["reason"], "forecast": res["forecast"],
             "count_stock": {"libre": item.get("libre"), "as_of_local": as_of_local},
             "pending_orders": [{"arrival_date": d.isoformat(), "units": int(q)} for d, q in sorted((pending or {}).items())],
             "scenarios": res["scenarios"], "sortkeys": sortkeys}
+    if kind == RECONSTRUIDO:
+        doc["stock_provenance"] = _stock_provenance(item, snapshot)
+    return doc
 
 
 def _counts(docs: list[dict], leads) -> dict:
@@ -278,13 +365,13 @@ def generate_plan(db, raw_params, *, dataset_id: str | None = None, snapshot_id:
     sdata = sales.load_sales(db, dataset["dataset_id"], [i["producto_id"] for i in items], cutoff)
     pend = params.pending_by_product()
     docs = [_product_doc(plan_id, it, params, count, cutoff, sdata[it["producto_id"]], pend.get(it["producto_id"]),
-                         snapshot["as_of_local"]) for it in items]
+                         snapshot["as_of_local"], snapshot) for it in items]
     counts = _counts(docs, params.lead_days)
     guard()
     token = uuid.uuid4().hex
     prior = db[RUNS].count_documents({"status": "completed", "month": params.month})
     ident = identity_of(params, dataset, snapshot)
-    head = _header(plan_id, params, dataset, snapshot, token, job_id, prior + 1, ident)
+    head = _header(plan_id, params, dataset, snapshot, token, job_id, prior + 1, ident, items)
     att = claim_attempt(db, head)                     # reclamacion atomica ANTES de limpiar o escribir
     try:
         renew(db, att)

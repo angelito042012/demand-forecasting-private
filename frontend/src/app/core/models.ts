@@ -487,7 +487,7 @@ export interface PlanPendingOrder { producto_id: string; units: number; arrival_
 export interface PlanAssumption { code?: string; text: string; nature?: string }
 export interface PlanInputs {
   dataset: { dataset_id: string; sales_cutoff: string; source_rows?: number; classes?: Record<string, number>; imported_at?: string } | null;
-  snapshot: { snapshot_id: string; as_of_local: string; warehouse?: { id: string; name: string } | string; products?: number } | null;
+  snapshot: { snapshot_id: string; as_of_local: string; warehouse?: { id: string; name: string } | string; products?: number; kind?: PlanSnapshotKind } | null;
   defaults?: {
     month: string; decision_date: string; lead_days: number[]; reserve_days: number; min_order: number; order_multiple: number;
     pending_orders: PlanPendingOrder[];
@@ -517,11 +517,28 @@ export interface PlanHeader extends PlanRef {
   distances?: { cutoff_to_count?: number; cutoff_to_month_start?: number; cutoff_to_month_end?: number; count_to_decision?: number; horizon_limit_days?: number };
   params?: PlanParams;
   dataset?: { dataset_id: string; sales_cutoff: string; source_rows?: number; classes?: Record<string, number>; imported_at?: string };
-  snapshot?: { snapshot_id?: string; as_of_local?: string; warehouse?: { id: string; name: string } } | null;
+  snapshot?: PlanSnapshotHeader | null;
+  /** T20: avisos pendientes de confirmar (solo existencia reconstruida). */
+  confirmations?: PlanConfirmation[];
   assumptions?: PlanAssumption[];
   warnings?: string[];
   provenance?: Record<string, string>;
   method?: string; engine_version?: string;
+}
+// ---- T20 (docs/T20_CONTRATO_ACTUALIZACION_V2.md §3): existencia reconstruida ----
+export type PlanSnapshotKind = 'INFORMADO' | 'RECONSTRUIDO';
+export interface PlanSnapshotHeader {
+  snapshot_id?: string; as_of_local?: string; warehouse?: { id: string; name: string } | string;
+  kind?: PlanSnapshotKind;
+  base_count_as_of_local?: string; last_movement_local?: string; discrepancy_products?: string[];
+}
+export interface PlanConfirmation { code: string; status: string; text: string; products?: string[] }
+export interface StockDiscrepancyPlan { difference: number | string; system_stock?: number | string; reconstructed?: number | string; compared_at_local?: string }
+export interface StockProvenance {
+  kind?: PlanSnapshotKind | string;
+  base_count?: number | string | null;
+  movements_net_to_closing?: number | string | null;
+  discrepancy: StockDiscrepancyPlan | null;
 }
 export interface PlanScenario {
   arrival_date: string | null;
@@ -548,6 +565,7 @@ export interface PlanResultItem {
   /** null = producto no calculable (nunca 0). */
   forecast: PlanForecast | null;
   count_stock: { libre: number | null; as_of_local?: string | null };
+  stock_provenance?: StockProvenance | null;
   scenarios: Record<string, PlanScenario>;
 }
 export interface PlanResultsPage {
@@ -571,3 +589,46 @@ export interface PlanCreateBody {
   pending_orders: PlanPendingOrder[];
 }
 export interface PlanAccepted { plan_id: string; job_id: string; status: JobStatus; reused: boolean }
+
+// ---- T20: comparación de versiones GET /plans/{a}/compare/{b} ----
+export interface PlanCompareSide {
+  forecast_daily: string | null; month_total: string | null; libre: number | string | null;
+  purchase: Record<string, number | string | null>; status?: string | null;
+}
+export interface PlanCompareItem {
+  producto_id: string; producto: string;
+  a: PlanCompareSide | null; b: PlanCompareSide | null;
+  delta?: { daily?: string | null; month_total?: string | null; purchase?: Record<string, number | string | null> } | null;
+}
+export interface PlanCompareResponse {
+  base?: Partial<PlanRef> & { snapshot?: PlanSnapshotHeader | null };
+  other?: Partial<PlanRef> & { snapshot?: PlanSnapshotHeader | null };
+  summary?: Record<string, unknown> | null;
+  note?: string | null;
+  items: PlanCompareItem[];
+}
+
+// ---- T20: GET /stock (existencia reconstruida) ----
+export interface StockSnapshot {
+  snapshot_id: string; kind?: string; version?: number; status?: string;
+  as_of_local: string; warehouse?: { id: string; name: string } | string;
+  base_count?: { snapshot_id?: string; as_of_local?: string } | null;
+  movements?: { from_local?: string; closing_local?: string; last_movement_local?: string } | null;
+  counts?: { products?: number; discrepancies?: number } | null;
+  rule?: string;
+  confirmations?: PlanConfirmation[];
+}
+export interface StockItem {
+  producto_id: string; producto: string; categoria?: string; unidad_reporte?: string; unidad_descripcion?: string | null;
+  libre: number | null;
+  base_count?: number | null;
+  movements?: { entradas_cierre?: number; salidas_cierre?: number; entradas_ultimo_mov?: number; salidas_ultimo_mov?: number } | null;
+  reconstructed_at_last_movement?: number | null;
+  system_stock_at_last_movement?: number | null;
+  system_reserved?: number | null;
+  discrepancy: { difference: number; compared_at_local?: string } | null;
+}
+export interface StockPage {
+  snapshot: StockSnapshot | null; items: StockItem[]; page: number; page_size: number; total: number; has_more: boolean;
+  unavailable_reason?: string | null;
+}

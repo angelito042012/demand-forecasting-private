@@ -114,7 +114,7 @@ def test_inputs_defaults_limits_and_unavailable(admin_s, reader_s, seeded):
     b = reader_s.http.get(BASE + "/inputs").json()
     assert b["dataset"]["dataset_id"] == h.DATASET_ID and b["dataset"]["sales_cutoff"] == "2026-09-30"
     assert b["dataset"]["classes"]["VENTA"] == b["dataset"]["source_rows"]
-    assert b["snapshot"] == {"snapshot_id": h.SNAPSHOT_ID, "as_of_local": h.AS_OF,
+    assert b["snapshot"] == {"snapshot_id": h.SNAPSHOT_ID, "kind": "INFORMADO", "as_of_local": h.AS_OF,
                              "warehouse": {"id": "1", "name": "Almacen 1"}, "products": len(h.PRODUCTS)}
     assert b["defaults"] == {"month": "2026-11", "decision_date": "2026-10-18", "lead_days": [7, 14], "reserve_days": 7,
                              "min_order": 1, "order_multiple": 1, "pending_orders": []}
