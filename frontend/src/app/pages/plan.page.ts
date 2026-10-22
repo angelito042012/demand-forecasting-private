@@ -410,7 +410,7 @@ const SORTS: { value: string; label: string }[] = [
     @media (min-width: 1100px) { .plan-info:has(.fold) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
     .plan-info > * { margin: 0; }
     .short-cell span { display: block; white-space: nowrap; }
-    .plan-table th[data-col-h], .plan-table td[data-col='forecast'], .plan-table td[data-col='count'] { min-width: 6.5rem; }
+    .plan-table th[data-col-h], .plan-table td[data-col='forecast'], .plan-table td[data-col='count'] { min-width: 5.5rem; }
     .compact { padding: 0.5rem 0.9rem; margin: 0.5rem 0; }
     .plan-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.5rem 1.5rem; margin: 0; padding: 0.7rem 1rem;
       background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
@@ -428,7 +428,7 @@ const SORTS: { value: string; label: string }[] = [
     .plan-table td.num strong, .plan-table td.num > .chip { white-space: nowrap; }
     .plan-table td[data-col^='arrival'] { white-space: nowrap; }
     .plan-table th, .plan-table td { padding: 0.5rem 0.7rem; }
-    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); min-width: 15rem; max-width: 20rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
+    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); min-width: 14rem; max-width: 18rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
     .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
     .plan-table .lead-start { border-left: 2px solid #9aa3b0; }
     .plan-table th.lead-group { text-align: center; background: #dde7f3; }
