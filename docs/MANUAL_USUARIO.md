@@ -146,3 +146,12 @@ No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTP
 **Qué no hace:** no suma unidades de productos distintos, no usa valores monetarios, no usa el inventario simulado, no arrastra las ventas perdidas como pedidos atrasados y no actualiza el pronóstico con octubre. Los decimales usan punto (18.214 = 18,2 unidades).
 
 **Administrador:** el formulario permite cambiar mes, fecha de decisión, plazos, reserva, mínimo y múltiplo, y declarar pedidos por recibir (producto, unidades, fecha de llegada y si es reportado o asumido); por defecto «no llegan otros pedidos» (supuesto). Un envío idéntico reutiliza el plan.
+
+## Versión de noviembre (actualización v2, 22/10/2026)
+**Menú principal:** *Inicio*, *Ventas previstas*, *Existencias*, *Compra recomendada* y *Mis análisis*. En *Más → Evaluación académica* están los análisis históricos con inventario simulado (no corresponden al inventario real de la empresa).
+- **Inicio:** resume el plan de noviembre vigente: versión, fecha de decisión, corte de ventas (último día completo: 20/10/2026), existencia inicial y cuántos productos tienen compra recomendada.
+- **Ventas previstas:** ventas previstas del mes y por día de cada producto, calculadas con el promedio de los últimos 28 días de ventas (23/09–20/10). Es una proyección bajo supuestos, no ventas observadas.
+- **Existencias:** existencia reconstruida al cierre del 20/10 (conteo reportado del 18/10 17:00 + movimientos del sistema). Los productos cuya existencia reconstruida difiere del stock del sistema (misma fecha de comparación) se marcan «Diferencia con el sistema»; no se ajustó ninguna cantidad.
+- **Compra recomendada:** por producto y para entregas de 7 y 14 días, con «Entender la compra» (pasos y día a día desde el 21/10). Los plazos y la reserva son parámetros configurados (*Configuración de reposición*), no condiciones confirmadas del proveedor. No se registran pedidos adicionales por recibir; se supone que no llegan otros (supuesto, sin confirmar con la empresa).
+- **Pendientes de confirmar con la empresa:** las compras 11452 y 11455 (fecha de recepción futura registrada) y las diferencias de inventario. Se muestran como pendientes.
+- **Comparar con otra versión:** en Compra recomendada, compara el plan del 18/10 con el del 21/10 por producto (las existencias son de fechas distintas).
