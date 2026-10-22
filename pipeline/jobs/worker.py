@@ -156,6 +156,28 @@ def run(db, worker_id: str, *, once: bool, poll_seconds: float, cfg: dict, uploa
     return 0
 
 
+def ensure_runtime_reference(db) -> bool:
+    """Con DF_RUNTIME_REFERENCE_STORE=mongo y DF_RUNTIME_REFERENCE_DIR: materializa la referencia T07 desde Mongo si el
+    directorio falta o esta incompleto. Si no hay referencia en Mongo, el worker arranca igual (los trabajos que la
+    requieren fallan con un codigo claro al verificarla)."""
+    from pipeline.publish import reference_store
+    target = os.environ.get("DF_RUNTIME_REFERENCE_DIR", "").strip()
+    if os.environ.get("DF_RUNTIME_REFERENCE_STORE", "").strip().lower() != "mongo" or not target:
+        return False
+    if reference_store.is_complete(Path(target)):
+        return False
+    try:
+        n = reference_store.materialize(db, Path(target))
+    except reference_store.ReferenceStoreError as exc:
+        log.error("referencia T07 no materializada: [%s] %s", exc.code, exc.message)
+        return False
+    except (OSError, PyMongoError):
+        log.error("referencia T07 no materializada: error de almacenamiento o base de datos")
+        return False
+    log.info("referencia T07 materializada desde Mongo (%s archivos)", n)
+    return True
+
+
 def main(argv=None) -> int:
     try:
         require_production_env()      # produccion: URI, base y directorio de subidas explicitos (sin valores por defecto)
@@ -189,6 +211,7 @@ def main(argv=None) -> int:
             pass
     client = get_client()
     try:
+        ensure_runtime_reference(client[args.db])
         return run(client[args.db], worker_id, once=args.once, poll_seconds=args.poll_seconds, cfg=cfg,
                    uploads_dir=args.uploads_dir or default_uploads_dir(cfg), lease_seconds=args.lease_seconds,
                    heartbeat_seconds=args.heartbeat_seconds, stop=stop)

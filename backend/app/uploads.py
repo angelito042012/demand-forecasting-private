@@ -15,6 +15,7 @@ from pathlib import Path
 from fastapi.concurrency import run_in_threadpool
 
 from backend.app.errors import ApiError
+from pipeline.jobs import upload_store
 from pipeline.jobs.xlsx_check import XlsxRejected, has_zip_signature, inspect_xlsx
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -120,3 +121,16 @@ def validate_and_store(tmp: Path, sha256: str, policy: UploadPolicy) -> tuple[Pa
     else:
         os.replace(tmp, final)            # atomico en el mismo volumen
     return final, info.month
+
+
+def persist_to_store(db, final: Path, sha256: str, size: int) -> None:
+    """Con DF_UPLOADS_STORE=mongo guarda los bytes finales en GridFS ANTES de encolar (el worker no comparte disco)."""
+    if not upload_store.mongo_mode():
+        return
+    try:
+        upload_store.persist(db, final, sha256, size)
+    except upload_store.UploadStoreError as exc:
+        final.unlink(missing_ok=True)
+        raise ApiError(500, exc.code, exc.message) from None
+    except Exception:  # noqa: BLE001 - cualquier fallo del almacen es 503 sin detalles
+        raise ApiError(503, "ALMACEN_NO_DISPONIBLE", "No se pudo guardar el archivo en el almacén; reintente.") from None

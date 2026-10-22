@@ -42,6 +42,9 @@ param logRetentionDays int = 30
 @description('Tope diario de ingesta de logs en GB (acota el costo).')
 param logDailyCapGb string = '0.2'
 
+@description('Monta Azure Files en data/reference. false = entornos "express" (T20, 22/10/2026: Azure for Students crea un entorno que NO admite Storage): /data efimero; no se usa la referencia historica T07.')
+param useFiles bool = false
+
 @description('Nombre de la base de publicacion en Atlas (no es secreto).')
 param mongodbDatabase string = 'demand_forecasting_pub'
 
@@ -167,7 +170,7 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
   }
 }
 
-resource envStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
+resource envStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = if (useFiles) {
   parent: env
   name: 'dfdata'
   properties: {
@@ -180,7 +183,7 @@ resource envStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
   }
 }
 
-resource envStorageRef 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
+resource envStorageRef 'Microsoft.App/managedEnvironments/storages@2024-03-01' = if (useFiles) {
   parent: env
   name: 'dfref'
   properties: {
@@ -201,33 +204,33 @@ var commonEnv = [
   { name: 'AUTH_SECRET', secretRef: 'auth-secret' }
   { name: 'ALLOWED_ORIGINS', value: 'https://${appHost}' }
   { name: 'TRUSTED_PROXIES', value: trustedProxies }
-  { name: 'DF_UPLOADS_DIR', value: '/data/uploads' }
+  { name: 'DF_UPLOADS_DIR', value: useFiles ? '/data/uploads' : '/tmp/uploads' }
 ]
 var commonSecrets = [
   { name: 'mongodb-uri', value: mongodbUri }
   { name: 'auth-secret', value: authSecret }
 ]
 var registryConfig = [{ server: acr.properties.loginServer, identity: identity.id }]
-var volumes = [
+var volumes = !useFiles ? [] : [
   {
     name: 'data'
     storageType: 'AzureFile'
-    storageName: envStorage.name
+    storageName: 'dfdata'
     // el contenedor corre como uid 10001; sin esto la montura SMB seria de root
     mountOptions: 'uid=10001,gid=10001,file_mode=0660,dir_mode=0770,nobrl'
   }
 ]
-var volumeMounts = [{ volumeName: 'data', mountPath: '/data' }]
+var volumeMounts = useFiles ? [{ volumeName: 'data', mountPath: '/data' }] : []
 // el worker/job monta ademas el paquete de referencia (solo lectura); la API NO lo monta
 var refVolume = {
   name: 'reference'
   storageType: 'AzureFile'
-  storageName: envStorageRef.name
+  storageName: 'dfref'
   mountOptions: 'uid=10001,gid=10001,file_mode=0440,dir_mode=0550,nobrl'
 }
-var workerVolumes = concat(volumes, [refVolume])
-var workerMounts = concat(volumeMounts, [{ volumeName: 'reference', mountPath: '/reference' }])
-var workerEnv = concat(commonEnv, [{ name: 'DF_RUNTIME_REFERENCE_DIR', value: '/reference' }])
+var workerVolumes = useFiles ? concat(volumes, [refVolume]) : volumes
+var workerMounts = useFiles ? concat(volumeMounts, [{ volumeName: 'reference', mountPath: '/reference' }]) : volumeMounts
+var workerEnv = useFiles ? concat(commonEnv, [{ name: 'DF_RUNTIME_REFERENCE_DIR', value: '/reference' }]) : commonEnv
 
 resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
   name: apiName

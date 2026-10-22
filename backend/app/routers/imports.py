@@ -49,6 +49,7 @@ async def upload_import(request: Request, db: Db,
     finally:
         await form.close()
     final, month = await run_in_threadpool(uploads.validate_and_store, tmp, sha256, policy)
+    await run_in_threadpool(uploads.persist_to_store, db, final, sha256, size)
     job, created = await run_in_threadpool(
         lambda: jobs_repo.enqueue_import(db, sha256=sha256, size_bytes=size, month=month, label=label,
                                          upload_name=final.name, created_by=user.username))

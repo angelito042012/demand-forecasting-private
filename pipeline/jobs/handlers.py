@@ -29,7 +29,7 @@ from pipeline.data.importer import import_workbook, read_rows, sha256_file
 from pipeline.data.sources import approved_sources
 from pipeline.generate.baseline import generate_and_publish
 from pipeline.generate.config import PROJECT_ROOT, GenerationError, load_t10_config
-from pipeline.jobs import queue
+from pipeline.jobs import queue, upload_store
 from pipeline.jobs.xlsx_check import XlsxRejected, inspect_xlsx
 from pipeline.plan import store as plan_store
 from pipeline.plan.engine import PlanRejected
@@ -126,6 +126,15 @@ def _resolve_upload(ctx: JobContext, job_input: dict) -> tuple[Path, str]:
     if m is None or m.group(1) != sha:
         raise JobFailure("ARCHIVO_NO_DISPONIBLE", "El nombre interno del archivo no corresponde a su sha256.")
     path = (root / rel).resolve()
+    if not path.is_relative_to(root):
+        raise JobFailure("ARCHIVO_NO_DISPONIBLE", "El archivo cargado no está disponible en el almacén privado.")
+    if not path.is_file() and upload_store.mongo_mode():       # sin disco compartido: se descarga de GridFS (hash verificado)
+        try:
+            got = upload_store.fetch(ctx.db, sha, root)
+        except upload_store.UploadStoreError:
+            raise JobFailure("ARCHIVO_NO_DISPONIBLE", "El archivo almacenado no coincide con su sha256.") from None
+        if got is not None:
+            path = got.resolve()
     if not path.is_relative_to(root) or not path.is_file():
         raise JobFailure("ARCHIVO_NO_DISPONIBLE", "El archivo cargado no está disponible en el almacén privado.")
     return path, sha
