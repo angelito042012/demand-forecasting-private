@@ -10,7 +10,7 @@ import { CurrentPlanStore, defaultPlanId } from '../core/current-plan.store';
 import { ActivatedRoute } from '@angular/router';
 import {
   AppError, JobType, PlanAccepted, PlanCompareResponse, StockDiscrepancyPlan, PlanCreateBody, PlanDailyRow, PlanHeader, PlanInputs, PlanList, PlanRef, PlanResultDetail,
-  PlanResultsPage, PlanStep,
+  PlanResultsPage, PlanScenario, PlanStep,
 } from '../core/models';
 import { fmtDate } from '../core/format';
 import { jobStatusWords, longDate, monthName } from '../core/ux-text';
@@ -228,6 +228,9 @@ const SORTS: { value: string; label: string }[] = [
               <app-state-panel [state]="det.state()" (retry)="det.reload()">
                 @if (detail(); as x) {
                   <p class="explain-product"><strong>{{ x.producto_id }}</strong> {{ x.producto }} <span class="muted">· {{ x.unidad_descripcion || NOT_REPORTED }}</span></p>
+                  @for (n of leadNotes(x); track n.lead) {
+                    <p class="notice info compact" role="note" [attr.data-testid]="'ex-compare-note'" [attr.data-lead]="n.lead">{{ n.text }}</p>
+                  }
                   <div class="plan-cols">
                     @for (l of leadsOf(x); track l) {
                       @if (x.scenarios[l]; as sc) {
@@ -245,17 +248,20 @@ const SORTS: { value: string; label: string }[] = [
                             @if (sc.shortage_before_month !== null && sc.shortage_before_month !== undefined) { <li>Faltante antes de que empiece el mes: {{ qty(sc.shortage_before_month) }}</li> }
                             <li>Faltante en el mes: {{ qty(sc.shortage_month) }}</li>
                           </ul>
+                          <p class="calc-summary" [attr.data-testid]="'ex-summary-' + l"><strong>Cómo se calculó:</strong> {{ calcSummary(x, l, sc) }}</p>
                           @if (stepsFor(x, l); as steps) {
-                            <h4>Cómo se calculó</h4>
-                            @if (steps.length) {
-                              <ol class="steps" [attr.data-testid]="'ex-steps-' + l">
-                                @for (s of steps; track $index) {
-                                  <li><strong>{{ s.label }}</strong>@if (s.text) { : {{ s.text }} }@if (val(s.value)) { <span class="num"> = <strong>{{ val(s.value) }}</strong></span> }</li>
-                                }
-                              </ol>
-                            } @else {
-                              <p class="muted">La API no entregó el desglose de este plazo.</p>
-                            }
+                            <details class="help fold" [attr.data-testid]="'ex-calc-' + l">
+                              <summary>Ver cálculo detallado</summary>
+                              @if (steps.length) {
+                                <ol class="steps" [attr.data-testid]="'ex-steps-' + l">
+                                  @for (s of steps; track $index) {
+                                    <li><strong>{{ s.label }}</strong>@if (s.text) { : {{ s.text }} }@if (val(s.value)) { <span class="num"> = <strong>{{ val(s.value) }}</strong></span> }</li>
+                                  }
+                                </ol>
+                              } @else {
+                                <p class="muted">La API no entregó el desglose de este plazo.</p>
+                              }
+                            </details>
                           }
                           <details class="help" [attr.data-testid]="'ex-daily-' + l">
                             <summary>Ver el día a día del plazo de {{ l }} días</summary>
@@ -483,6 +489,8 @@ const SORTS: { value: string; label: string }[] = [
     .explain h3 { margin-top: 0; }
     .explain h4 { margin: 0.9rem 0 0.3rem; font-size: 1rem; }
     .explain .verdict { margin: 0.2rem 0; }
+    .explain .calc-summary { margin: 0.6rem 0 0.2rem; }
+    .explain details.fold { margin: 0.4rem 0; }
     .explain .buy-line { font-size: 1.25rem; margin: 0.3rem 0 0.6rem; }
     #h-explain:focus { outline: 3px solid var(--accent); outline-offset: 3px; }
   `,
@@ -664,6 +672,33 @@ export class PlanPage {
   leadsOf(x: PlanResultDetail): string[] { return Object.keys(x.scenarios).sort((a, b) => Number(a) - Number(b)); }
   stepsFor(x: PlanResultDetail, l: string): PlanStep[] { return x.scenarios[l]?.explanation ?? []; }
   dailyFor(x: PlanResultDetail, l: string): PlanDailyRow[] { return x.scenarios[l]?.series ?? []; }
+  private n(v: unknown): number | null { const x = typeof v === 'string' ? Number(v) : v; return typeof x === 'number' && Number.isFinite(x) ? x : null; }
+  /** Una frase del cálculo de un plazo, armada con las cifras del propio desglose (el detalle completo queda en «Ver cálculo detallado»). */
+  calcSummary(x: PlanResultDetail, l: string, sc: PlanScenario): string {
+    const steps = this.stepsFor(x, l);
+    const val = (prefix: string) => steps.find((s) => s.label.startsWith(prefix))?.value ?? null;
+    const need = val('Necesidad total'), stock = val('Menos el stock S');
+    const bought = purchaseText(sc);
+    if (bought === null) return 'No se puede calcular la compra de este plazo con los datos entregados.';
+    if (need === null || need === undefined) return `La compra propuesta es ${this.buyNumber(sc)}; el desglose de las cifras no está disponible.`;
+    const reserve = this.header()?.params?.reserve_days;
+    const stockPart = stock !== null && this.n(stock) !== null && this.n(stock)! > 0 ? `se descuentan ${qtyText(stock)} unidades de stock disponibles al llegar` : 'no hay stock disponible al llegar para descontar';
+    return `Se necesitan ${qtyText(need)} unidades desde la llegada hasta fin de mes${reserve !== undefined ? ' más ' + reserve + ' días de reserva' : ''}; ${stockPart}, y la compra propuesta es ${this.buyNumber(sc)}.`;
+  }
+  /** Si un plazo más largo compra menos Y atiende menos ventas, lo explica con las cifras del producto (nunca fija para todos). */
+  leadNotes(x: PlanResultDetail): { lead: string; text: string }[] {
+    const leads = this.leadsOf(x); const out: { lead: string; text: string }[] = [];
+    if (leads.length < 2) return out;
+    const l0 = leads[0], b = x.scenarios[l0];
+    for (const l of leads.slice(1)) {
+      const sc = x.scenarios[l];
+      const pb = this.n(b.purchase_qty), pl = this.n(sc.purchase_qty), sb = this.n(b.served_month), sl = this.n(sc.served_month);
+      if (pb === null || pl === null || sb === null || sl === null || !(pl < pb) || !(sl < sb)) continue;
+      const lost = qtyText(String(Math.round((sb - sl) * 1000) / 1000));
+      out.push({ lead: l, text: `Con el plazo de ${l} días se compra menos (${qtyText(sc.purchase_qty)} frente a ${qtyText(b.purchase_qty)} con ${l0} días) porque el pedido llega ${sc.arrival_date ? 'el ' + longDate(sc.arrival_date) : 'después'} y deja ${lost} unidades de las ventas previstas sin atender (podrían atenderse ${qtyText(sc.served_month)} frente a ${qtyText(b.served_month)}). No es una opción equivalente con ahorro: se compra menos porque se vende menos.` });
+    }
+    return out;
+  }
   hasAvailable(rows: PlanDailyRow[]): boolean { return rows.some((r) => r.disponible !== undefined && r.disponible !== null); }
 
   /** El plan vigente es el primero de la lista del mes (misma regla que Inicio y Ventas previstas). */

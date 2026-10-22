@@ -359,3 +359,62 @@ describe('Piloto de presentación de «Compra recomendada» (22/10)', () => {
     expect(txt(el, 'plan-legend')).toContain('Stock al 1/12');
   });
 });
+
+describe('«Entender la compra»: resumen del cálculo y explicación del plazo largo (22/10)', () => {
+  const steps = (need: string, stock: string, buy: string) => [
+    { label: 'Necesidad total', text: 'x', value: need }, { label: 'Menos el stock S', text: 'y', value: stock }, { label: 'Compra propuesta', text: 'z', value: buy }];
+  const late = () => {
+    const d = item('1000001', null) as Record<string, unknown>;
+    d['scenarios'] = {
+      '7': { ...scen(), purchase_qty: 25, served_month: '18.214', shortage_before_month: '4.25', shortage_month: '0', explanation: steps('24.893', '0', '25') },
+      '14': { ...scen(), arrival_date: '2026-11-04', status: 'LLEGA_TARDE', purchase_qty: 21, served_month: '16.393', shortage_before_month: '6.679', shortage_month: '1.821', explanation: steps('20.643', '0', '21') },
+    };
+    return d;
+  };
+  async function openDetail(detail: unknown) {
+    const { f, el } = await openPlan();
+    (el.querySelector('tr[data-sku="1000001"] [data-testid="plan-understand"]') as HTMLElement).click();
+    await settle(f);
+    await ok(f, at(`/plans/${V2}/results/1000001`), detail);
+    return { f, el };
+  }
+
+  it('cada plazo muestra visibles compra, llegada, ventas atendibles y faltantes; el cálculo detallado está cerrado y el resumen es una frase', async () => {
+    const { el } = await openDetail(late());
+    for (const l of ['7', '14']) {
+      const card = q(el, 'ex-lead-' + l)!;
+      expect(txt(card, 'ex-buy')).toBe('Compra recomendada: ' + (l === '7' ? '25' : '21'));
+      expect(card.textContent).toContain('Llega el');
+      expect(txt(card, 'ex-served')).toContain('Ventas que podrían atenderse en este escenario');
+      expect(txt(card, 'ex-served')).toContain('Faltante en el mes');
+      const d = q(card, 'ex-calc-' + l) as HTMLDetailsElement;
+      expect(d.tagName).toBe('DETAILS');
+      expect(d.open).toBe(false);
+      expect(d.querySelector('summary')?.textContent?.trim()).toBe('Ver cálculo detallado');
+      expect(d.querySelectorAll('ol li').length).toBe(3);
+    }
+    expect(txt(q(el, 'ex-lead-7')!, 'ex-summary-7')).toBe('Cómo se calculó: Se necesitan 24.893 unidades desde la llegada hasta fin de mes más 7 días de reserva; no hay stock disponible al llegar para descontar, y la compra propuesta es 25.');
+    expect(txt(q(el, 'ex-lead-14')!, 'ex-summary-14')).toContain('Se necesitan 20.643 unidades');
+  });
+
+  it('la compra a 14 días menor porque vende menos: nota generada de los resultados, no equivalente con ahorro', async () => {
+    const { el } = await openDetail(late());
+    const notes = Array.from(el.querySelectorAll('[data-testid="ex-compare-note"]'));
+    expect(notes.length).toBe(1);
+    const t = (notes[0].textContent ?? '').replace(/\s+/g, ' ');
+    expect(t).toContain('Con el plazo de 14 días se compra menos (21 frente a 25 con 7 días)');
+    expect(t).toContain('llega el 4 de noviembre de 2026');
+    expect(t).toContain('1.821 unidades de las ventas previstas sin atender');
+    expect(t).toContain('podrían atenderse 16.393 frente a 18.214');
+    expect(t).toContain('No es una opción equivalente con ahorro');
+  });
+
+  it('sin llegada tardía (resultados iguales o plazo largo que no atiende menos) no hay nota', async () => {
+    const { el } = await openDetail(item('1000001', null));
+    expect(el.querySelector('[data-testid="ex-compare-note"]')).toBeNull();
+    const d = late() as { scenarios: Record<string, Record<string, unknown>> };
+    d.scenarios['14'] = { ...d.scenarios['14'], status: 'OK', purchase_qty: 30, served_month: '18.214', shortage_month: '0' };
+    const second = await (async () => { TestBed.resetTestingModule(); return openDetail(d); })();
+    expect(second.el.querySelector('[data-testid="ex-compare-note"]')).toBeNull();
+  });
+});
