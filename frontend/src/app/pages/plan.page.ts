@@ -213,7 +213,7 @@ const SORTS: { value: string; label: string }[] = [
                   <li><strong>Llegada:</strong> día en que llega el pedido según el plazo de entrega (se muestra día y mes; el año es el del plan o el siguiente).</li>
                   <li><strong>Stock al {{ monthFirst() }}:</strong> existencia estimada al empezar el mes, después de las ventas y llegadas previas.</li>
                   <li><strong>Comprar:</strong> unidades recomendadas; «Cubre el mes», «Llega tarde» o «No llega a tiempo» indican si el pedido alcanza.</li>
-                  <li><strong>Faltantes:</strong> «Antes» = unidades que no se podrían atender antes de empezar el mes; «En el mes» = durante el mes. Un faltante vacío no se muestra como 0: dice «No se puede calcular».</li>
+                  <li><strong>Faltantes:</strong> «Antes» = unidades que no se podrían atender antes de empezar el mes; «Mes» = durante el mes. Un faltante vacío no se muestra como 0: dice «No se puede calcular».</li>
                   <li data-testid="plan-units-note">Las cantidades están en la presentación de cada producto (caja, pack, frasco); no se suman entre productos y no hay valores en dinero.</li>
                   <li><strong>Decimales y miles:</strong> el punto separa decimales (18.214 son 18 unidades y 214 milésimas) y la coma separa miles (1,250).</li>
                   <li><strong>Configuración de reposición:</strong> plazos, reserva, compra mínima y múltiplo son parámetros configurados por el administrador, no condiciones confirmadas del proveedor.</li>
@@ -462,16 +462,16 @@ const SORTS: { value: string; label: string }[] = [
     .plan-table td { position: relative; }
     .plan-table thead th { white-space: normal; vertical-align: bottom; line-height: 1.25; position: static; }
     .plan-table td.num { white-space: normal; }
-    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); width: 12.5rem; min-width: 11rem; max-width: 14rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
+    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); width: 13.5rem; min-width: 11.5rem; max-width: 15rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
     .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
     .plan-table .unit { font-size: 0.9rem; }
     .plan-table td .small { padding: 0.1rem 0.55rem; min-height: 1.9rem; font-size: 0.9rem; margin-top: 0.15rem; }
     .plan-table .c-forecast { width: 6rem; min-width: 5.8rem; }
     .plan-table .c-count { width: 5.4rem; min-width: 5.2rem; }
-    .plan-table .c-arrival { width: 4.4rem; min-width: 4rem; }
+    .plan-table .c-arrival { width: 4.1rem; min-width: 3.9rem; }
     .plan-table .c-start { width: 4.4rem; min-width: 4.2rem; }
     .plan-table .c-buy { width: 6.4rem; min-width: 6rem; }
-    .plan-table .c-short { width: 5.8rem; min-width: 5.4rem; }
+    .plan-table .c-short { width: 5rem; min-width: 4.6rem; }
     .plan-table td[data-col^='arrival'] { white-space: nowrap; }
     .plan-table .lead-start { border-left: 2px solid #9aa3b0; }
     .plan-table th.lead-group { text-align: center; background: #dde7f3; }
@@ -658,7 +658,7 @@ export class PlanPage {
     if (sc.shortage_month === null && sc.shortage_before_month === null) return [NOT_COMPUTABLE];
     const parts: string[] = [];
     if (sc.shortage_before_month !== null) parts.push(`Antes: ${qtyText(sc.shortage_before_month)}`);
-    if (sc.shortage_month !== null) parts.push(`En el mes: ${qtyText(sc.shortage_month)}`);
+    if (sc.shortage_month !== null) parts.push(`Mes: ${qtyText(sc.shortage_month)}`);
     return parts;
   }
   leadsOf(x: PlanResultDetail): string[] { return Object.keys(x.scenarios).sort((a, b) => Number(a) - Number(b)); }
