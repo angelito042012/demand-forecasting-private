@@ -404,3 +404,7 @@ Planificación de compras para noviembre bajo supuestos (commits 2e99534, 7dbb30
 
 **18/10 — R19/R20 cerrados en revisión Codex (462e7f5):** reproducciones propias de fallo de purga y respuesta incierta conservan resultados (1/1); reintento reused. Recorrido lector listo para comenzar; aceptación humana pendiente. Navegador del ejecutor 23/25: quedan casos 17/18 de generación de variante/fechas para validación administrativa, sin acreditar 25/25 ni repetir suites completas. Ver cierre final de REVISION_CODEX_19.md.
 
+
+
+**21/10 — revision Codex T20:** checkpoint 3c94ab8/8a66457 revisado en alcance dirigido: 54 pruebas propias aprobadas y 100 compras sin diferencias al repetir recalculo contra evidencia guardada. Pendiente R21: Inicio y Ventas previstas aun llevan al ejemplo historico; conectar al plan v2 y preservar historicos en apartado academico. Leer REVISION_CODEX_20.md. Preparacion de nube puede continuar; presupuesto concreto, saldo de credito, publicacion verificada y aceptacion humana pendientes.
+
