@@ -492,6 +492,7 @@ const SORTS: { value: string; label: string }[] = [
     .explain .calc-summary { margin: 0.6rem 0 0.2rem; }
     .explain details.fold { margin: 0.4rem 0; }
     .explain .buy-line { font-size: 1.25rem; margin: 0.3rem 0 0.6rem; }
+    #h-explain { scroll-margin-top: 4.5rem; }
     #h-explain:focus { outline: 3px solid var(--accent); outline-offset: 3px; }
   `,
 })
