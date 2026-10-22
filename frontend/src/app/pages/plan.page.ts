@@ -100,7 +100,7 @@ const SORTS: { value: string; label: string }[] = [
                   </p>
                   @if (pendingConfirmations().length) {
                     <details class="pending-inline" data-testid="plan-confirmations">
-                      <summary><strong>{{ pendingConfirmations().length }} {{ pendingConfirmations().length === 1 ? 'pendiente' : 'pendientes' }} de confirmar</strong> <span class="link-like">Ver detalle</span></summary>
+                      <summary><strong>{{ pendingConfirmations().length }} {{ pendingConfirmations().length === 1 ? 'pendiente' : 'pendientes' }} de confirmar</strong>{{ ' ' }}<span class="link-like">Ver detalle</span></summary>
                       <p class="muted"><strong>{{ pendingSummary() }}.</strong></p>
                       <ul class="plain">@for (c of pendingConfirmations(); track c.code) { <li [attr.data-code]="c.code">{{ c.text }}</li> }</ul>
                       <p class="muted">Las diferencias de inventario y las llegadas tardías se marcan en cada producto afectado de la tabla.</p>

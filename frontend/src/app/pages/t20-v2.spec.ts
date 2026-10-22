@@ -346,4 +346,16 @@ describe('Piloto de presentación de «Compra recomendada» (22/10)', () => {
       expect(main.classList.contains('wide')).toBe(false);
     } finally { main.remove(); }
   });
+
+  it('la fecha del encabezado «Stock al 1/MM» sigue al mes del plan (no queda fija en noviembre)', async () => {
+    const { f, el } = await openPlan();
+    const heads = () => Array.from(el.querySelectorAll('[data-testid="plan-table"] thead th')).map((h) => (h.textContent ?? '').replace(/\s+/g, ' ').trim());
+    expect(heads()).toContain('Stock al 1/11');
+    const page = f.componentInstance as PlanPage;
+    page.hdr.state.set({ kind: 'data', data: { ...header(V2, 2), month: '2026-12' } as never });
+    await settle(f);
+    expect(heads()).toContain('Stock al 1/12');
+    expect(heads()).not.toContain('Stock al 1/11');
+    expect(txt(el, 'plan-legend')).toContain('Stock al 1/12');
+  });
 });
