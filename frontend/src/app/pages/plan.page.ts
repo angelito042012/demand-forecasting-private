@@ -5,6 +5,8 @@ import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { JobBoard, STAGE_LABELS } from '../core/jobs';
 import { load } from '../core/load';
+import { CurrentPlanStore, defaultPlanId } from '../core/current-plan.store';
+import { ActivatedRoute } from '@angular/router';
 import {
   AppError, JobType, PlanAccepted, PlanCompareResponse, StockDiscrepancyPlan, PlanCreateBody, PlanDailyRow, PlanHeader, PlanInputs, PlanList, PlanRef, PlanResultDetail,
   PlanResultsPage, PlanStep,
@@ -136,6 +138,9 @@ const SORTS: { value: string; label: string }[] = [
             }
           </app-state-panel>
 
+          @if (notCurrent()) {
+            <p class="notice info" role="note" data-testid="plan-not-current">Estás viendo una versión que no es la vigente. «Inicio» y «Ventas previstas» siguen mostrando la versión vigente ({{ versionLabel(versions()[0]) }}).</p>
+          }
           @if (versions().length > 1) {
             <section class="surface" aria-label="Comparar versiones" data-testid="plan-compare">
               <form class="filters" (submit)="$event.preventDefault(); compare()">
@@ -376,6 +381,8 @@ export class PlanPage {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
+  private current = inject(CurrentPlanStore);
+  private route = inject(ActivatedRoute);
   /** Solo orientación: el servidor decide los permisos. */
   isAdmin = this.auth.isAdmin;
 
@@ -392,8 +399,10 @@ export class PlanPage {
   month = signal('');
   planId = signal<string | null>(null);
   private wantPlan: string | null = null;
-  q = signal('');
-  draft = '';
+  /** Enlace desde «Ventas previstas»: `?q=<código>` abre la tabla ya filtrada por ese producto. */
+  private initialQ = this.route.snapshot?.queryParamMap?.get('q') ?? '';
+  q = signal(this.initialQ);
+  draft = this.initialQ;
   status = signal('');
   sort = signal('producto_id');
   page = signal(1);
@@ -414,7 +423,7 @@ export class PlanPage {
         this.versions.set(items);
         const keep = this.wantPlan && items.some((p) => p.plan_id === this.wantPlan) ? this.wantPlan : null;
         this.wantPlan = null;
-        const chosen = keep ?? (items.some((p) => p.plan_id === this.planId()) ? this.planId() : items[0]?.plan_id ?? null);
+        const chosen = keep ?? (items.some((p) => p.plan_id === this.planId()) ? this.planId() : defaultPlanId(items));
         if (chosen !== this.planId()) this.clearPlan();
         this.planId.set(chosen);
         this.sel.set(null);
@@ -511,6 +520,9 @@ export class PlanPage {
   dailyFor(x: PlanResultDetail, l: string): PlanDailyRow[] { return x.scenarios[l]?.series ?? []; }
   hasAvailable(rows: PlanDailyRow[]): boolean { return rows.some((r) => r.disponible !== undefined && r.disponible !== null); }
 
+  /** El plan vigente es el primero de la lista del mes (misma regla que Inicio y Ventas previstas). */
+  notCurrent = computed(() => !!this.planId() && this.versions().length > 0 && this.planId() !== defaultPlanId(this.versions()));
+
   // ---- T20: comparar versiones ----
   otherId = signal<string>('');
   compareOpen = signal(false);
@@ -574,6 +586,7 @@ export class PlanPage {
   stageWords = (s: string | null | undefined) => (s ? (STAGE_LABELS[s] ?? 'Calculando el plan') : 'Calculando el plan');
 
   private refreshAfter(planId: string | null) {
+    this.current.invalidate();
     this.wantPlan = planId;
     if (planId) this.page.set(1);
     this.pl.reload();

@@ -44,7 +44,7 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
     <app-page-header title="Reposición simulada" lead="Cuántas unidades se sugeriría reponer de cada producto en el ejemplo, y cómo se calculó esa cantidad." />
     <p class="notice info" role="note" data-testid="acad-header"><strong>Evaluación académica.</strong>
       Esta pantalla es una evaluación histórica con inventario simulado, separada del flujo principal (Ventas previstas, Existencias y Compra recomendada).
-      Para decidir una compra real use «Compra recomendada».</p>
+      Para decidir una compra real use «Compra recomendada». La previsión histórica está en <a [routerLink]="['/evaluacion/ventas-previstas']" queryParamsHandling="preserve" data-testid="acad-to-forecasts">Evaluación académica: ventas previstas</a>.</p>
     <app-analysis-bar [runId]="choice.id()" />
     @if (!barShowsReplaced()) { <app-reco-replaced-notice [run]="data()?.run" /> }
     <app-sim-notice [scenarioId]="scenarioId()" />

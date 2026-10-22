@@ -319,13 +319,13 @@ describe('Crear análisis: generación (admin)', () => {
     await ok(m.f, one(m.http, '/api/v1/jobs/g1'), job({ job_id: 'g1', type: 'generate_run', status: 'completed', result: { run_id: 'gen-20260630-abc' } }));
     const link = q(m.el, 'job-run-link') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toContain('run=gen-20260630-abc');
-    expect(link.getAttribute('href')).toContain('/pronosticos');
+    expect(link.getAttribute('href')).toContain('/evaluacion/ventas-previstas');
     expect(txt(m.el, 'job-status')).toBe('Terminado');
     // confirmación en palabras sencillas con «Ver previsión» hacia el análisis creado
     expect(txt(m.el, 'gen-done')).toContain('Listo: el análisis se creó');
     const view = q(m.el, 'gen-view') as HTMLAnchorElement;
     expect(view.textContent).toContain('Ver previsión');
-    expect(view.getAttribute('href')).toContain('/pronosticos');
+    expect(view.getAttribute('href')).toContain('/evaluacion/ventas-previstas');
     expect(view.getAttribute('href')).toContain('run=gen-20260630-abc');
     // la lista compartida de análisis se vuelve a leer
     await ok(m.f, one(m.http, '/api/v1/runs'), page([realRunSummary]));

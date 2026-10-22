@@ -46,7 +46,7 @@ import { JobsPanel } from '../ui/jobs-panel';
           <div class="notice ok" role="status" data-testid="gen-done">
             <p><strong>Listo: el análisis se creó.</strong> Ya puedes consultar sus ventas previstas.</p>
             <p class="actions">
-              <a class="btn secondary" [routerLink]="['/pronosticos']" [queryParams]="{ run: c }" data-testid="gen-view">Ver previsión</a>
+              <a class="btn secondary" [routerLink]="['/evaluacion/ventas-previstas']" [queryParams]="{ run: c }" data-testid="gen-view">Ver previsión</a>
               <a class="btn secondary" [routerLink]="['/corridas']" [queryParams]="{ run: c }" data-testid="gen-view-runs">Ver en Mis análisis</a>
             </p>
           </div>

@@ -29,6 +29,7 @@
         <li><a routerLink="/resumen" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-ventas-registradas">Ventas registradas</a></li>
         <li><a routerLink="/comparacion" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-evaluacion">Evaluación de resultados</a></li>
         <li><a routerLink="/recomendaciones" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-reposicion">Evaluación académica</a></li>
+        <li><a routerLink="/evaluacion/ventas-previstas" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-eval-ventas">Evaluación académica: ventas previstas</a></li>
         @if (s.role !== 'admin') {
           <li><a routerLink="/cargas" queryParamsHandling="preserve" routerLinkActive="active" data-testid="nav-datos-cargados">Datos cargados</a></li>
         }
@@ -52,6 +53,8 @@
         <strong>Existencia reconstruida (no es simulada).</strong> Parte del conteo informado por la empresa y suma los movimientos registrados en el sistema; no es un conteo físico nuevo.
       } @else if (onPlan()) {
         <strong>Plan de compra bajo supuestos.</strong> Usa ventas registradas hasta su fecha de corte y la existencia de la empresa a esa fecha; no es una compra ejecutada ni una mejora comprobada.
+      } @else if (onCurrentPlan()) {
+        <strong>Plan de noviembre vigente.</strong> Ventas registradas hasta la fecha de corte del plan y existencia de la empresa a esa fecha; la previsión es una proyección bajo supuestos, no ventas observadas.
       } @else if (onAcademic()) {
         <strong>Evaluación académica.</strong> Inventario simulado con supuestos; no corresponde al inventario real de la empresa.
       } @else {

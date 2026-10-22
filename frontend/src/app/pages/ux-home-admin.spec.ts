@@ -47,6 +47,8 @@ async function settle(f: ComponentFixture<unknown>) { f.detectChanges(); await f
 async function ok(f: ComponentFixture<unknown>, r: TestRequest, body: unknown) { r.flush(body as object); await settle(f); }
 const q = (el: HTMLElement, id: string) => el.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
 const txt = (el: HTMLElement, id: string) => (q(el, id)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+/** Inicio pide el plan vigente al montarse; estas pruebas históricas lo contestan vacío (no hay plan). */
+async function noPlan(m: M<unknown>) { await ok(m.f, one(m.http, '/api/v1/plans/inputs'), {}); }
 const recoPage = (total: number, extra: object = {}) => ({ ...page([]), total, ...extra });
 
 beforeEach(() => { try { localStorage.clear(); } catch { /* sin almacenamiento */ } });
@@ -55,6 +57,7 @@ afterEach(() => { vi.restoreAllMocks(); lastHttp?.verify(); lastHttp = undefined
 /** Monta Inicio y responde a /runs y a la cifra de reposición. */
 async function openHome(role: Role, url = '/inicio', total = 640, runs = [histRun, finalRun], user = 'u') {
   const m = await mountAs(HomePage, role, url, user);
+  await noPlan(m);
   await ok(m.f, one(m.http, '/api/v1/runs'), page(runs));
   const reco = one(m.http, '/api/v1/recommendations');
   await ok(m.f, reco, recoPage(total));
@@ -62,31 +65,31 @@ async function openHome(role: Role, url = '/inicio', total = 640, runs = [histRu
 }
 
 describe('Inicio: orientación', () => {
-  it('título, explicación y cuatro tarjetas de tarea con un botón real y una sola acción principal', async () => {
+  it('encabezado del plan vigente, cuatro tarjetas principales y sección académica separada', async () => {
     const { m } = await openHome('lector');
     expect(m.el.querySelectorAll('h1').length).toBe(1);
-    expect(txt(m.el, 'page-title')).toBe('Explora las ventas previstas y una simulación de reposición');
-    expect(txt(m.el, 'page-lead')).toBe('Consulta cuánto se estimó vender y cómo se calculó una sugerencia de reposición con los datos del ejemplo.');
-    expect(m.el.querySelectorAll('[data-testid^="task-"]').length).toBe(5);
-    expect((q(m.el, 'go-plan') as HTMLAnchorElement).getAttribute('href')).toContain('/planificar');
-    expect((q(m.el, 'go-inventory') as HTMLAnchorElement).textContent).toContain('Ver inventario informado');
-    expect((q(m.el, 'go-inventory') as HTMLAnchorElement).getAttribute('href')).toContain('/inventario');
+    expect(txt(m.el, 'page-title')).toBe('Ventas previstas y compra recomendada para el mes del plan');
+    expect(m.el.querySelectorAll('[data-testid="home-tasks"] [data-testid^="task-"]').length).toBe(4);
     const go = (id: string) => q(m.el, id) as HTMLAnchorElement;
-    expect(go('go-forecasts').textContent).toContain('Ver previsión');
     expect(go('go-forecasts').getAttribute('href')).toContain('/pronosticos');
-    expect(go('go-reco').textContent).toContain('Explorar reposición simulada');
-    expect(go('go-reco').getAttribute('href')).toContain('/recomendaciones');
-    expect(go('go-runs').textContent).toContain('Ver mis análisis');
+    expect(go('go-stock').getAttribute('href')).toContain('/existencias');
+    expect(go('go-plan').getAttribute('href')).toContain('/planificar');
     expect(go('go-runs').getAttribute('href')).toContain('/corridas');
-    // una única acción principal visual en las tareas
     expect(m.el.querySelectorAll('[data-testid="home-tasks"] .btn:not(.secondary)').length).toBe(1);
-    // el lector no ve administración
+    const ac = q(m.el, 'home-academic')!;
+    expect(ac.textContent).toContain('inventario simulado');
+    expect(go('go-reco').getAttribute('href')).toContain('/recomendaciones');
+    expect(ac.contains(go('go-reco'))).toBe(true);
+    expect(ac.contains(go('go-academic-runs'))).toBe(true);
+    expect(go('go-academic-forecasts').getAttribute('href')).toContain('/evaluacion/ventas-previstas');
+    expect(q(m.el, 'home-tasks')!.textContent).not.toMatch(/ejemplo|simulad/i);
     expect(q(m.el, 'home-admin')).toBeNull();
+    expect(txt(m.el, 'page-title')).not.toMatch(/ejemplo/i);
   });
 
   it('las tarjetas conservan el análisis elegido (run) y la barra muestra su nombre y fechas', async () => {
     const { m, reco } = await openHome('lector', '/inicio?run=' + FINAL_ID);
-    for (const id of ['go-forecasts', 'go-reco', 'go-runs']) {
+    for (const id of ['go-reco', 'go-academic-forecasts', 'go-academic-runs']) {
       expect((q(m.el, id) as HTMLAnchorElement).getAttribute('href')).toContain('run=' + FINAL_ID);
     }
     expect(reco.request.params.get('run_id')).toBe(FINAL_ID);
@@ -96,6 +99,7 @@ describe('Inicio: orientación', () => {
 
   it('la cifra es el total del SERVIDOR (page_size=1), con universo, filtro y aviso de simulación; nunca la suma de la página', async () => {
     const m = await mountAs(HomePage, 'lector');
+    await noPlan(m);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([histRun]));
     const reco = one(m.http, '/api/v1/recommendations');
     expect(reco.request.params.get('only_orders')).toBe('true');
@@ -113,6 +117,7 @@ describe('Inicio: orientación', () => {
 
   it('en la evaluación no hay pedidos: no se muestra cifra y se explica', async () => {
     const m = await mountAs(HomePage, 'lector', '/inicio?run=' + FINAL_ID);
+    await noPlan(m);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([histRun, finalRun]));
     await ok(m.f, one(m.http, '/api/v1/recommendations'), recoPage(0, { unavailable_reason: 'La evaluación final no tiene recomendaciones', see_run: 'x' }));
     expect(q(m.el, 'home-figure')).toBeNull();
@@ -121,6 +126,7 @@ describe('Inicio: orientación', () => {
 
   it('si la cifra falla se avisa con reintento y no se inventa ningún valor', async () => {
     const m = await mountAs(HomePage, 'lector');
+    await noPlan(m);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([histRun]));
     one(m.http, '/api/v1/recommendations').flush({}, { status: 503, statusText: 'x' });
     await settle(m.f);

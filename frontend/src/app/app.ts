@@ -28,6 +28,9 @@ export class App {
   /** T20: la evaluación histórica con inventario simulado está separada del flujo principal. */
   protected readonly onAcademic = computed(() => /^\/recomendaciones(\/|\?|$)/.test(this.url()));
 
+  /** Inicio y Ventas previstas muestran el plan vigente (no el ejemplo histórico). */
+  protected readonly onCurrentPlan = computed(() => /^\/(inicio|pronosticos)(\/|\?|$)/.test(this.url()));
+
   constructor() {
     this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => { this.menuOpen.set(false); this.url.set(e.urlAfterRedirects); });
   }

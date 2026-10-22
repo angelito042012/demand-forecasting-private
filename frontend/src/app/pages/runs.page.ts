@@ -149,7 +149,7 @@ export class RunTech {
         </div>
       }
       <div class="actions">
-        <a class="btn" [class.secondary]="!primary()" [routerLink]="['/pronosticos']" [queryParams]="{ run: r.run_id }" data-testid="to-forecasts">Ver previsión</a>
+        <a class="btn" [class.secondary]="!primary()" [routerLink]="['/evaluacion/ventas-previstas']" [queryParams]="{ run: r.run_id }" data-testid="to-forecasts">Ver previsión</a>
         @if (!final()) { <a class="btn secondary" [routerLink]="['/recomendaciones']" [queryParams]="{ run: r.run_id }" data-testid="to-reco">Ver reposición</a> }
         <a class="btn secondary" [routerLink]="['/comparacion']" [queryParams]="{ run: r.run_id }" data-testid="to-compare">Ver evaluación</a>
         @if (!consulting()) { <button type="button" class="secondary" (click)="pick.emit(r.run_id)" data-testid="choose">Elegir este análisis</button> }

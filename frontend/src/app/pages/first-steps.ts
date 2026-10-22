@@ -3,9 +3,9 @@
  * El cierre es solo una preferencia de la interfaz: no controla permisos ni oculta funciones.
  */
 export const FIRST_STEPS: { title: string; text: string }[] = [
-  { title: 'Elige un análisis', text: 'Empieza con el ejemplo que ya está en uso por defecto o cambia de análisis en «Mis análisis».' },
-  { title: 'Consulta las ventas previstas', text: 'Elige un producto y revisa las unidades estimadas para las fechas del ejemplo.' },
-  { title: 'Explora la reposición simulada', text: 'Abre una sugerencia para ver con qué se contó, qué se buscó cubrir y de dónde sale la cantidad.' },
+  { title: 'Mira las ventas previstas', text: 'Revisa cuántas unidades se estima vender de cada producto en el mes del plan de compra vigente.' },
+  { title: 'Revisa las existencias', text: 'Consulta cuántas unidades había al cierre de la fecha del plan y de dónde sale ese número.' },
+  { title: 'Abre la compra recomendada', text: 'Mira cuántas unidades comprar con plazos de entrega de 7 y 14 días, y qué supuestos se usaron.' },
 ];
 
 const key = (user: string | null | undefined) => `ux01.comoempezar.cerrado.${user || 'anonimo'}`;

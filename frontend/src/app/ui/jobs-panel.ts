@@ -48,7 +48,7 @@ import { fmtInt } from '../core/format';
           }
           @if (s.importId) { <button type="button" class="secondary small" data-testid="job-import-link" (click)="openImport.emit(s.importId!)">Ver detalle del archivo cargado</button> }
           @if (s.runId) {
-            <a class="btn secondary small" data-testid="job-run-link" [routerLink]="['/pronosticos']" [queryParams]="{ run: s.runId }">Ver previsión</a>
+            <a class="btn secondary small" data-testid="job-run-link" [routerLink]="['/evaluacion/ventas-previstas']" [queryParams]="{ run: s.runId }">Ver previsión</a>
             <a class="btn secondary small" data-testid="job-run-list" [routerLink]="['/corridas']" [queryParams]="{ run: s.runId }">Ver en Mis análisis</a>
           }
         }

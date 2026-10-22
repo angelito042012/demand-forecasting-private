@@ -19,7 +19,9 @@ export const routes: Routes = [
       { path: 'cargas', title: 'Datos cargados', loadComponent: () => import('./pages/imports.page').then((m) => m.ImportsPage) },
       { path: 'crear-analisis', title: 'Crear análisis', loadComponent: () => import('./pages/create-run.page').then((m) => m.CreateRunPage) },
       { path: 'corridas', title: 'Mis análisis', loadComponent: () => import('./pages/runs.page').then((m) => m.RunsPage) },
-      { path: 'pronosticos', title: 'Ventas previstas', loadComponent: () => import('./pages/forecasts.page').then((m) => m.ForecastsPage) },
+      { path: 'pronosticos', title: 'Ventas previstas', loadComponent: () => import('./pages/plan-forecasts.page').then((m) => m.PlanForecastsPage) },
+      // Versión histórica (RunsStore/run_id), conservada intacta como evaluación académica.
+      { path: 'evaluacion/ventas-previstas', title: 'Evaluación académica: ventas previstas', loadComponent: () => import('./pages/forecasts.page').then((m) => m.ForecastsPage) },
       { path: 'recomendaciones', title: 'Evaluación académica: reposición simulada', loadComponent: () => import('./pages/recommendations.page').then((m) => m.RecommendationsPage) },
       { path: 'planificar', title: 'Compra recomendada', loadComponent: () => import('./pages/plan.page').then((m) => m.PlanPage) },
       { path: 'existencias', title: 'Existencias', loadComponent: () => import('./pages/stock.page').then((m) => m.StockPage) },

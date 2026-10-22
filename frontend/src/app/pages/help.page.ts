@@ -26,9 +26,9 @@ import { FIRST_STEPS, resetOnboarding } from './first-steps';
     <section class="surface" aria-labelledby="h-not" data-testid="help-limits">
       <h2 id="h-not">Qué no hace esta aplicación</h2>
       <ul class="plain">
-        <li>No es tu inventario real: el inventario del ejemplo es simulado, con supuestos.</li>
-        <li>No ejecuta compras ni envía pedidos a proveedores: las cantidades sugeridas son un escenario para entender el cálculo.</li>
-        <li>No pronostica las ventas de hoy ni de los próximos días: trabaja con datos históricos de 2026.</li>
+        <li>No es tu inventario real en la evaluación académica: allí el inventario es simulado, con supuestos. Las existencias del plan vienen del conteo informado por la empresa y los movimientos del sistema.</li>
+        <li>No ejecuta compras ni envía pedidos a proveedores: las cantidades recomendadas son una propuesta para que decidas.</li>
+        <li>No pronostica las ventas de hoy: el plan usa ventas registradas hasta su fecha de corte (lo posterior es desconocido, no cero) y la evaluación académica trabaja con datos históricos de 2026.</li>
         <li>Consultar nunca crea trabajos ni cambia datos. Solo el administrador carga archivos o crea análisis.</li>
       </ul>
     </section>

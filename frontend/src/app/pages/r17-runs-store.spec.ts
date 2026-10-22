@@ -25,6 +25,7 @@ function setup(cmp: Type<unknown>, url = '/inicio') {
 }
 const settle = async (f: { detectChanges(): void; whenStable(): Promise<unknown> }) => { f.detectChanges(); await f.whenStable(); f.detectChanges(); };
 const answerSideRequests = (http: HttpTestingController) => {
+  http.match((r) => r.url === '/api/v1/plans/inputs').forEach((r) => r.flush({}));
   http.match((r) => r.url === '/api/v1/recommendations').forEach((r) => r.flush({ items: [], total: 0, page: 1, page_size: 1, has_more: false }));
   http.match((r) => r.url === '/api/v1/forecasts').forEach((r) => r.flush({ items: [], total: 0, page: 1, page_size: 50, has_more: false }));
 };
