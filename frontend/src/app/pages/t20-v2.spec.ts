@@ -303,7 +303,7 @@ describe('Piloto de presentación de «Compra recomendada» (22/10)', () => {
       expect(d.open).toBe(false);
     }
     expect((el.textContent ?? '').match(/Plan de compra bajo supuestos/g)?.length).toBe(1);
-    expect(txt(el, 'plan-confirmations')).toContain('2 pendientes de confirmar con la empresa');
+    expect(txt(el, 'plan-confirmations')).toContain('2 pendientes de confirmar');
     expect(txt(el, 'plan-confirmations')).toContain('1 diferencia de inventario');
     expect(txt(el, 'src-orders')).toContain('Supuesto');
     expect(txt(el, 'src-orders')).toContain('sin confirmar con la empresa');

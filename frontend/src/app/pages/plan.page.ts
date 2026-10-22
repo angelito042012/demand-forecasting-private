@@ -90,7 +90,6 @@ const SORTS: { value: string; label: string }[] = [
         @if (planId()) {
           <app-state-panel [state]="hdr.state()" (retry)="hdr.reload()">
             @if (header(); as h) {
-              <div class="plan-info">
               <section class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
                 <p data-testid="src-params"><strong>Configuración de reposición</strong>{{ ' ' }}<span class="muted">(configurada; no confirmada por el proveedor)</span>:
                   plazos de entrega de {{ leadText() }} días
@@ -98,9 +97,19 @@ const SORTS: { value: string; label: string }[] = [
                     · reserva {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
                   }
                 </p>
-                <p data-testid="src-orders"><span class="chip warn">Supuesto</span> <strong>Pedidos por recibir:</strong> {{ pendingNote() }}
-                  @if (!pendingOrders().length && !/confirmar/i.test(pendingNote() ?? '')) { <span class="muted">Pendiente de confirmar con la empresa.</span> }
-                </p>
+                <div class="orders-row">
+                  <p data-testid="src-orders"><span class="chip warn">Supuesto</span>{{ ' ' }}<strong>Pedidos por recibir:</strong> {{ pendingNote() }}
+                    @if (!pendingOrders().length && !/confirmar/i.test(pendingNote() ?? '')) { <span class="muted">Pendiente de confirmar con la empresa.</span> }
+                  </p>
+                  @if (pendingConfirmations().length) {
+                    <details class="pending-inline" data-testid="plan-confirmations">
+                      <summary><strong>{{ pendingConfirmations().length }} {{ pendingConfirmations().length === 1 ? 'pendiente' : 'pendientes' }} de confirmar</strong> <span class="link-like">Ver detalle</span></summary>
+                      <p class="muted"><strong>{{ pendingSummary() }}.</strong></p>
+                      <ul class="plain">@for (c of pendingConfirmations(); track c.code) { <li [attr.data-code]="c.code">{{ c.text }}</li> }</ul>
+                      <p class="muted">Las diferencias de inventario y las llegadas tardías se marcan en cada producto afectado de la tabla.</p>
+                    </details>
+                  }
+                </div>
                 @if (pendingOrders().length) {
                   <ul class="plain" data-testid="src-pending">
                     @for (o of pendingOrders(); track $index) {
@@ -109,16 +118,6 @@ const SORTS: { value: string; label: string }[] = [
                   </ul>
                 }
               </section>
-
-              @if (pendingConfirmations().length) {
-                <details class="notice warn compact fold" data-testid="plan-confirmations">
-                  <summary><strong>{{ pendingConfirmations().length }} {{ pendingConfirmations().length === 1 ? 'pendiente' : 'pendientes' }} de confirmar con la empresa:</strong>
-                    {{ pendingSummary() }}. <span class="link-like">Ver detalle</span></summary>
-                  <ul class="plain">@for (c of pendingConfirmations(); track c.code) { <li [attr.data-code]="c.code">{{ c.text }}</li> }</ul>
-                  <p class="muted">Las diferencias de inventario y las llegadas tardías se marcan en cada producto afectado de la tabla.</p>
-                </details>
-              }
-              </div>
             }
           </app-state-panel>
 
@@ -411,7 +410,10 @@ const SORTS: { value: string; label: string }[] = [
   styles: `
     .plan-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin: 1rem 0; }
     td, th { vertical-align: top; }
-    .plan-cutoff { margin: 0 0 0.5rem; }
+    :host { display: block; }
+    :host ::ng-deep .ph { margin: 0 0 0.4rem; }
+    :host ::ng-deep .ph h1 { margin: 0; }
+    .plan-cutoff { margin: 0 0 0.4rem; }
     .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .plan-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.5rem; margin: 0 0 0.4rem; padding: 0.45rem 0.9rem;
       background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.95rem; }
@@ -421,38 +423,42 @@ const SORTS: { value: string; label: string }[] = [
     .plan-summary .plan-facts { display: flex; flex-wrap: wrap; gap: 0.1rem 1.4rem; flex: 1 1 24rem; border: 0; padding: 0; background: none; }
     .plan-facts > div { display: flex; gap: 0.35rem; align-items: baseline; }
     .plan-facts > div.grow { flex: 1 1 100%; }
-    .plan-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0.5rem 0; align-items: start; }
-    @media (min-width: 1100px) { .plan-info:has(.fold) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
-    .plan-info > * { margin: 0; }
+    .orders-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 1rem; }
+    .orders-row p { margin: 0.2rem 0; flex: 1 1 28rem; }
+    .pending-inline { flex: 0 1 auto; margin: 0.2rem 0; padding: 0.1rem 0.6rem; background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn-line); border-radius: var(--radius); }
+    .pending-inline[open] { flex: 1 1 100%; }
+    .pending-inline summary { cursor: pointer; }
     .short-cell span { display: block; white-space: nowrap; }
     .plan-table th[data-col-h], .plan-table td[data-col='forecast'], .plan-table td[data-col='count'] { min-width: 5.5rem; }
     .compact { padding: 0.4rem 0.9rem; margin: 0.4rem 0; font-size: 0.95rem; }
-    .plan-info { font-size: 0.95rem; }
     .toolbar { margin: 0.4rem 0; padding: 0.4rem 0.9rem; }
-    .toolbar label { font-size: 0.95rem; }
+    .toolbar .filters { gap: 0.4rem 1rem; align-items: center; }
+    .toolbar label { font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem; }
     .toolbar select, .toolbar input { min-height: 2.2rem; }
     .plan-facts { margin: 0; }
     .plan-facts dt { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
     .plan-facts dt::after { content: ':'; }
     .plan-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .plan-params { margin: 0; padding: 0.1rem 0.9rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.95rem; }
-    .plan-params p { margin: 0.35rem 0; }
+    .plan-params { margin: 0 0 0.4rem; padding: 0.15rem 0.9rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.95rem; }
+    .plan-params > p { margin: 0.25rem 0; }
     .fold > summary { cursor: pointer; }
     .link-like { text-decoration: underline; color: var(--link); }
     .table-meta { margin: 0.4rem 0; }
     .plan-table-wrap { max-height: none; margin: 0.4rem 0; }
-    .plan-table { width: 100%; min-width: 60rem; font-size: 0.95rem; table-layout: auto; }
-    .plan-table th, .plan-table td { padding: 0.4rem 0.5rem; }
+    .plan-table { width: 100%; min-width: 56rem; font-size: 0.95rem; table-layout: auto; }
+    .plan-table th, .plan-table td { padding: 0.4rem 0.4rem; }
+    .plan-table td { position: relative; }
     .plan-table thead th { white-space: normal; vertical-align: bottom; line-height: 1.25; position: static; }
     .plan-table td.num { white-space: normal; }
-    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); width: 15rem; min-width: 12rem; max-width: 16rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
+    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); width: 14rem; min-width: 11.5rem; max-width: 15rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
     .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
     .plan-table .unit { display: block; font-size: 0.9rem; }
-    .plan-table .c-forecast, .plan-table .c-count { width: 6rem; min-width: 5.5rem; }
-    .plan-table .c-arrival { width: 4.6rem; min-width: 4.2rem; }
-    .plan-table .c-start { width: 5rem; min-width: 4.6rem; }
-    .plan-table .c-buy { width: 6.8rem; min-width: 6.2rem; }
-    .plan-table .c-short { width: 6.4rem; min-width: 5.8rem; }
+    .plan-table .c-forecast { width: 6.2rem; min-width: 6rem; }
+    .plan-table .c-count { width: 5.4rem; min-width: 5.2rem; }
+    .plan-table .c-arrival { width: 4.4rem; min-width: 4rem; }
+    .plan-table .c-start { width: 4.8rem; min-width: 4.4rem; }
+    .plan-table .c-buy { width: 6.4rem; min-width: 6rem; }
+    .plan-table .c-short { width: 5.8rem; min-width: 5.4rem; }
     .plan-table td[data-col^='arrival'] { white-space: nowrap; }
     .plan-table .lead-start { border-left: 2px solid #9aa3b0; }
     .plan-table th.lead-group { text-align: center; background: #dde7f3; }
@@ -637,7 +643,7 @@ export class PlanPage {
   shortLines(sc: { shortage_before_month: string | null; shortage_month: string | null }): string[] {
     if (sc.shortage_month === null && sc.shortage_before_month === null) return [NOT_COMPUTABLE];
     const parts: string[] = [];
-    if (sc.shortage_before_month !== null) parts.push(`Antes del mes: ${qtyText(sc.shortage_before_month)}`);
+    if (sc.shortage_before_month !== null) parts.push(`Antes: ${qtyText(sc.shortage_before_month)}`);
     if (sc.shortage_month !== null) parts.push(`En el mes: ${qtyText(sc.shortage_month)}`);
     return parts;
   }
