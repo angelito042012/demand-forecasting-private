@@ -79,7 +79,7 @@ const SORTS: { value: string; label: string }[] = [
                 <div><dt>Decisión de compra</dt><dd data-testid="head-decision">{{ shortDate(h.params?.decision_date ?? h.decision_date) }}</dd></div>
                 <div><dt>Ventas hasta</dt><dd data-testid="head-sales">{{ shortDate(cutoff()) }}</dd></div>
                 <div class="grow"><dt>Existencias</dt>
-                  <dd data-testid="head-stock">{{ reconstructed() ? 'Cierre del ' + countDay() + ' (reconstruida: conteo informado ' + baseStamp() + ' más movimientos del sistema)' : 'Conteo informado ' + countStamp() }}</dd></div>
+                  <dd data-testid="head-stock">{{ reconstructed() ? 'cierre del ' + countDay() + ' · reconstruida (conteo informado ' + baseStampShort() + ' + movimientos del sistema)' : 'conteo informado ' + countStamp() }}</dd></div>
               </dl>
             }
           </section>
@@ -91,11 +91,12 @@ const SORTS: { value: string; label: string }[] = [
           <app-state-panel [state]="hdr.state()" (retry)="hdr.reload()">
             @if (header(); as h) {
               <section class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
-                <p data-testid="src-params"><strong>Configuración de reposición</strong>{{ ' ' }}<span class="muted">(configurada; no confirmada por el proveedor)</span>:
+                <p class="params-line"><span data-testid="src-params"><strong>Configuración de reposición</strong>{{ ' ' }}<span class="muted">(configurada; no confirmada por el proveedor)</span>:
                   plazos de entrega de {{ leadText() }} días
                   @if (h.params; as p) {
                     · reserva {{ p.reserve_days }} días · compra mínima {{ p.min_order }} · múltiplo {{ p.order_multiple }}
-                  }
+                  }</span>
+                  <button type="button" class="link-btn" data-testid="plan-legend-open" (click)="showLegend()">Cómo leer la tabla</button>
                 </p>
                 <div class="orders-row">
                   <p data-testid="src-orders"><span class="chip warn">Supuesto</span>{{ ' ' }}<strong>Pedidos por recibir:</strong> {{ pendingNote() }}
@@ -138,7 +139,6 @@ const SORTS: { value: string; label: string }[] = [
                 </select>
               </label>
               <button type="submit" class="small" [class.btn]="!isAdmin" [class.secondary]="isAdmin" data-testid="plan-search">Buscar</button>
-              <button type="button" class="secondary small" data-testid="plan-legend-open" (click)="showLegend()">Cómo leer la tabla</button>
             </form>
           </section>
 
@@ -423,6 +423,8 @@ const SORTS: { value: string; label: string }[] = [
     .plan-summary .plan-facts { display: flex; flex-wrap: wrap; gap: 0.1rem 1.4rem; flex: 1 1 24rem; border: 0; padding: 0; background: none; }
     .plan-facts > div { display: flex; gap: 0.35rem; align-items: baseline; }
     .plan-facts > div.grow { flex: 1 1 100%; }
+    .params-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.1rem 1rem; }
+    .link-btn { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; min-height: 0; }
     .orders-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 1rem; }
     .orders-row p { margin: 0.2rem 0; flex: 1 1 28rem; }
     .pending-inline { flex: 0 1 auto; margin: 0.2rem 0; padding: 0.1rem 0.6rem; background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn-line); border-radius: var(--radius); }
@@ -435,6 +437,7 @@ const SORTS: { value: string; label: string }[] = [
     .toolbar .filters { gap: 0.4rem 1rem; align-items: center; }
     .toolbar label { font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem; }
     .toolbar select, .toolbar input { min-height: 2.2rem; }
+    .toolbar input { width: 11rem; }
     .plan-facts { margin: 0; }
     .plan-facts dt { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
     .plan-facts dt::after { content: ':'; }
@@ -446,17 +449,17 @@ const SORTS: { value: string; label: string }[] = [
     .table-meta { margin: 0.4rem 0; }
     .plan-table-wrap { max-height: none; margin: 0.4rem 0; }
     .plan-table { width: 100%; min-width: 56rem; font-size: 0.95rem; table-layout: auto; }
-    .plan-table th, .plan-table td { padding: 0.4rem 0.4rem; }
+    .plan-table th, .plan-table td { padding: 0.4rem 0.35rem; }
     .plan-table td { position: relative; }
     .plan-table thead th { white-space: normal; vertical-align: bottom; line-height: 1.25; position: static; }
     .plan-table td.num { white-space: normal; }
-    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); width: 14rem; min-width: 11.5rem; max-width: 15rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
+    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); width: 12.5rem; min-width: 11rem; max-width: 14rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
     .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
     .plan-table .unit { display: block; font-size: 0.9rem; }
-    .plan-table .c-forecast { width: 6.2rem; min-width: 6rem; }
+    .plan-table .c-forecast { width: 6rem; min-width: 5.8rem; }
     .plan-table .c-count { width: 5.4rem; min-width: 5.2rem; }
     .plan-table .c-arrival { width: 4.4rem; min-width: 4rem; }
-    .plan-table .c-start { width: 4.8rem; min-width: 4.4rem; }
+    .plan-table .c-start { width: 4.4rem; min-width: 4.2rem; }
     .plan-table .c-buy { width: 6.4rem; min-width: 6rem; }
     .plan-table .c-short { width: 5.8rem; min-width: 5.4rem; }
     .plan-table td[data-col^='arrival'] { white-space: nowrap; }
@@ -560,6 +563,7 @@ export class PlanPage {
   /** T20: la existencia inicial es reconstruida (conteo base + movimientos del sistema). Solo lo dice la cabecera del plan. */
   reconstructed = computed(() => (this.planId() ? this.header()?.snapshot?.kind : this.inputs()?.snapshot?.kind) === 'RECONSTRUIDO');
   baseStamp = computed(() => stampWords(this.header()?.snapshot?.base_count_as_of_local));
+  baseStampShort = computed(() => (this.baseStamp() || '').replace(' a las ', ' '));
   lastMovement = computed(() => { const m = this.header()?.snapshot?.last_movement_local; return m ? stampWords(m) : ''; });
   pendingConfirmations = computed(() => (this.header()?.confirmations ?? []).filter((c) => c.status === 'PENDIENTE'));
   /** Frase breve de los pendientes (el texto completo está en el detalle desplegable). */

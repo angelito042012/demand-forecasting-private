@@ -291,7 +291,7 @@ describe('Piloto de presentación de «Compra recomendada» (22/10)', () => {
     expect(q(el, 'head-version')).toBeNull();
     expect(txt(el, 'head-decision')).toBe('21/10/2026');
     expect(txt(el, 'head-sales')).toBe('20/10/2026');
-    expect(txt(el, 'head-stock')).toContain('Cierre del 20/10/2026');
+    expect(txt(el, 'head-stock')).toContain('cierre del 20/10/2026');
     expect(txt(el, 'head-stock')).toContain('reconstruida');
   });
 
