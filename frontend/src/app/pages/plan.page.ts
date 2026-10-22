@@ -56,22 +56,8 @@ const SORTS: { value: string; label: string }[] = [
               @if (!planId() && pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
             </p>
           }
-          <section class="plan-summary" aria-label="Plan elegido" data-testid="plan-picker">
-            <div class="filters picks">
-              <label>Mes
-                <select name="month" data-testid="plan-month" [ngModel]="month()" (ngModelChange)="setMonth($event)">
-                  @for (m of monthOptions(); track m) { <option [value]="m">{{ monthLabel(m) }}</option> }
-                </select>
-              </label>
-              @if (versions().length > 1) {
-                <label>Versión
-                  <select name="ver" data-testid="plan-version" [ngModel]="planId()" (ngModelChange)="pickPlan($event)">
-                    @for (v of versions(); track v.plan_id) { <option [value]="v.plan_id">{{ versionShort(v) }}</option> }
-                  </select>
-                </label>
-              }
-            </div>
-            @if (header(); as h) {
+          @if (header(); as h) {
+            <section class="plan-summary" aria-label="Resumen del plan" data-testid="plan-summary-card">
               <dl class="plan-facts" data-testid="plan-head">
                 @if (versions().length <= 1) {
                   <div><dt>Versión</dt><dd data-testid="head-version">{{ h.version ? 'v' + h.version + ' · ' : '' }}{{ stampOf(h.created_at) }}</dd></div>
@@ -81,16 +67,7 @@ const SORTS: { value: string; label: string }[] = [
                 <div class="grow"><dt>Existencias</dt>
                   <dd data-testid="head-stock">{{ reconstructed() ? 'cierre del ' + countDay() + ' · reconstruida (conteo informado ' + baseStampShort() + ' + movimientos del sistema)' : 'conteo informado ' + countStamp() }}</dd></div>
               </dl>
-            }
-          </section>
-        }
-      </app-state-panel>
-
-      <app-state-panel [state]="pl.state()" emptyText="Todavía no se generó un plan para este mes." (retry)="pl.reload()">
-        @if (planId()) {
-          <app-state-panel [state]="hdr.state()" (retry)="hdr.reload()">
-            @if (header(); as h) {
-              <section class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
+              <div class="plan-params" aria-label="Configuración de reposición" data-testid="plan-params">
                 <p class="params-line"><span data-testid="src-params"><strong>Configuración de reposición</strong>{{ ' ' }}<span class="muted">(configurada; no confirmada por el proveedor)</span>:
                   plazos de entrega de {{ leadText() }} días
                   @if (h.params; as p) {
@@ -118,14 +95,25 @@ const SORTS: { value: string; label: string }[] = [
                     }
                   </ul>
                 }
-              </section>
-            }
-          </app-state-panel>
-
-          @if (notCurrent()) {
-            <p class="notice info" role="note" data-testid="plan-not-current">Estás viendo una versión que no es la vigente. «Inicio» y «Ventas previstas» siguen mostrando la versión vigente ({{ versionLabel(versions()[0]) }}).</p>
+              </div>
+            </section>
           }
-          <section class="toolbar" aria-label="Filtros de la tabla de compras" data-testid="plan-filters">
+          <section class="toolbar plan-toolbar" aria-label="Plan y filtros" data-testid="plan-filters">
+            <div class="filters picks" data-testid="plan-picker">
+              <label>Mes
+                <select name="month" data-testid="plan-month" [ngModel]="month()" (ngModelChange)="setMonth($event)">
+                  @for (m of monthOptions(); track m) { <option [value]="m">{{ monthLabel(m) }}</option> }
+                </select>
+              </label>
+              @if (versions().length > 1) {
+                <label>Versión
+                  <select name="ver" data-testid="plan-version" [ngModel]="planId()" (ngModelChange)="pickPlan($event)">
+                    @for (v of versions(); track v.plan_id) { <option [value]="v.plan_id">{{ versionShort(v) }}</option> }
+                  </select>
+                </label>
+              }
+            </div>
+            @if (planId()) {
             <form class="filters" (ngSubmit)="search()" aria-label="Buscar en el plan">
               <label>Código o nombre <input name="q" [(ngModel)]="draft" autocomplete="off" maxlength="100" data-testid="plan-q" /></label>
               <label>Estado
@@ -140,7 +128,18 @@ const SORTS: { value: string; label: string }[] = [
               </label>
               <button type="submit" class="small" [class.btn]="!isAdmin" [class.secondary]="isAdmin" data-testid="plan-search">Buscar</button>
             </form>
+            }
           </section>
+        }
+      </app-state-panel>
+
+      <app-state-panel [state]="pl.state()" emptyText="Todavía no se generó un plan para este mes." (retry)="pl.reload()">
+        @if (planId()) {
+          <app-state-panel [state]="hdr.state()" (retry)="hdr.reload()"></app-state-panel>
+
+          @if (notCurrent()) {
+            <p class="notice info" role="note" data-testid="plan-not-current">Estás viendo una versión que no es la vigente. «Inicio» y «Ventas previstas» siguen mostrando la versión vigente ({{ versionLabel(versions()[0]) }}).</p>
+          }
 
           <app-state-panel [state]="res.state()" emptyText="Este plan no tiene productos." (retry)="res.reload()">
             @if (results(); as d) {
@@ -415,14 +414,15 @@ const SORTS: { value: string; label: string }[] = [
     :host ::ng-deep .ph h1 { margin: 0; }
     .plan-cutoff { margin: 0 0 0.4rem; }
     .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-    .plan-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.5rem; margin: 0 0 0.4rem; padding: 0.45rem 0.9rem;
-      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.95rem; }
+    .plan-summary { margin: 0 0 0.4rem; padding: 0.3rem 0.9rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.95rem; }
+    .plan-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.5rem; }
+    .plan-toolbar form { margin: 0; }
     .picks { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; align-items: center; margin: 0; }
     .picks label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.95rem; }
     .picks select { min-height: 2.2rem; padding: 0.2rem 0.5rem; }
-    .plan-summary .plan-facts { display: flex; flex-wrap: wrap; gap: 0.1rem 1.4rem; flex: 1 1 24rem; border: 0; padding: 0; background: none; }
+    .plan-summary .plan-facts { display: flex; flex-wrap: wrap; gap: 0.1rem 1.4rem; border: 0; padding: 0; background: none; margin: 0.1rem 0; }
     .plan-facts > div { display: flex; gap: 0.35rem; align-items: baseline; }
-    .plan-facts > div.grow { flex: 1 1 100%; }
+    .plan-facts > div.grow { flex: 1 1 auto; }
     .params-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.1rem 1rem; }
     .link-btn { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; min-height: 0; }
     .orders-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 1rem; }
@@ -442,7 +442,7 @@ const SORTS: { value: string; label: string }[] = [
     .plan-facts dt { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
     .plan-facts dt::after { content: ':'; }
     .plan-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .plan-params { margin: 0 0 0.4rem; padding: 0.15rem 0.9rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.95rem; }
+    .plan-params { margin: 0; padding: 0; font-size: 0.95rem; }
     .plan-params > p { margin: 0.25rem 0; }
     .fold > summary { cursor: pointer; }
     .link-like { text-decoration: underline; color: var(--link); }
