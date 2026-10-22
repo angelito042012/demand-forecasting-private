@@ -403,7 +403,7 @@ const SORTS: { value: string; label: string }[] = [
     td, th { vertical-align: top; }
     .plan-top { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: stretch; margin: 0 0 0.5rem; }
     .plan-picker { margin: 0; flex: 0 1 auto; }
-    .plan-top .plan-cutoff { flex: 1 1 24rem; margin: 0; display: flex; align-items: center; }
+    .plan-top .plan-cutoff { flex: 1 1 24rem; margin: 0; }
     .plan-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0.5rem 0; align-items: start; }
     @media (min-width: 1100px) { .plan-info:has(.fold) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
     .plan-info > * { margin: 0; }
@@ -419,13 +419,13 @@ const SORTS: { value: string; label: string }[] = [
     .fold > summary { cursor: pointer; }
     .link-like { text-decoration: underline; color: var(--link); }
     .table-meta { margin: 0.4rem 0; }
-    .plan-table { width: max-content; min-width: 100%; font-size: 0.95rem; }
+    .plan-table { width: 100%; min-width: 1500px; font-size: 0.95rem; }
     .plan-table thead th { white-space: normal; vertical-align: bottom; }
     .plan-table td.num { white-space: normal; }
     .plan-table td.num strong, .plan-table td.num > .chip { white-space: nowrap; }
     .plan-table td[data-col^='arrival'] { white-space: nowrap; }
     .plan-table th, .plan-table td { padding: 0.5rem 0.7rem; }
-    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); min-width: 17rem; max-width: 22rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
+    .plan-table .sticky-col { position: sticky; left: 0; background: var(--surface); min-width: 15rem; max-width: 20rem; box-shadow: 1px 0 0 var(--line); z-index: 2; }
     .plan-table thead th.sticky-col { z-index: 4; background: #e8ecf2; }
     .plan-table .lead-start { border-left: 2px solid #9aa3b0; }
     .plan-table th.lead-group { text-align: center; background: #dde7f3; }

@@ -46,6 +46,7 @@
     </nav>
   }
   <main id="contenido" tabindex="-1">
+    @if (!onPlan()) {
     <p class="context-strip" data-testid="context-strip" role="note">
       @if (onInventory()) {
         <strong>Inventario informado por la empresa (no es simulado).</strong> Las ventas y las recomendaciones del ejemplo son históricas y se consultan en otras pantallas.
@@ -61,6 +62,7 @@
         <strong>Ejemplo con datos históricos de 2026.</strong> Las sugerencias de reposición usan un inventario simulado; no representa las existencias actuales.
       }
     </p>
+    }
     <router-outlet />
   </main>
 </div>
