@@ -29,3 +29,6 @@ Copia verificada antes de cualquier cambio destructivo: el paquete de datos (§3
 **Bloqueo exacto:** acción de Rogelio en Atlas (agregar las 2 IP). No se abrió `0.0.0.0/0`, no se cambió de servicio y no se amplió el presupuesto.
 **No declarado como publicado:** falta la verificación en la URL pública (inicio de sesión, plan v2, explicación, idempotencia, persistencia).
 **Costos observados:** Cost Management aún sin filas (retraso de hasta 24 h); se deja a Rogelio la lectura del portal; consumo activo de réplicas de prueba: unas decenas de minutos-vCPU (despreciable). Las aplicaciones de prueba `dfpub-ipprobe*` quedan a 0 réplicas (no se eliminaron).
+
+## 9. Verificación pública (22/10/2026)
+Publicada y verificada: `https://dfpub-api.ashyglacier-9e3e37bc.brazilsouth.azurecontainerapps.io`. La causa del bloqueo era que API y worker salían por `20.226.5.99` y `20.226.18.13` (fuera de las cuatro IP de los sondeos); con ambas en Atlas (/32) conectan. Detalle de pruebas (12/12 navegador, Excel→GridFS→worker, persistencia tras bajar a 0, cabeceras/CSRF/roles) en `docs/ESTADO.md`. Límite: el entorno express no ofrece IP de salida fija; la IP de cada aplicación se ha mantenido entre reinicios pero debe medirse tras una revisión nueva. Costos observados: sin cifra (Cost Management sin importes). Aceptación humana: pendiente.
