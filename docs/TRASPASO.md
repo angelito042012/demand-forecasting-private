@@ -86,3 +86,5 @@ URL `https://dfpub-api.ashyglacier-9e3e37bc.brazilsouth.azurecontainerapps.io` (
 **22/10/2026 — «Entender la compra» del piloto:** ver `docs/T22_PILOTO_COMPRA_RECOMENDADA.md` §6 (commit `a56e6fd`, etiqueta `t22-piloto-3`). Pendiente: revisión de Rogelio; después extender el criterio y publicar la versión aprobada.
 
 **22/10/2026 (tarde):** costos observados US$ 1,544 (proyección al 23/10 ≈ US$ 3–4), revisión de seguridad sin hallazgos y plan de extensión a Inicio/Ventas previstas/Existencias preparado (`docs/T22_PLAN_EXTENSION_PILOTO.md`); nada extendido ni publicado hasta que Rogelio confirme el piloto. Siguiente paso: esperar su confirmación; luego implementar (≈ 2 h), probar al 100 %, publicar en Azure (medir IP de salida otra vez) y repetir las pruebas públicas.
+
+**22/10/2026 (noche):** versión T22 (piloto + extensión) publicada en la URL pública y verificada (ver ESTADO.md y `docs/T20_PLAN_NUBE.md` §11). Rollback: imagen `t20c-5460230`. Tras cualquier nueva revisión medir la IP de salida y compararla con la lista de Atlas (`docs/MANUAL_OPERACION.md` §9). Siguiente paso: prueba humana pública (una acción por mensaje, aceptación pendiente).
