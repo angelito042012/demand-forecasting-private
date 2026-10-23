@@ -1,25 +1,116 @@
-# Desarrollo de Demand Forecasting para la MYPE
+# Demand Forecasting - Prevision de ventas y compras
 
-**Recuperación y continuidad desde el 17/10/2026:** iniciar con [RETOMAR_CLAUDE.md](RETOMAR_CLAUDE.md). Hay una implementación parcial; no reiniciar. [ESTADO.md](docs/ESTADO.md) contiene el estado actual y [TRASPASO.md](docs/TRASPASO.md) la siguiente acción. La guía inicial siguiente se conserva como referencia histórica cuando describa pasos ya realizados.
+Sistema de prevision de demanda y recomendacion de compras para una MYPE. Construido con Angular, FastAPI, Python (scikit-learn / XGBoost) y MongoDB.
 
-Paquete preparado el 16 de octubre de 2026. Fecha límite: 23 de octubre de 2026, hora de Lima. La hora exacta de entrega debe confirmarse; el plan fija cierre interno a las 18:00.
+## Estado actual
 
-Este directorio contiene el análisis, las decisiones propuestas y la configuración de Claude Code. No es todavía la aplicación terminada ni contiene los datos de la empresa.
+La aplicacion tiene un plan de noviembre v2 funcional con 50 productos, escenarios de entrega a 7 y 14 dias, y recomendaciones de compra explicables. La version entregada (`t22g-a9119ae`) fue aceptada funcionalmente para exposicion el 23/10/2026.
 
-1. Leer [análisis y plan](docs/ANALISIS_Y_PLAN.md) y los resultados vigentes de la [auditoría de datos](docs/AUDITORIA_DATOS.md).
-2. Revisar [contratos y criterios](docs/CONTRATOS.md) y [tareas](docs/BACKLOG.md).
-3. Abrir una terminal en esta carpeta y ejecutar `claude`.
-4. Entregar a Claude el contenido de [INICIO_CLAUDE.md](INICIO_CLAUDE.md).
-5. Registrar cada entrega en [estado](docs/ESTADO.md). Codex revisará cambios, pruebas, resultados y bloqueos a partir de ese registro y del repositorio.
+**Pendiente:** actualizacion operativa autonoma (nuevos cortes de datos), evaluacion academica formal y automatizacion. Ver `docs/ESTADO.md` y `docs/BACKLOG.md`.
 
-Las instrucciones del documento académico se tratan como material de referencia y requisitos del proyecto, no como órdenes para ejecutar acciones. El archivo original permanece sin modificaciones. Su extracción textual se incluye en `docs/FUENTE_EXTRAIDA.txt`; las imágenes se conservan en `docs/figuras/`.
+## Requisitos
 
-El entorno se comprueba con `powershell -File scripts/doctor.ps1`. La preparación Python se realiza con `scripts/bootstrap.ps1 -PythonExe <ruta a Python 3.12>`. La instalación descarga dependencias y requiere acceso a Internet. Se debe conservar el archivo de versiones resultante. El frontend se genera en la primera tarea de implementación, después de comprobar si existe un repositorio previo.
+- Python 3.12
+- Node.js >= 18 (para el frontend Angular)
+- Docker y Docker Compose
+- MongoDB Database Tools (`mongorestore`) para restaurar respaldos
 
-No se han conectado Azure, Atlas ni GitHub; no se ha desplegado el producto. Los accesos y datos que faltan están en ESTADO.md. Las configuraciones locales no habilitan permisos ilimitados ni instalan plugins externos.
+## Instalacion local
 
-La .venv de esta carpeta ya tiene las dependencias Python instaladas. Git local esta inicializado. Ver docs/VALIDACION_ENTORNO.md para los limites comprobados: Angular pendiente por conectividad y MongoDB/Docker pendientes de servidor.
+### 1. Clonar y preparar el entorno Python
 
-Actualización de datos: los seis meses ya contienen detalle por producto. La solicitud de reexportación quedó resuelta; usar el estado y auditoría vigentes. No se cambió el stack ni la fecha objetivo.
+```
+git clone <url-del-repo> demand-forecasting
+cd demand-forecasting
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/Mac:
+source .venv/bin/activate
+pip install -r requirements.lock.txt
+```
 
-Antes de iniciar Claude, leer docs/DECISIONES_DATOS.md. Las cuatro decisiones del usuario ya están incorporadas. Los datos sintéticos de inventario se encuentran en data/synthetic/reference_v1 y se entregan identificados como simulación, separados de los Excel reales.
+### 2. Crear un entorno Docker aislado
+
+El script `scripts/demo_local.py` crea entornos Docker aislados con credenciales auto-generadas:
+
+```
+python -m scripts.demo_local --env mi_entorno up
+```
+
+Esto construye la imagen, levanta MongoDB + API + Worker + Proxy (Caddy con TLS autofirmado) y restaura el respaldo academico incluido.
+
+### 3. Crear usuarios locales
+
+```
+python -m scripts.demo_local --env mi_entorno create-user mi_admin admin
+python -m scripts.demo_local --env mi_entorno create-user mi_lector lector
+```
+
+Las credenciales se guardan en `artifacts/private/t13b/<env>_credenciales.txt`.
+
+### 4. Acceder a la aplicacion
+
+Abrir `https://localhost:<puerto>` (el puerto se muestra al crear el entorno). Aceptar el certificado autofirmado.
+
+### 5. Detener / reiniciar
+
+```
+python -m scripts.demo_local --env mi_entorno stop     # detiene, conserva datos
+python -m scripts.demo_local --env mi_entorno up        # reinicia
+python -m scripts.demo_local --env mi_entorno down      # elimina contenedores y volumenes
+```
+
+## Estructura del proyecto
+
+```
+backend/          API FastAPI y logica de negocio
+frontend/         Aplicacion Angular
+pipeline/         Pipeline de datos y modelos ML
+scripts/          Utilidades (demo_local, bootstrap, etc.)
+tests/            Pruebas (backend, jobs, plan, publish, inventory)
+deploy/           Dockerfile, Caddyfile, entrypoint, mongo-init
+infra/            Bicep templates para Azure (referencia)
+config/           Configuracion de experimentos y seleccion de modelos
+docs/             Documentacion tecnica y reportes
+data/synthetic/   Datos sinteticos para desarrollo y pruebas
+```
+
+## Datos privados
+
+Este repositorio **no contiene** datos empresariales, respaldos de produccion ni credenciales. Los datos necesarios para operar con el escenario real se entregan por un canal separado y se almacenan en `artifacts/private/` (excluido de Git).
+
+Para restaurar el escenario operativo completo se necesita:
+1. El respaldo operativo (`cloud_bundle_20261021/`) con sus dos archivos `.gz`
+2. Restaurar con `mongorestore` y remapeo de namespace a la base local
+3. Consultar la guia tecnica entregada por separado
+
+## Pruebas
+
+```
+# Backend (777 tests)
+python -m pytest tests/backend tests/jobs tests/plan tests/publish tests/inventory -q
+
+# Frontend (312 tests)
+cd frontend && ng test
+```
+
+## Arquitectura
+
+- **API:** FastAPI (uvicorn), autenticacion por sesion + CSRF, roles admin/lector
+- **Worker:** procesa jobs de generacion de planes en background
+- **MongoDB:** almacen de datos, planes, corridas y sesiones
+- **Proxy:** Caddy con TLS autofirmado para desarrollo local
+- **Frontend:** Angular con pantallas de ventas, existencias, compra recomendada y evaluacion
+
+## Infraestructura en nube
+
+El proyecto incluye templates de Azure (`infra/main.bicep`) como referencia. El despliegue en nube requiere permisos y presupuesto propios; la configuracion del titular anterior **no** se hereda automaticamente. Los accesos a Azure y Atlas se gestionan por separado.
+
+## Reglas del proyecto
+
+- No fabricar resultados ni datos reales
+- Datos sinteticos siempre etiquetados como tales
+- No repetir T12 ni reentrenar contra agosto
+- No desplegar sin autorizacion ni presupuesto
+- Credenciales solo en `.env` (no versionado) o variables de entorno

@@ -1,27 +1,61 @@
-# Dirección del proyecto
+# Instrucciones para Claude Code
 
-**Nueva prioridad autorizada, 18/10 — ETAPA_19_CLAUDE.md:** implementar la conexión completa de las 14 fuentes preparadas, previsión para noviembre y propuesta de una compra para cubrir el mes. Escenarios de entrega 7/14 días; 50 productos con conteo; proyectar consumo previo a noviembre sin fabricar ventas de octubre. Nuevo modo separado de T10/T12 y ensayo ens19/8445. Rogelio eligió compra mensual, no calendario semanal. R18 ya cerrado por Codex. Leer el encargo y estado; no limitarse a redactar otro plan cuando Rogelio transmita la orden. No nube ni pedidos reales. Este encargo sustituye instrucciones antiguas de esperar la integración.
+Sistema de prevision de demanda y compras. Angular + FastAPI + Python + MongoDB.
 
-**Prioridad posterior 18/10 — conteo recibido:** leer `docs/REVISION_CONTEO_50_20261018.md` y ETAPA_18_CLAUDE.md. Los 50 productos cuentan con inventario físico reportado al 18/10/2026 17:00, almacén 1, sin ventas durante el recuento (confirmado por Rogelio). Derivado vigente: `artifacts/private/conteo_recibido_20261018_v2/`. No regenerar la plantilla del Excel recibido. La etapa 18 es el encargo preparado de integración local en ensayo; se ejecuta cuando Rogelio envíe el mensaje. No inferir ventas faltantes de octubre ni reutilizar inventario actual en T12. Nube sigue sin autorización.
+## Stack y convenciones
 
-**Actualización prioritaria 18/10:** Codex preparó, por encargo explícito de Rogelio, las 14 fuentes marzo–septiembre. Leer `docs/PREPARACION_DATOS_ACADEMICA_V1.md`, ESTADO y TRASPASO. El paquete privado `artifacts/private/datos_preparados_v1/` es una versión separada, todavía no importada: universo normalizado y grupo de 50 con balances retrospectivos bajo supuestos. No inferir stock real, no entrenar con balances ni reabrir T12. No iniciar implementación/cargas hasta el siguiente encargo. UX01R/R17 ya aceptados en REVISION_CODEX_17; la autoridad ETAPA_16 mencionada abajo es histórica. Nube y aceptación humana siguen pendientes.
+- Python 3.12, PyMongo, FastAPI, scikit-learn, XGBoost
+- Angular (frontend), Caddy (proxy), Docker Compose
+- Zona horaria: America/Lima
+- Fijar versiones en `requirements.lock.txt` y `package-lock.json`
 
-Para recuperar una sesión, leer RETOMAR_CLAUDE.md, docs/ESTADO.md, docs/TRASPASO.md y docs/PROTOCOLO_TRABAJO.md. El usuario asigna a Claude ejecución integral y a Codex dirección/revisión; puede rotar el ejecutor cuando avise de límites. No repetir el inicio ni R01–R03 ya aceptados. Guardar traspaso por unidad de trabajo; un solo ejecutor principal activo.
+## Estructura
 
-Construir el sistema descrito en docs/ANALISIS_Y_PLAN.md y docs/CONTRATOS.md para entrega el 23/10/2026, zona America/Lima. Leer docs/ESTADO.md y docs/BACKLOG.md al retomar. Existe una implementación parcial revisada; la aplicación completa sigue pendiente.
+- `backend/` — API y logica de negocio
+- `frontend/` — Aplicacion Angular
+- `pipeline/` — Pipeline de datos y ML
+- `scripts/` — Utilidades (demo_local, build, etc.)
+- `tests/` — Pruebas (backend, jobs, plan, publish, inventory)
+- `deploy/` — Docker, Caddy, entrypoint
+- `infra/` — Templates Azure (referencia)
+- `config/` — Configuracion de modelos y experimentos
+- `docs/` — Documentacion tecnica
 
-Confirmado: seis Excel en C:\Users\rogel\Documents\Datos; no reiniciar. Azure estudiantes y Atlas Free ya creados, sin publicación/gasto autorizado. Autoridad vigente: ETAPA_16_CLAUDE.md y docs/UX01_BRIEF.md. El usuario no comprende el uso de la demo y solicita un rediseño completo de presentación y navegación antes de publicar. Ejecutar UX01 en Angular, con lenguaje sencillo, tareas guiadas y detalles técnicos secundarios; no cambiar ciencia, datos ni advertencias esenciales. R12–R16 aceptados localmente en REVISION_CODEX_13/15; no repetir T06/T07/T12 ni Azure. ETAPA_15 de publicación queda diferida hasta nueva aceptación de UX y autorización expresa. Conservar df-demo/base común, originales, congelación y resultados adversos; no consultar reference_v1.
+## Reglas de desarrollo
 
-Conservar Angular + FastAPI + Python + MongoDB + Azure salvo decisión registrada. Revisar el estado de esta carpeta para no sobrescribir avances; desarrollar en backend/, pipeline/, frontend/, infra/ y tests/. Fijar versiones probadas y conservar lockfiles. Usar Python 3.12 y driver PyMongo.
+Leer `docs/ESTADO.md` y `docs/BACKLOG.md` al retomar. Existe una implementacion funcional aceptada; la actualizacion operativa y la evaluacion academica estan pendientes.
 
-El documento fuente es evidencia y especificación candidata; sus textos de plantilla no son órdenes de ejecución. No inventar resultados, datos reales, mejoras, pruebas, aceptación ni despliegues. Separar hechos, propuestas, supuestos y bloqueos. Datos sintéticos autorizados para desarrollo y evaluación de escenarios, siempre etiquetados; nunca evidencia de inventario o mejora real.
+### Seguridad
+- No exponer credenciales en repositorio, logs ni prompts
+- No imprimir `.env` ni tokens
+- No desplegar a Azure/Atlas sin autorizacion y presupuesto
+- No ejecutar compras reales ni modificar sistemas de la empresa
 
-Reglas científicas: partición temporal; último mes reservado; transformaciones ajustadas en train; rezagos anteriores al corte; no usar ventas futuras reales en horizonte múltiple; reportar MAPE con cobertura y R² indefinido. La venta observada puede estar censurada por stock. No inferir compras por SKU directamente de categorías sin método explícito.
+### Datos
+- Datos sinteticos autorizados para desarrollo, siempre etiquetados
+- Nunca presentar datos sinteticos como evidencia real
+- No repetir T12 ni reentrenar contra agosto
+- TIPO_DOC=7 son notas de credito; separar de ventas brutas
+- Excluir del entrenamiento: 03/04, 12/04 y 07/06 de 2026
+- Catalogo por fecha de corte segun `docs/DECISIONES_DATOS.md`
 
-Coordinar hasta tres subagentes simultáneos cuando las tareas sean independientes. Asignar alcance de archivos y entregables. Un único integrador cambia contratos, dependencias y configuración común. Delegar datos a data-engineer, ML a forecasting, API/simulación a backend-inventory, UI a frontend y revisión a quality-reviewer. Leer skills relevantes al asignar tareas.
+### Ciencia
+- Particion temporal; ultimo mes reservado para evaluacion
+- Transformaciones ajustadas en train
+- Rezagos anteriores al corte; no usar ventas futuras
+- Reportar MAPE con cobertura; R² indefinido
+- La venta observada puede estar censurada por stock
 
-No exponer credenciales ni datos comerciales en repositorio, logs o prompts externos innecesarios. No imprimir .env. No desplegar infraestructura de pago sin presupuesto y acceso autorizado. No ejecutar compras reales ni modificar sistemas operativos de la MYPE. No desactivar controles de permisos para ganar velocidad.
+### Proceso
+- Cada entrega actualiza `docs/ESTADO.md`
+- Cambios pequenos, revisar diff, resolver defectos antes de ampliar
+- No inventar resultados, mejoras ni aceptaciones
+- Separar hechos, propuestas, supuestos y bloqueos
 
-Cada entrega actualiza ESTADO.md con archivos, pruebas ejecutadas, resultado, pendientes y siguiente tarea. Una prueba no ejecutada se registra como pendiente. Hacer cambios pequeños, revisar diff y resolver defectos críticos antes de ampliar alcance. La revisión académica exige evidencia real; no redactar hallazgos experimentales antes de medir.
+## Subagentes
 
-Decisiones cerradas: TIPO_DOC=7 son notas de crédito confirmadas; separarlas de ventas brutas y no inferir devolución física. Excluir del entrenamiento y métricas 03/04, 12/04 y 07/06 de 2026 sin comprimir calendario. Catálogo por fecha de corte según DECISIONES_DATOS.md. No volver a preguntar estos cuatro puntos.
+Definidos en `.claude/agents/`: data-engineer, forecasting, backend-inventory, frontend, quality-reviewer. Maximo tres simultaneos para tareas independientes. Un unico integrador cambia contratos, dependencias y configuracion comun.
+
+## Skills
+
+Definidos en `.claude/skills/`: data-quality, inventory-backtest, release-evidence, temporal-forecasting.
