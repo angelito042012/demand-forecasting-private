@@ -163,3 +163,16 @@ No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTP
 - **Existencias:** «Conteo 18/10», «Entradas», «Salidas», «Existencia al 20/10» y «Diferencia» (solo en los productos donde el sistema y la reconstrucción no coinciden; pendiente de confirmar, sin ajustes). «2 pendientes de confirmar con la empresa · Ver detalle» muestra las compras 11452/11455 y las diferencias de inventario.
 - **Compra recomendada:** «Plazo de 7 días / 14 días» con *Llegada*, *Stock al 1/11* (según el mes), *Comprar* («Cubre el mes», «Llega tarde», «No llega a tiempo») y *Faltantes* («Antes» del mes y «Mes»). «Entender la compra» muestra primero cantidad, llegada, ventas que podrían atenderse y faltantes; una frase resume el cálculo y **«Ver cálculo detallado»** (cerrado) guarda los 14 pasos. Si un plazo largo compra menos **porque la llegada tardía deja ventas sin atender**, una nota lo explica con las cifras del producto: no es una opción equivalente con ahorro.
 - **Formato de números:** el punto separa decimales (18.214 son 18 unidades y 214 milésimas) y la coma separa miles (1,250).
+
+### Qué puedes hacer tú y qué requiere soporte técnico (22/10/2026)
+| Tarea | Lector | Administrador (interfaz) | Soporte técnico |
+|---|---|---|---|
+| Consultar Inicio, Ventas previstas, Existencias, Compra recomendada, «Entender la compra» | Sí | Sí | — |
+| Generar una versión nueva del plan con otros parámetros (decisión, plazos, reserva, mínimo, múltiplo, pedidos por recibir) | No | **Sí**: «Compra recomendada» → «Generar plan». Si todo es idéntico se reutiliza la versión existente | — |
+| Cargar un Excel mensual en «Cargar datos» | No | Sí, **solo ventas de marzo a julio de 2026** (agosto reservado; otros meses se rechazan): alimenta los análisis históricos, **no el plan de noviembre** | — |
+| «Crear análisis» | No | Sí, **solo históricos**: cortes del 01/06 al 10/07/2026, 21 días, promedio de 28 días | — |
+| Incorporar ventas o existencias posteriores al 20/10/2026 y actualizar el plan de noviembre con ellas | No | **No** (la interfaz no lo permite) | **Sí**: conciliación con la base de la empresa, nueva versión de datos y publicación en la nube; hoy exige adaptar el procedimiento (ver `docs/T22_ALCANCE_DATOS_Y_PLAN.md`) |
+| Cambiar las reglas del servidor (meses permitidos, cortes, horizonte) | No | No | Sí, con encargo aparte posterior a la evaluación final |
+| Confirmar las compras 11452/11455 y las 13 diferencias de inventario | — | — | Lo confirma la empresa; luego soporte actualiza los datos |
+- **Estado del sistema** (administrador): indica si el servicio y la base de datos responden; no depende del plan ni del inventario.
+- **Por qué «Cargar datos» y «Crear análisis» tienen límites:** son reglas del servidor para proteger la evaluación académica (agosto de 2026 es la prueba final reservada); no son textos viejos.

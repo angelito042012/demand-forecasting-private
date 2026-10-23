@@ -33,6 +33,12 @@ import { FIRST_STEPS, resetOnboarding } from './first-steps';
       </ul>
     </section>
 
+    <section class="surface" aria-labelledby="h-upd" data-testid="help-plan-update">
+      <h2 id="h-upd">Cómo se actualiza el plan de noviembre</h2>
+      <p><strong>Lo que puede hacer el administrador desde la aplicación:</strong> generar una versión nueva del plan en «Compra recomendada» (decisión, plazos, reserva, compra mínima, múltiplo y pedidos por recibir). Si los datos y parámetros son idénticos, se reutiliza la versión existente.</p>
+      <p><strong>Lo que requiere soporte técnico:</strong> incorporar ventas o existencias posteriores al 20/10/2026. Se concilian con la base de la empresa (solo lectura), se sellan como una versión nueva de los datos del plan y se publican en la nube. «Cargar datos» y «Crear análisis» <strong>no</strong> lo hacen: son para los análisis históricos académicos (marzo a julio de 2026; agosto queda reservado para la prueba final).</p>
+    </section>
+
     <section class="surface" aria-labelledby="h-wape" data-testid="help-wape">
       <h2 id="h-wape">Cómo leer el error absoluto (WAPE)</h2>
       <p>Es la suma de los errores dividida entre las unidades vendidas. Un valor bajo indica menos error. Por ejemplo, un WAPE de 0,78 equivale a un error acumulado de alrededor del 78 % del volumen vendido; <strong>no significa 78 % de acierto</strong>.</p>

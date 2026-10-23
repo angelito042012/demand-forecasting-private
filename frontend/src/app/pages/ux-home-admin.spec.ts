@@ -179,6 +179,7 @@ describe('Inicio: «Cómo empezar» cerrable y recordado', () => {
     // Ayuda: siempre muestra los pasos y permite volver a mostrarlos en Inicio
     const help = await mountAs(HelpPage, 'lector', '/ayuda', 'ana');
     expect(help.el.querySelectorAll('[data-testid="help-steps"] ol li').length).toBe(3);
+    expect((help.el.querySelector('[data-testid="help-plan-update"]')?.textContent ?? '')).toContain('requiere soporte técnico');
     (q(help.el, 'onboarding-reset') as HTMLButtonElement).click();
     await settle(help.f);
     expect(q(help.el, 'onboarding-reset-done')).toBeTruthy();
