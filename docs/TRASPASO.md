@@ -96,3 +96,5 @@ URL `https://dfpub-api.ashyglacier-9e3e37bc.brazilsouth.azurecontainerapps.io` (
 **23/10/2026 (22:10 Lima):** entrega congelada para la exposición (etiqueta `entrega-20261023`; imagen `t22g-a9119ae`). Después del cierre solo correcciones que bloqueen el uso o la exposición. Siguiente: recibir nombres/roles de Atlas → rotar credencial y comprobarlo; registrar el resultado de «Generar plan» sin cambios; aceptación final. No asumir continuidad del servicio después del 23/10.
 
 **23/10/2026 (22:25 Lima):** prueba administrativa «Generar plan» satisfactoria (registrada en `CIERRE_ENTREGA_20261023.md` §4). Siguen pendientes la credencial de Atlas y la aceptación final.
+
+**23/10/2026 (22:40 Lima):** aceptación funcional registrada (ver `CIERRE_ENTREGA_20261023.md` §0). Pendientes futuros: rotar la credencial de Atlas (pospuesta), decidir continuidad del servicio, actualización operativa autónoma (trabajo futuro), confirmaciones de la empresa. Mantener congelada `t22g-a9119ae` hasta la exposición.

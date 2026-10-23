@@ -36,7 +36,7 @@ Pruebas de los modelos o de T12: **no se repitieron** (resultados y sellos conse
 
 ## 4. Seguridad
 - **TRUSTED_PROXIES: corregido.** Configuración `192.168.0.1/32` en `dfpub-api` (también por defecto en `infra/main.bicep`); medición: el par TCP es `192.168.0.1` y Azure sobrescribe `X-Forwarded-For`; revisión publicada = la actual (réplica `…47b0586216f1`); pruebas: 20 fallos → 429, `X-Forwarded-For` falsificado no evade, otro cliente 401, recorrido 12/12 y roles/CSRF intactos (`T22_TRUSTED_PROXIES_Y_CREDENCIAL.md`).
-- **Credencial expuesta de Atlas: PENDIENTE** (esperando nombres y roles de los Database Users que dará Rogelio; no se actúa por descarte). `dfpub_app` y los accesos de API/worker no se tocan hasta tener evidencia.
+- **Credencial expuesta de Atlas: PENDIENTE; Rogelio decidió posponerla hasta después del 23/10** (se necesitarán los nombres y roles de los Database Users; no se actúa por descarte). La seguridad **no** está totalmente cerrada. `dfpub_app` y los accesos de API/worker no se tocan hasta tener evidencia.
 - Sin `0.0.0.0/0`, TLS verificado, sin credenciales en el repositorio (revisión de secretos sin hallazgos).
 
 ## 5. Operación, consumo y disponibilidad
@@ -44,3 +44,7 @@ Pruebas de los modelos o de T12: **no se repitieron** (resultados y sellos conse
 - **Proyección (no observada):** ≈ US$ 1,9 por día con API y worker en 1/1 → ≈ US$ 3,5 al cierre del 23/10 (< US$ 8 de revisión y < US$ 20 de techo). Sin cargos de bolsillo ni cambio de plan.
 - **Disponibilidad para la exposición:** API y worker en mínimo 1 réplica (sin arranque en frío), Atlas Free (≈ 320 de 512 MB). No se identificó ningún impedimento para mantener el servicio hasta el 23/10 19:30 Lima.
 - **Después del 23/10 no se asume continuidad:** requiere una decisión de Rogelio (continuar ≈ US$ 1,9/día o escalar a 0 réplicas conservando los datos; ACR ≈ US$ 0,10–0,17/día fijo). No se elimina nada sin copia verificada y orden expresa.
+
+
+## 6. Aceptación y congelación
+Alcance funcional aceptado por Rogelio el 23/10/2026 (ver `CIERRE_ENTREGA_20261023.md` §0; excluye actualización autónoma y mejoras económicas reales). La versión `t22g-a9119ae` queda congelada para la exposición; solo se modifica ante una incidencia que impida utilizarla.

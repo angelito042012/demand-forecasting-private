@@ -1,6 +1,12 @@
 # Cierre de la entrega para la exposición del 23/10/2026 (19:30 Lima)
 
-**Estado: NO es un cierre total.** Faltan la rotación y comprobación de la credencial de Atlas y la aceptación final de Rogelio (la prueba administrativa «Generar plan» ya fue satisfactoria). Todo lo demás verificable hoy está terminado y documentado.
+**Estado: aceptación funcional parcial registrada; seguridad NO totalmente cerrada.**
+
+## 0. Aceptación humana (registrada tal como la expresó Rogelio, 23/10/2026)
+**Acepta el alcance funcional entregado para la exposición:** consulta del plan de noviembre v2, previsiones, existencias fechadas, comparación de escenarios, explicación de compras, separación del análisis académico y generación con los mismos parámetros sin duplicar el plan.
+**La aceptación NO incluye:** actualización autónoma de datos (trabajo futuro) ni la acreditación de mejoras económicas reales en la empresa.
+**Pendientes que se mantienen abiertos por decisión de Rogelio:** (1) la **credencial expuesta de Atlas** permanece sin identificar ni rotar: se pospone hasta **después del 23/10**; la seguridad **no** se registra como totalmente cerrada (TRUSTED_PROXIES sí está corregido); (2) la **continuidad del servicio después del 23/10** no está decidida; (3) confirmaciones de la empresa (compras 11452/11455; 13 diferencias).
+**Congelación:** la versión publicada `t22g-a9119ae` permanece congelada para la exposición, salvo una incidencia que impida utilizarla. Prioridad actual: estudiar los manuales y ensayar la demostración.
 
 ## 1. Qué quedó terminado y con qué evidencia
 | Entregable | Evidencia |
@@ -25,8 +31,8 @@
 
 ## 3. Qué depende de Rogelio
 0. ~~Prueba administrativa «Generar plan»~~: **hecha y satisfactoria** (§4).
-1. **Credencial de Atlas:** entregar los **nombres y roles** de los Database Users (sin contraseñas); con eso identifico el afectado, guío la rotación paso a paso y compruebo que el acceso antiguo dejó de funcionar y que API y worker siguen conectados.
-2. **Aceptación final** de la aplicación (no se registra sin su respuesta).
+1. **Credencial de Atlas (pospuesta por Rogelio hasta después del 23/10):** cuando se retome, entregar los **nombres y roles** de los Database Users (sin contraseñas); con eso identifico el afectado, guío la rotación paso a paso y compruebo que el acceso antiguo dejó de funcionar y que API y worker siguen conectados.
+2. ~~Aceptación final~~: **alcance funcional aceptado** (ver §0), con las exclusiones indicadas.
 3. **Decisión sobre el servicio después del 23/10** (continuar ≈ US$ 1,9/día o escalar a 0 conservando datos).
 
 ## 4. Prueba humana pendiente (una sola acción)
