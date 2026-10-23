@@ -87,3 +87,14 @@ Fuente: `docs/FUENTE_EXTRAIDA.txt` (objetivo general, tres específicos, hipóte
 - T11B_REPORTE.md y T13A_REPORTE.md llevan el sello «17/10/2026» (sellos de artefacto no reescritos aquí), mientras que la fecha real de trabajo en Lima es 17/10/2026; el sello puede responder a otra zona horaria (UTC). Verificar al consolidar.
 - Conteos de pruebas varían por alcance (424/6, 511/7, 440/5, 67/1, 59, 83): no son comparables entre sí y no se suman.
 - Chrome 16/16 (T10) y 20/20 (T11A) son corridas distintas.
+
+## Actualización 23/10/2026 (versión entregada `t22g-a9119ae`; detalle en `CONGELACION_ENTREGA_20261023.md`)
+| Fila | Estado anterior | Estado al 23/10/2026 | Evidencia / límite |
+|---|---|---|---|
+| A13 Despliegue HTTPS y consulta | pendiente nube | **Publicado y verificado**: HTTPS, roles, recorrido público 12/12, API y worker conectados a Atlas | `CONGELACION_ENTREGA_20261023.md` §3. **No** se midió latencia p95 ni 5 sesiones simultáneas en la nube (la medición T13A/T13B es local) |
+| Despliegue HTTPS en Azure con Atlas | solo propuesta | **Hecho** dentro del crédito autorizado: US$ 1,544 observados al 22/10, proyección ≈ US$ 3,5 al 23/10 | `T20_PLAN_NUBE.md` §10–11 |
+| Seguridad: proxies y límite de intentos | — | **TRUSTED_PROXIES corregido** (`192.168.0.1/32`, medición y pruebas) | `T22_TRUSTED_PROXIES_Y_CREDENCIAL.md` |
+| Seguridad: credencial de Atlas expuesta | pendiente | **PENDIENTE**: falta identificar el usuario (Rogelio entrega nombres y roles), rotar y comprobar que el acceso antiguo dejó de funcionar | `T22_TRUSTED_PROXIES_Y_CREDENCIAL.md` §2 |
+| A14 / guion de aceptación humana | pendiente humano | **Parcial**: Rogelio revisó en la URL pública Inicio, Ventas previstas, Existencias, Compra recomendada y «Entender la compra» (3110044) y, como administrador, Estado del sistema y el detalle de marzo.xlsx; falta la prueba administrativa «Generar plan» sin cambios y la **aceptación final** | no se registra aceptación sin su respuesta |
+| Actualización operativa autónoma | — | **Fuera de alcance** (trabajo futuro) | `T22_VIABILIDAD_ACTUALIZACION_OPERATIVA.md` |
+| Compras 11452/11455 y 13 diferencias | pendientes | **Siguen pendientes de la empresa**; sin ajustes de cantidades | `T20_REPORTE.md`, plan v2 |

@@ -1,6 +1,12 @@
-# Manual de usuario (borrador, interfaz UX01)
+# Manual de usuario — versión entregada (23/10/2026)
 
-Estado: borrador. Versión de la interfaz: commit `f95092f` (imagen `df-app:ux01r-f95092f`), tras el rediseño UX01 (17/10/2026). Describe las pantallas tal como existen en `frontend/src`. No hay publicación: **URL pública: [PENDIENTE: no existe publicación]**. Hoy el sistema solo se ejecuta en el equipo local (ver `docs/GUIA_LOCAL.md` y `docs/MANUAL_OPERACION.md`). La comprensión de la interfaz por una persona real sigue siendo una observación abierta (ver `docs/UX01_DECISIONES.md`).
+**Versión descrita:** aplicación publicada en https://dfpub-api.ashyglacier-9e3e37bc.brazilsouth.azurecontainerapps.io, imagen `t22g-a9119ae` (código `a9119ae`; checkpoint documental: etiqueta Git `entrega-20261023`). Plan de noviembre vigente: **versión 2**, ventas y existencias al corte del **20/10/2026**, escenarios de 7 y 14 días. **Aceptación humana final: pendiente.**
+
+**Cómo leer este manual.** La parte **A** (al final: «Versión de noviembre», «Cómo leer las pantallas principales» y «Qué puedes hacer tú y qué requiere soporte técnico») describe el **plan operativo entregado**. La parte **B** (secciones 1–9) conserva la descripción del **análisis histórico académico** (Mis análisis, Evaluación de resultados, reposición simulada), que sigue disponible en «Más» con su etiqueta «Inventario simulado con supuestos; no corresponde al inventario real de la empresa»; donde la parte B hable de la franja o del menú anterior, **prevalece la parte A**. Material de apoyo: `docs/GUIA_RAPIDA.md`, `docs/EXPLICACION_SIMPLE.md`, `docs/DEMOSTRACION_3110044.md`, `docs/MODELOS_Y_METODO_OPERATIVO.md`, `docs/PREGUNTAS_FRECUENTES_EXPOSICION.md`.
+
+**Límites de esta entrega:** no ejecuta compras; no incorpora datos posteriores al 20/10 desde la aplicación (requiere un procedimiento técnico: `docs/T22_ALCANCE_DATOS_Y_PLAN.md`); no demuestra ahorro; las compras 11452/11455 y 13 diferencias de inventario están pendientes de confirmar por la empresa.
+
+## Parte B — Análisis histórico académico
 
 ## 1. Qué es y qué no es
 
@@ -137,7 +143,9 @@ Primeros pasos (con **Volver a mostrar «Cómo empezar» en Inicio**), «Qué no
 
 No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTPS externo y la aceptación humana están pendientes; este manual no los afirma. Las contraseñas de las cuentas de ensayo no se escriben aquí.
 
-## Planificar compras (versión de ensayo ens19, `https://localhost:8445`)
+## Parte A — Plan operativo
+
+### Antecedente: «Planificar compras» (ensayo 18/10, superado por «Compra recomendada» v2)
 
 **Para qué sirve:** proponer, por producto, una única compra para cubrir todo noviembre de 2026, bajo supuestos visibles. No es un pedido ejecutado ni una mejora comprobada; usa ventas registradas hasta el 30 de septiembre (octubre es desconocido, no cero) y el conteo informado del 18/10/2026 17:00.
 

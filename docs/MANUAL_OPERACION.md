@@ -1,6 +1,6 @@
-# Manual de operación (borrador)
+# Manual de operación — versión entregada (23/10/2026)
 
-Estado: borrador T14A, código de referencia `28a5f49` (17/10/2026). Todo lo descrito como probado se probó **en local**. Publicación en la nube: **pendiente de aprobación** (ver `docs/T11_PLAN_DESPLIEGUE.md`, propuesta no ejecutada). Fuentes: `docs/GUIA_LOCAL.md`, `docs/T11A_EMPAQUETADO.md`, `docs/T11B_ACTA_RECUPERACION_INTEGRAL.md`, `docs/T11B_GENERACION_CONTENEDOR.md`, `docs/T10_CONTRATO.md`, `docs/T11_CONTRATO.md`.
+**Estado:** la aplicación está **publicada** en Azure Container Apps + MongoDB Atlas Free (imagen `t22g-a9119ae`, código `a9119ae`; checkpoint documental: etiqueta `entrega-20261023`). Las secciones **9 y 10** y `docs/CONGELACION_ENTREGA_20261023.md` describen la operación real en la nube (URL, imagen/digest, IP de salida y lista de Atlas, reinicio real, recuperación, costos, TRUSTED_PROXIES); las secciones 1–8 conservan el procedimiento **local** y de contenedores (borrador T14A, código `28a5f49`), que sigue siendo válido para ensayos y para actualizar datos. **La sección 8 («Pendiente para publicar») quedó superada por la publicación;** pendientes reales: rotación de la credencial de Atlas expuesta y aceptación humana final. Fuentes: `docs/GUIA_LOCAL.md`, `docs/T11A_EMPAQUETADO.md`, `docs/T11B_ACTA_RECUPERACION_INTEGRAL.md`, `docs/T11B_GENERACION_CONTENEDOR.md`, `docs/T10_CONTRATO.md`, `docs/T11_CONTRATO.md`, `docs/T20_PLAN_NUBE.md`, `docs/T22_ALCANCE_DATOS_Y_PLAN.md`.
 
 ## 1. Dos escenarios: local y publicación
 
@@ -114,7 +114,7 @@ Medido en local (17/10/2026): export 40,6 s, bundle de 43 archivos (147 MB) ínt
 | `export-all` rechazado | Falta `--maintenance-confirmed`, hay escritores o directorio no vacío | Detener procesos; usar directorio vacío |
 | Carga rechazada por mes con fuente aprobada | Fuente distinta ya aprobada | `docs/REMEDIACION_FUENTES.md` |
 
-## 8. Pendiente para publicar
+## 8. Pendiente para publicar (SUPERADO el 22/10/2026: ya está publicado; ver §9)
 
 Nada de esto está hecho ni autorizado: cuota/permisos efectivos de Container Apps (el último preflight muestra Microsoft.App registrado y `ManagedEnvironmentCount` Brazil South 0/1; no demuestra despliegue), usuario mínimo y credencial rotada en Atlas, imagen en registro, montajes privados, HTTPS, CSRF/proxy en la plataforma, restauración en la plataforma, y aprobación del plan de costo (máximo propuesto US$ 20 con condiciones de detención). Ver `docs/T11_PLAN_DESPLIEGUE.md`.
 
