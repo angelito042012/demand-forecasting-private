@@ -363,7 +363,7 @@ const SORTS: { value: string; label: string }[] = [
                   <li data-testid="src-sales"><strong>Ventas reales:</strong> registradas hasta el {{ longDate(cutoff()) }}.</li>
                   @if (reconstructed()) {
                     <li data-testid="src-count"><strong>Existencia reconstruida al cierre del {{ countDay() }} (conteo reportado {{ baseStamp() }} + movimientos del sistema)</strong>{{ warehouseName() ? ' · ' + warehouseName() : '' }}.
-                      El conteo lo informó la empresa y no se verificó de forma independiente; los movimientos vienen del sistema{{ lastMovement() ? ' hasta el ' + lastMovement() : '' }}.</li>
+                      El conteo lo informó la empresa y no se verificó de forma independiente; los movimientos hasta el cierre del {{ countDay() }} vienen del sistema{{ lastMovement() ? ' (los posteriores, hasta el ' + lastMovement() + ', solo sirven para comparar con el stock del sistema y no cambian las cantidades del plan)' : '' }}.</li>
                   } @else {
                     <li data-testid="src-count"><strong>Conteo reportado por la empresa:</strong> {{ countStamp() }}{{ warehouseName() ? ' · ' + warehouseName() : '' }}. Lo informó la empresa y no se verificó de forma independiente.</li>
                   }

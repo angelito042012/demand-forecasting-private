@@ -31,7 +31,7 @@ export function stampWords(iso: string | null | undefined): string {
         <p><strong>Existencia reconstruida (no es simulada) al cierre del {{ closingDay() }}</strong> (conteo reportado {{ baseStamp() }} + movimientos del sistema)
           @if (warehouse()) { · {{ warehouse() }} }
           · Es una reconstrucción, no un conteo físico nuevo.
-          @if (lastMovement()) { <span class="muted" data-testid="stk-age">Último movimiento del sistema considerado: {{ lastMovement() }}. Lo ocurrido después no está incluido.</span> }
+          @if (lastMovement()) { <span class="muted" data-testid="stk-age">El plan usa la existencia al cierre del {{ closingDay() }}. Los movimientos posteriores, hasta el último del sistema ({{ lastMovement() }}), solo se usan para comparar con el stock del sistema y no cambian las cantidades; lo ocurrido después no está incluido.</span> }
         </p>
         <div class="orders-row">
           <span data-testid="stk-count-link">El conteo físico informado por la empresa es la base de esta reconstrucción.
@@ -117,7 +117,7 @@ export function stampWords(iso: string | null | undefined): string {
           <ul class="plain">
             <li>Regla: existencia al cierre = conteo base + entradas − salidas registradas hasta el cierre del {{ closingDay() }}.</li>
             <li>Conteo base: {{ baseStamp() }}.</li>
-            <li>La comparación con el stock que indica el sistema se hace en la fecha del último movimiento ({{ lastMovement() || 'no informado' }}), no al cierre.</li>
+            <li>La existencia del plan es la del cierre del {{ closingDay() }}. La comparación con el stock que indica el sistema se hace en la fecha del último movimiento ({{ lastMovement() || 'no informado' }}); esos movimientos posteriores al cierre no se suman a la existencia del plan.</li>
             @if (s.rule) { <li data-testid="stk-rule">{{ s.rule }}</li> }
             <li>Identificador: <span data-testid="stk-snapshot-id">{{ s.snapshot_id }}</span></li>
           </ul>

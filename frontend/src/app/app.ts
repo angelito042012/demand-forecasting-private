@@ -23,7 +23,9 @@ export class App {
   /** T19: Planificar compras tampoco puede hablar de inventario simulado. */
   protected readonly onPlan = computed(() => /^\/planificar(\/|\?|$)/.test(this.url()));
   /** Pantallas con aviso propio de una línea (Compra recomendada, Ventas previstas, Existencias): no repiten la franja global. */
-  protected readonly ownNotice = computed(() => /^\/(planificar|pronosticos|existencias)(\/|\?|$)/.test(this.url()));
+  protected readonly ownNotice = computed(() => /^\/(planificar|pronosticos|existencias|sistema|ayuda|acceso)(\/|\?|$)/.test(this.url()));
+  /** Carga de datos y Ventas registradas: datos históricos del análisis (marzo–julio); no hablan de inventario simulado ni del plan operativo. */
+  protected readonly onHistoricalSales = computed(() => /^\/(cargas|resumen)(\/|\?|$)/.test(this.url()));
 
   /** T20: «Existencias» (existencia reconstruida). */
   protected readonly onStock = computed(() => /^\/existencias(\/|\?|$)/.test(this.url()));

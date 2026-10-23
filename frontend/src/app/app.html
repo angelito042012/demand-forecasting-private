@@ -56,6 +56,8 @@
         <strong>Plan de compra bajo supuestos.</strong> Usa ventas registradas hasta su fecha de corte y la existencia de la empresa a esa fecha; no es una compra ejecutada ni una mejora comprobada.
       } @else if (onCurrentPlan()) {
         <strong>Plan de noviembre vigente.</strong> Ventas registradas hasta la fecha de corte del plan y existencia de la empresa a esa fecha; la previsión es una proyección bajo supuestos, no ventas observadas.
+      } @else if (onHistoricalSales()) {
+        <strong>Ventas históricas del análisis académico (marzo a julio de 2026).</strong> No son el plan de compra de noviembre: ese plan usa ventas hasta el 20/10 y existencias al cierre del 20/10 (ver «Ventas previstas» y «Compra recomendada»).
       } @else if (onAcademic()) {
         <strong>Evaluación académica.</strong> Inventario simulado con supuestos; no corresponde al inventario real de la empresa.
       } @else {

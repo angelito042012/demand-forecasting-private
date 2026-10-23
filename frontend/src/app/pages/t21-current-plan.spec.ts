@@ -251,7 +251,7 @@ describe('R21 · franja de contexto y rutas', () => {
     TestBed.configureTestingModule({
       imports: [App],
       providers: [provideHttpClient(withInterceptors([apiInterceptor])), provideHttpClientTesting(),
-        provideRouter([{ path: 'inicio', children: [] }, { path: 'pronosticos', children: [] }, { path: 'existencias', children: [] }, { path: 'evaluacion/ventas-previstas', children: [] }, { path: 'recomendaciones', children: [] }])],
+        provideRouter([{ path: 'inicio', children: [] }, { path: 'pronosticos', children: [] }, { path: 'existencias', children: [] }, { path: 'sistema', children: [] }, { path: 'ayuda', children: [] }, { path: 'cargas', children: [] }, { path: 'resumen', children: [] }, { path: 'evaluacion/ventas-previstas', children: [] }, { path: 'recomendaciones', children: [] }])],
     });
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(AuthService).session.set(session);
@@ -267,6 +267,14 @@ describe('R21 · franja de contexto y rutas', () => {
     expect(el.querySelector('[data-testid="context-strip"]')).toBeNull();
     await router.navigateByUrl('/existencias'); await settle(f);
     expect(el.querySelector('[data-testid="context-strip"]')).toBeNull();   // Existencias también lleva su aviso propio
+    // T22: el aviso de inventario simulado no aparece en Estado del sistema ni en Ayuda; Cargar datos y Ventas registradas hablan de datos históricos
+    for (const u of ['/sistema', '/ayuda']) { await router.navigateByUrl(u); await settle(f); expect(el.querySelector('[data-testid="context-strip"]'), u).toBeNull(); }
+    for (const u of ['/cargas', '/resumen']) {
+      const t2 = await strip(u);
+      expect(t2, u).toContain('Ventas históricas del análisis académico (marzo a julio de 2026)');
+      expect(t2, u).toContain('No son el plan de compra de noviembre');
+      expect(t2, u).not.toMatch(/inventario simulado/i);
+    }
     expect(await strip('/evaluacion/ventas-previstas')).toContain('Ejemplo con datos históricos de 2026');
     expect(await strip('/recomendaciones')).toContain('Inventario simulado con supuestos; no corresponde al inventario real de la empresa');
   });

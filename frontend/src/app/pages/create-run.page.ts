@@ -20,7 +20,8 @@ import { JobsPanel } from '../ui/jobs-panel';
   selector: 'app-create-run-page',
   imports: [RouterLink, PageHeader, StatePanel, JobsPanel],
   template: `
-    <app-page-header title="Crear análisis" lead="Crea un análisis nuevo con el promedio de los últimos 28 días para las fechas elegidas; no reentrena modelos." />
+    <app-page-header title="Crear análisis" lead="Crea un análisis histórico con el promedio de los últimos 28 días para las fechas elegidas; no reentrena modelos." />
+    <p class="notice info" data-testid="runs-scope" role="note"><strong>Análisis histórico (académico), no el plan de compra.</strong> Las fechas permitidas (abajo), el horizonte de 21 días y el método son una regla del servidor: sirven para comparar estimaciones con ventas ya registradas. El plan operativo de noviembre se genera y consulta en «Compra recomendada».</p>
     @if (!isAdmin) {
       <p class="notice info" role="status" data-testid="admin-only">Solo el administrador puede crear análisis.</p>
       <p><a class="btn secondary" [routerLink]="['/corridas']" queryParamsHandling="preserve">Ir a Mis análisis</a></p>

@@ -70,6 +70,8 @@ describe('Importaciones: permisos de la interfaz', () => {
     expect(q(m.el, 'upload-btn')).toBeTruthy();
     expect(q(m.el, 'jobs-empty')).toBeTruthy();
     expect(q(m.el, 'readonly-note')).toBeNull();
+    expect(txt(m.el, 'imports-scope')).toContain('No actualiza el plan de compra de noviembre');
+    expect(txt(m.el, 'imports-scope')).toContain('regla del servidor');
   });
 
   it('el lector no ve selector, botón ni trabajos, y no consulta /jobs', async () => {
@@ -287,10 +289,14 @@ describe('Crear análisis: generación (admin)', () => {
   it('explica qué hará el botón y publica el rango permitido por la API (sin ampliarlo)', async () => {
     const m = await open();
     const t = visibleText(m.el).replace(/\s+/g, ' ');
-    expect(t).toContain('Crea un análisis nuevo con el promedio de los últimos 28 días para las fechas elegidas; no reentrena modelos');
+    expect(t).toContain('Crea un análisis histórico con el promedio de los últimos 28 días para las fechas elegidas; no reentrena modelos');
     expect(txt(m.el, 'origin-range')).toContain('1 de junio de 2026');
     expect(txt(m.el, 'origin-range')).toContain('10 de julio de 2026');
     expect(txt(m.el, 'generate-btn')).toBe('Crear análisis');
+    // T22: aclara que es un análisis histórico y dónde está el plan operativo
+    expect(txt(m.el, 'runs-scope')).toContain('Análisis histórico (académico), no el plan de compra');
+    expect(txt(m.el, 'runs-scope')).toContain('regla del servidor');
+    expect(txt(m.el, 'runs-scope')).toContain('«Compra recomendada»');
     // consultar la pantalla no crea trabajos
     m.http.expectNone((r) => r.method === 'POST');
   });

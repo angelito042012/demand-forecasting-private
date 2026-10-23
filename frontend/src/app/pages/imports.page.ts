@@ -37,10 +37,14 @@ export function uploadErrorText(e: AppError): string {
   template: `
     @if (isAdmin) {
       <app-page-header title="Cargar datos" lead="Sube el Excel mensual de ventas y revisa qué se aceptó. Cargar no crea análisis ni cambia los ya publicados." />
+      <section class="notice info" data-testid="imports-scope" role="note">
+        <p><strong>Para qué sirve esta carga.</strong> Alimenta los <strong>análisis históricos</strong> del ejemplo (ventas de marzo a julio de 2026). Agosto de 2026 queda reservado para la prueba final y los demás meses no se aceptan: es una regla del servidor, no un texto desactualizado.</p>
+        <p><strong>No actualiza el plan de compra de noviembre.</strong> Ese plan usa ventas hasta el 20/10 y existencias al cierre del 20/10, y los incorpora el soporte técnico con un procedimiento aparte (ver Ayuda). Desde «Compra recomendada» el administrador sí puede generar otra versión del plan con otros parámetros.</p>
+      </section>
       <ol class="stepper" aria-label="Pasos para cargar datos" data-testid="upload-steps">
         <li><strong>1. Elegir archivo</strong> <span class="muted">un Excel mensual (.xlsx)</span></li>
         <li><strong>2. Revisar el resultado</strong> <span class="muted">qué se aceptó y qué se rechazó</span></li>
-        <li><strong>3. Consultar</strong> <span class="muted">las <a [routerLink]="['/resumen']" queryParamsHandling="preserve" data-testid="step-sales">ventas registradas</a> o la <a [routerLink]="['/pronosticos']" queryParamsHandling="preserve" data-testid="step-forecast">previsión</a></span></li>
+        <li><strong>3. Consultar</strong> <span class="muted">las <a [routerLink]="['/resumen']" queryParamsHandling="preserve" data-testid="step-sales">ventas registradas</a> o la <a [routerLink]="['/evaluacion/ventas-previstas']" queryParamsHandling="preserve" data-testid="step-forecast">previsión del ejemplo</a></span></li>
       </ol>
       <section class="surface" aria-labelledby="h-up" data-testid="upload-section">
         <h2 id="h-up">1. Elegir el archivo</h2>
