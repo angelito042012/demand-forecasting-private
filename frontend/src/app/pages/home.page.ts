@@ -28,17 +28,17 @@ import { localStamp } from './inventory.page';
 
     <app-state-panel [state]="store.state()" emptyText="Todavía no se generó un plan de compra. Cuando exista, aquí verás su resumen." (retry)="store.reload()">
       @if (cur(); as c) {
-        <section class="surface" aria-labelledby="h-plan" data-testid="home-plan">
+        <section class="surface plan-card" aria-labelledby="h-plan" data-testid="home-plan">
           <h2 id="h-plan">Plan de compra vigente</h2>
-          <ul class="plain">
-            <li data-testid="hp-version"><strong>Versión {{ c.ref.version ?? '—' }}</strong> del {{ stamp(c.ref.created_at) }} · decisión de compra el {{ date(c.header.params?.decision_date ?? c.ref.decision_date) }} · plazos de {{ leadText() }} días.</li>
+          <p data-testid="hp-version"><strong>Versión {{ c.ref.version ?? '—' }}</strong> del {{ stamp(c.ref.created_at) }} · decisión de compra el {{ date(c.header.params?.decision_date ?? c.ref.decision_date) }} · plazos de {{ leadText() }} días.</p>
+          <ul class="plain prov" data-testid="hp-prov">
             <li data-testid="hp-cutoff"><span class="chip ok">Dato real</span> Ventas registradas hasta el <strong>{{ longDate(cutoff()) }}</strong>. Lo posterior es desconocido, no cero.</li>
             <li data-testid="hp-stock"><span class="chip">Dato de la empresa</span> {{ stockText() }}</li>
-            <li data-testid="hp-projection"><span class="chip warn">Proyección</span> Las ventas previstas se calculan con el promedio de los últimos 28 días; no son ventas observadas.</li>
+            <li data-testid="hp-projection"><span class="chip warn">Proyección</span> Promedio de los últimos 28 días; no son ventas observadas.</li>
           </ul>
           <app-state-panel [state]="res.state()" (retry)="res.reload()">
             @if (buyCounts(); as bc) {
-              <p data-testid="hp-counts">Productos con compra recomendada:
+              <p class="counts" data-testid="hp-counts">Productos con compra recomendada:
                 @for (b of bc; track b.lead) { <strong>{{ b.n }}</strong> de {{ b.total }} con plazo de {{ b.lead }} días{{ $last ? '.' : ' · ' }} }
               </p>
             } @else {
@@ -49,20 +49,20 @@ import { localStamp } from './inventory.page';
       }
     </app-state-panel>
 
-    <section class="cards" aria-label="¿Qué quieres hacer?" data-testid="home-tasks">
+    <section class="cards tasks" aria-label="¿Qué quieres hacer?" data-testid="home-tasks">
       <article class="card" data-testid="task-forecast">
         <h2>Ventas previstas</h2>
-        <p>Revisa las unidades que se estima vender de cada producto en el mes del plan.</p>
+        <p>Unidades que se estima vender de cada producto en el mes del plan.</p>
         <div class="actions"><a class="btn" [routerLink]="['/pronosticos']" data-testid="go-forecasts">Ver ventas previstas</a></div>
       </article>
       <article class="card" data-testid="task-inventory">
         <h2>Existencias</h2>
-        <p>Consulta las existencias al cierre de la fecha del plan y su procedencia.</p>
+        <p>Existencias al cierre de la fecha del plan y su procedencia.</p>
         <div class="actions"><a class="btn secondary" [routerLink]="['/existencias']" data-testid="go-stock">Ver existencias</a></div>
       </article>
       <article class="card" data-testid="task-plan">
         <h2>Compra recomendada</h2>
-        <p>Revisa cuántas unidades comprar por producto para cubrir el mes, con plazos de entrega de 7 y 14 días y supuestos a la vista.</p>
+        <p>Unidades a comprar por producto, con plazos de 7 y 14 días y supuestos a la vista.</p>
         <div class="actions"><a class="btn secondary" [routerLink]="['/planificar']" data-testid="go-plan">Ver compra recomendada</a></div>
       </article>
       <article class="card" data-testid="task-runs">
@@ -72,8 +72,8 @@ import { localStamp } from './inventory.page';
       </article>
     </section>
 
-    <section class="surface" aria-labelledby="h-acad" data-testid="home-academic">
-      <h2 id="h-acad">Evaluación académica con datos históricos del ejemplo</h2>
+    <details class="surface fold" data-testid="home-academic">
+      <summary><strong>Evaluación académica con datos históricos del ejemplo</strong> <span class="muted">(inventario simulado con supuestos; no representa las existencias actuales)</span></summary>
       <p class="muted">Esta sección es histórica y separada del plan de compra: usa un inventario simulado con supuestos y no representa las existencias actuales.</p>
       <app-analysis-bar [runId]="choice.id()" />
       <div class="cards">
@@ -111,11 +111,11 @@ import { localStamp } from './inventory.page';
           <p class="muted" role="status" data-testid="home-figure-error">No se pudo consultar la cifra de reposición. <button type="button" class="secondary small" (click)="reco.reload()">Reintentar</button></p>
         }
       }
-    </section>
+    </details>
 
     @if (!closed()) {
-      <section class="surface" aria-labelledby="h-start" data-testid="onboarding">
-        <h2 id="h-start">Cómo empezar</h2>
+      <details class="surface fold" data-testid="onboarding">
+        <summary><strong>Cómo empezar</strong></summary>
         <ol class="steps">
           @for (s of steps; track s.title) { <li><strong>{{ s.title }}.</strong> {{ s.text }}</li> }
         </ol>
@@ -123,7 +123,7 @@ import { localStamp } from './inventory.page';
           <button type="button" class="secondary small" (click)="close()" data-testid="onboarding-close">Entendido, cerrar</button>
           <span class="muted"> Puedes volver a verlo desde <a [routerLink]="['/ayuda']" queryParamsHandling="preserve">Ayuda</a>.</span>
         </p>
-      </section>
+      </details>
     }
 
     @if (isAdmin) {
@@ -138,6 +138,16 @@ import { localStamp } from './inventory.page';
     }
   `,
   styles: `
+    :host ::ng-deep .ph { margin: 0 0 0.5rem; }
+    .plan-card { padding-top: 0.2rem; padding-bottom: 0.5rem; }
+    .plan-card h2 { margin: 0.4rem 0 0.3rem; font-size: 1.2rem; }
+    .plan-card p { margin: 0.3rem 0; }
+    .prov { margin: 0.2rem 0; font-size: 0.95rem; }
+    .prov li { margin: 0.15rem 0; }
+    .counts { font-size: 1.05rem; }
+    .tasks .card h2 { font-size: 1.1rem; margin: 0.2rem 0; }
+    .tasks .card p { margin: 0.3rem 0; font-size: 0.95rem; }
+    .fold > summary { cursor: pointer; }
     .big { font-size: 1.6rem; }
     .toolbar-links { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   `,

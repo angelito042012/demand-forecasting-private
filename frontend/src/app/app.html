@@ -46,7 +46,7 @@
     </nav>
   }
   <main id="contenido" tabindex="-1">
-    @if (!onPlan()) {
+    @if (!ownNotice()) {
     <p class="context-strip" data-testid="context-strip" role="note">
       @if (onInventory()) {
         <strong>Inventario informado por la empresa (no es simulado).</strong> Las ventas y las recomendaciones del ejemplo son históricas y se consultan en otras pantallas.

@@ -22,6 +22,8 @@ export class App {
   protected readonly onInventory = computed(() => /^\/inventario(\/|\?|$)/.test(this.url()));
   /** T19: Planificar compras tampoco puede hablar de inventario simulado. */
   protected readonly onPlan = computed(() => /^\/planificar(\/|\?|$)/.test(this.url()));
+  /** Pantallas con aviso propio de una línea (Compra recomendada, Ventas previstas, Existencias): no repiten la franja global. */
+  protected readonly ownNotice = computed(() => /^\/(planificar|pronosticos|existencias)(\/|\?|$)/.test(this.url()));
 
   /** T20: «Existencias» (existencia reconstruida). */
   protected readonly onStock = computed(() => /^\/existencias(\/|\?|$)/.test(this.url()));

@@ -205,8 +205,14 @@ describe('T20 Existencias', () => {
     const { el, first } = await openStock();
     expect(first.request.params.has('view')).toBe(false);
     expect(txt(el, 'page-title')).toBe('Existencias');
-    expect(txt(el, 'stk-strip')).toContain('Existencia reconstruida al cierre del 20/10/2026 (conteo reportado 18/10/2026 a las 17:00 + movimientos del sistema)');
+    expect(txt(el, 'stk-strip')).toContain('Existencia reconstruida (no es simulada) al cierre del 20/10/2026 (conteo reportado 18/10/2026 a las 17:00 + movimientos del sistema)');
     expect(txt(el, 'stk-age')).toContain('21/10/2026 a las 16:26');
+    // T22: encabezados cortos con fechas del plan, pendientes y leyenda plegados
+    const sh = Array.from(el.querySelectorAll('[data-testid="stk-table"] thead th')).map((h) => (h.textContent ?? '').replace(/\s+/g, ' ').trim());
+    expect(sh).toEqual(['Producto', 'Conteo 18/10', 'Entradas', 'Salidas', 'Existencia al 20/10', 'Diferencia']);
+    expect((q(el, 'stk-confirmations') as HTMLDetailsElement).open).toBe(false);
+    expect((q(el, 'stk-legend') as HTMLDetailsElement).open).toBe(false);
+    expect(txt(el, 'stk-confirmations')).toContain('2 pendientes de confirmar con la empresa');
     expect(el.querySelectorAll('[data-testid="stk-confirmations"]').length).toBe(1);
     expect(el.querySelectorAll('[data-testid="stk-table"] tbody tr').length).toBe(2);
     const r = el.querySelector('tr[data-sku="1000001"]')!;

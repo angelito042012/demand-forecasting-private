@@ -128,8 +128,16 @@ describe('R21 · mismo plan vigente en Inicio, Ventas previstas y Compra recomen
     expect(cell(f, '1000002', 'window')).toContain('23/09/2026 al 20/10/2026');
     expect(cell(f, '1000002', 'stock')).toBe('40');
     const link = f.querySelector('tr[data-sku="1000002"] [data-testid="fc-to-plan"]') as HTMLAnchorElement;
-    expect(link.textContent).toContain('Ver compra recomendada');
+    expect(link.textContent).toContain('Ver compra');
+    expect(link.getAttribute('aria-label')).toContain('Ver compra recomendada');
     expect(link.getAttribute('href')).toContain('/planificar');
+    // T22: aviso propio de una línea, encabezados cortos, leyenda cerrada
+    expect(txt(f, 'fc-notice')).toContain('no ventas observadas');
+    const fh = Array.from(f.querySelectorAll('[data-testid="fc-table"] thead th')).map((h) => (h.textContent ?? '').replace(/\s+/g, ' ').trim());
+    expect(fh).toEqual(['Producto', 'Venta prevista del mes', 'Por día', 'Últimos 28 días', 'Existencias', 'Compra']);
+    expect((q(f, 'fc-legend') as HTMLDetailsElement).open).toBe(false);
+    expect(txt(f, 'fc-legend')).toContain('sin limitar por stock');
+    expect(txt(f, 'fc-summary')).toContain('productos en este plan');
     expect(link.getAttribute('href')).toContain('q=1000002');
     expect(TestBed.inject(CurrentPlanStore).plan()!.ref.plan_id).toBe(homePlanId);
     const fcForecast = ['1000001', '1000002', '1000003'].map((c) => cell(f, c, 'forecast'));
@@ -234,6 +242,7 @@ describe('R21 · mismo plan vigente en Inicio, Ventas previstas y Compra recomen
     expect(q(el, 'hp-cutoff')).toBeNull();
     expect(q(el, 'home-academic')).toBeTruthy();
     expect(q(el, 'home-academic')!.textContent).toContain('inventario simulado');
+    expect((q(el, 'home-academic') as HTMLDetailsElement).open).toBe(false);   // T22: plegada; la etiqueta sigue en su título
   });
 });
 
@@ -242,7 +251,7 @@ describe('R21 · franja de contexto y rutas', () => {
     TestBed.configureTestingModule({
       imports: [App],
       providers: [provideHttpClient(withInterceptors([apiInterceptor])), provideHttpClientTesting(),
-        provideRouter([{ path: 'inicio', children: [] }, { path: 'pronosticos', children: [] }, { path: 'evaluacion/ventas-previstas', children: [] }, { path: 'recomendaciones', children: [] }])],
+        provideRouter([{ path: 'inicio', children: [] }, { path: 'pronosticos', children: [] }, { path: 'existencias', children: [] }, { path: 'evaluacion/ventas-previstas', children: [] }, { path: 'recomendaciones', children: [] }])],
     });
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(AuthService).session.set(session);
@@ -250,11 +259,14 @@ describe('R21 · franja de contexto y rutas', () => {
     const router = TestBed.inject(Router);
     const el = f.nativeElement as HTMLElement;
     const strip = async (url: string) => { await router.navigateByUrl(url); await settle(f); return txt(el, 'context-strip'); };
-    for (const u of ['/inicio', '/pronosticos']) {
-      const t = await strip(u);
-      expect(t, u).toContain('Plan de noviembre vigente');
-      expect(t, u).not.toContain('Ejemplo con datos históricos');
-    }
+    const t = await strip('/inicio');
+    expect(t).toContain('Plan de noviembre vigente');
+    expect(t).not.toContain('Ejemplo con datos históricos');
+    // Ventas previstas lleva su propio aviso de una línea y no repite la franja global
+    await router.navigateByUrl('/pronosticos'); await settle(f);
+    expect(el.querySelector('[data-testid="context-strip"]')).toBeNull();
+    await router.navigateByUrl('/existencias'); await settle(f);
+    expect(el.querySelector('[data-testid="context-strip"]')).toBeNull();   // Existencias también lleva su aviso propio
     expect(await strip('/evaluacion/ventas-previstas')).toContain('Ejemplo con datos históricos de 2026');
     expect(await strip('/recomendaciones')).toContain('Inventario simulado con supuestos; no corresponde al inventario real de la empresa');
   });

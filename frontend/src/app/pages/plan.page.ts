@@ -13,6 +13,7 @@ import {
   PlanResultsPage, PlanScenario, PlanStep,
 } from '../core/models';
 import { fmtDate } from '../core/format';
+import { useWideMain } from '../core/wide-main';
 import { jobStatusWords, longDate, monthName } from '../core/ux-text';
 import { PageHeader } from '../ui/page-header';
 import { StatePanel } from '../ui/state-panel';
@@ -504,10 +505,7 @@ export class PlanPage {
   private route = inject(ActivatedRoute);
   private doc = inject(DOCUMENT);
   constructor() {
-    // Piloto: esta pantalla usa todo el ancho disponible. Solo añade una clase al <main> mientras está abierta; las demás pantallas no cambian.
-    const main = this.doc.querySelector('main');
-    main?.classList.add('wide');
-    this.destroyRef.onDestroy(() => main?.classList.remove('wide'));
+    useWideMain(this.doc, this.destroyRef);
     // «Entender la compra»: cuando el detalle ya está pintado, el título de la sección queda arriba y con el foco.
     effect(() => {
       if (this.detail() && this.scrollPending) { this.scrollPending = false; setTimeout(() => this.focusExplain(), 0); }
