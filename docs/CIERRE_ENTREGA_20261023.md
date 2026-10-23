@@ -1,6 +1,6 @@
 # Cierre de la entrega para la exposición del 23/10/2026 (19:30 Lima)
 
-**Estado: NO es un cierre total.** Faltan la comprobación de la rotación de la credencial de Atlas y la aceptación final de Rogelio. Todo lo demás verificable hoy está terminado y documentado.
+**Estado: NO es un cierre total.** Faltan la rotación y comprobación de la credencial de Atlas y la aceptación final de Rogelio (la prueba administrativa «Generar plan» ya fue satisfactoria). Todo lo demás verificable hoy está terminado y documentado.
 
 ## 1. Qué quedó terminado y con qué evidencia
 | Entregable | Evidencia |
@@ -24,15 +24,15 @@
 - Continuidad del servicio después del 23/10 (no asumida).
 
 ## 3. Qué depende de Rogelio
+0. ~~Prueba administrativa «Generar plan»~~: **hecha y satisfactoria** (§4).
 1. **Credencial de Atlas:** entregar los **nombres y roles** de los Database Users (sin contraseñas); con eso identifico el afectado, guío la rotación paso a paso y compruebo que el acceso antiguo dejó de funcionar y que API y worker siguen conectados.
-2. **Prueba administrativa «Generar plan» sin cambiar parámetros** (§4) y registro de su resultado real.
-3. **Aceptación final** de la aplicación (no se registra sin su respuesta).
-4. **Decisión sobre el servicio después del 23/10** (continuar ≈ US$ 1,9/día o escalar a 0 conservando datos).
+2. **Aceptación final** de la aplicación (no se registra sin su respuesta).
+3. **Decisión sobre el servicio después del 23/10** (continuar ≈ US$ 1,9/día o escalar a 0 conservando datos).
 
 ## 4. Prueba humana pendiente (una sola acción)
 **Acción:** inicia sesión como **administrador** (`pub_admin`), abre **Compra recomendada**, baja al formulario y pulsa **«Generar plan»** sin cambiar ningún valor.
 **Resultado esperado:** aviso verde «Ya existía un plan con exactamente estos datos: se reutilizó y no se calculó de nuevo»; la **versión 2** sigue vigente y no aparece una versión 3 (el selector de versión sigue mostrando solo v2 y v1).
-**Resultado real:** *pendiente de que Rogelio lo ejecute* (verificado por el soporte con la misma operación en las pruebas públicas: «reenvío idéntico reutiliza el plan»).
+**Resultado real (23/10/2026, ejecutado por Rogelio como `pub_admin`): SATISFACTORIO.** Apareció «Ya existía un plan con exactamente estos datos: se reutilizó y no se calculó de nuevo»; el selector siguió en v2 y solo mostró v1 y v2 (sin v3). **Contraste del servidor** (`verif_final.mjs` el 23/10/2026 03:20 UTC, después de la prueba): 2 planes, v2 `plan-2026-11-d20261021-d72cbd8fa9bd` (creado 22/10 02:10 UTC, vigente) y v1 `plan-2026-11-d20261018-831a5df711f4`; 3110044 sigue en 25 / 21. Registrado por la respuesta de Rogelio; el soporte repitió la comprobación en servidor. Esto **no** equivale a la aceptación final.
 Si aparece una versión 3, **no seguir** y avisar: significaría que los datos o parámetros cambiaron.
 
 ## 5. Dónde están los manuales y el material

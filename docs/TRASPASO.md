@@ -94,3 +94,5 @@ URL `https://dfpub-api.ashyglacier-9e3e37bc.brazilsouth.azurecontainerapps.io` (
 **23/10/2026:** `TRUSTED_PROXIES=192.168.0.1/32` activo en `dfpub-api` (medición en `docs/T22_TRUSTED_PROXIES_Y_CREDENCIAL.md`); si se recrea el entorno, repetir la medición. Actualización operativa autónoma: pendiente de decisiones (fuente de existencias, política SQL) y de datos posteriores al 20/10; ver `docs/T22_VIABILIDAD_ACTUALIZACION_OPERATIVA.md`.
 
 **23/10/2026 (22:10 Lima):** entrega congelada para la exposición (etiqueta `entrega-20261023`; imagen `t22g-a9119ae`). Después del cierre solo correcciones que bloqueen el uso o la exposición. Siguiente: recibir nombres/roles de Atlas → rotar credencial y comprobarlo; registrar el resultado de «Generar plan» sin cambios; aceptación final. No asumir continuidad del servicio después del 23/10.
+
+**23/10/2026 (22:25 Lima):** prueba administrativa «Generar plan» satisfactoria (registrada en `CIERRE_ENTREGA_20261023.md` §4). Siguen pendientes la credencial de Atlas y la aceptación final.
