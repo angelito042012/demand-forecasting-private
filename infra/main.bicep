@@ -49,7 +49,9 @@ param useFiles bool = false
 param mongodbDatabase string = 'demand_forecasting_pub'
 
 @description('IP/CIDR del salto de proxy de confianza para X-Forwarded-For. Vacio = no se confia (seguro, limite global por salto).')
-param trustedProxies string = ''
+// Azure Container Apps (medido el 23/10/2026): el par TCP que ve la aplicación es 192.168.0.1 (envoy) y Azure SOBRESCRIBE X-Forwarded-For con la IP real del cliente.
+// Confianza mínima: solo ese salto (/32); cualquier otro par no se cree X-Forwarded-For.
+param trustedProxies string = '192.168.0.1/32'
 
 @secure()
 @description('URI de Atlas con usuario de aplicacion minimo; se entrega por canal privado. No va en archivos.')
