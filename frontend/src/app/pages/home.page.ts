@@ -23,8 +23,7 @@ import { localStamp } from './inventory.page';
   selector: 'app-home-page',
   imports: [RouterLink, PageHeader, AnalysisBar, StatePanel],
   template: `
-    <app-page-header [title]="'Ventas previstas y compra recomendada para ' + monthWord()"
-      lead="Revisa el plan de compra vigente: cuánto se estima vender, qué existencias hay y cuántas unidades comprar." />
+    <app-page-header [title]="'Ventas previstas y compra recomendada para ' + monthWord()" />
 
     <app-state-panel [state]="store.state()" emptyText="Todavía no se generó un plan de compra. Cuando exista, aquí verás su resumen." (retry)="store.reload()">
       @if (cur(); as c) {
@@ -146,7 +145,8 @@ import { localStamp } from './inventory.page';
     .prov li { margin: 0.15rem 0; }
     .counts { font-size: 1.05rem; }
     .tasks .card h2 { font-size: 1.1rem; margin: 0.2rem 0; }
-    .tasks .card p { margin: 0.3rem 0; font-size: 0.95rem; }
+    .tasks .card p { margin: 0.2rem 0; font-size: 0.95rem; }
+    .tasks .card { padding-top: 0.5rem; padding-bottom: 0.6rem; }
     .fold > summary { cursor: pointer; }
     .big { font-size: 1.6rem; }
     .toolbar-links { display: flex; flex-wrap: wrap; gap: 0.6rem; }
