@@ -12,10 +12,10 @@ con valores por defecto. Los valores actuales corresponden al corte del 20/10/20
 
 | Variable | Valor actual | Archivo | Proposito | Procedencia |
 |---|---|---|---|---|
-| `OCTOBER_NAME` | `"octubre.xlsx"` | `pipeline/plan/dataset_v2.py:37` | Nombre del libro de ventas del mes de corte | Nombre del archivo Excel entregado por la MYPE |
-| `OCTOBER_WINDOW` | `(2026-10-01, 2026-10-20)` | `pipeline/plan/dataset_v2.py:38` | Ventana de fechas validas del libro | Primer dia del mes hasta ultimo dia completo |
-| `CUTOFF` | `2026-10-20` | `pipeline/plan/dataset_v2.py:39` | Ultimo dia completo de ventas en el libro | Derivado de `OCTOBER_WINDOW[1]` |
-| `PARTIAL_DATE` | `"2026-10-21"` | `pipeline/plan/dataset_v2.py:40` | Fecha del parcial (dia incompleto posterior al corte) | Dia siguiente al corte; datos extraidos de SQL |
+| `OCTOBER_NAME` | `"octubre.xlsx"` | `pipeline/plan/dataset_v2.py:38` | Nombre del libro de ventas del mes de corte | Nombre del archivo Excel entregado por la MYPE |
+| `OCTOBER_WINDOW` | `(2026-10-01, 2026-10-20)` | `pipeline/plan/dataset_v2.py:39` | Ventana de fechas validas del libro | Primer dia del mes hasta ultimo dia completo |
+| `CUTOFF` | `2026-10-20` | `pipeline/plan/dataset_v2.py:40` | Ultimo dia completo de ventas en el libro | Derivado de `OCTOBER_WINDOW[1]` |
+| `PARTIAL_DATE` | `"2026-10-21"` | `pipeline/plan/dataset_v2.py:41` | Fecha del parcial (dia incompleto posterior al corte) | Dia siguiente al corte; datos extraidos de SQL |
 | `AS_OF_LOCAL` | `"2026-10-20T23:59:59-05:00"` | `pipeline/inventory/reconstructed.py:31` | Cierre de la existencia reconstruida | Fin del dia del corte en zona America/Lima |
 | `BASE_AS_OF_LOCAL` | `"2026-10-18T17:00:00-05:00"` | `pipeline/inventory/reconstructed.py:32` | Fecha/hora del conteo fisico base | Hora del conteo reportado por la MYPE (18/10 17:00) |
 | `LAST_FULL_DAY` | `2026-10-20` | `scripts/sql21_prepare.py:27` | Ultimo dia completo para conciliacion SQL | Coincide con `CUTOFF`; se usa en la preparacion de datos |
