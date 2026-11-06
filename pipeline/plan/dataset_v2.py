@@ -76,23 +76,24 @@ def _code(raw: str) -> str:
     return v.lstrip("0") or "0"
 
 
-def verify_october(october: Path, report: dict, rows: list[dict]) -> dict:
+def verify_october(october: Path, report: dict, rows: list[dict], *,
+                   book_name: str = OCTOBER_NAME, cutoff: date = CUTOFF) -> dict:
     """Exige que el informe SQL corresponda a ESTE libro y a estas filas; devuelve la verificacion para la cabecera."""
     sha = sha256_file(october)
     libros = report.get("libros")
-    if not isinstance(libros, dict) or libros.get(OCTOBER_NAME) != sha:
-        raise ImportRejected("FUENTE_ALTERADA", "El SHA-256 de octubre.xlsx no coincide con el informe de conciliacion SQL.")
-    comp = (report.get("ventas_excel_vs_sql") or {}).get(OCTOBER_NAME)
+    if not isinstance(libros, dict) or libros.get(book_name) != sha:
+        raise ImportRejected("FUENTE_ALTERADA", f"El SHA-256 de {book_name} no coincide con el informe de conciliacion SQL.")
+    comp = (report.get("ventas_excel_vs_sql") or {}).get(book_name)
     if not isinstance(comp, dict) or comp.get("coincide") is not True:
         raise ImportRejected("SQL_NO_COINCIDE", "El informe no declara que octubre.xlsx coincide con SQL.")
     if comp.get("lineas_excel") != len(rows) or comp.get("lineas_sql") != len(rows):
         raise ImportRejected("SQL_NO_COINCIDE", "Las lineas del informe no son las filas normalizadas del libro.")
     if comp.get("solo_excel") != 0 or comp.get("solo_sql") != 0:
         raise ImportRejected("SQL_NO_COINCIDE", "El informe declara registros presentes en solo uno de los orígenes.")
-    if comp.get("ultimo_dia") != CUTOFF.isoformat() or report.get("ultimo_dia_completo") != CUTOFF.isoformat():
-        raise ImportRejected("SQL_NO_COINCIDE", "El informe no declara el 20/10 como ultimo dia completo.")
-    if max(r["fecha"] for r in rows) > CUTOFF:
-        raise ImportRejected("FECHA_FUERA_DE_VENTANA", "Hay ventas posteriores al corte del 20/10.")
+    if comp.get("ultimo_dia") != cutoff.isoformat() or report.get("ultimo_dia_completo") != cutoff.isoformat():
+        raise ImportRejected("SQL_NO_COINCIDE", f"El informe no declara el {cutoff} como ultimo dia completo.")
+    if max(r["fecha"] for r in rows) > cutoff:
+        raise ImportRejected("FECHA_FUERA_DE_VENTANA", f"Hay ventas posteriores al corte del {cutoff}.")
     docs = len({r["documento_id"] for r in rows})
     prep = (report.get("datos_preparados") or {}).get("octubre_normalizado")
     if isinstance(prep, dict) and (prep.get("sha256") != sha or prep.get("filas") != len(rows)):
@@ -100,10 +101,11 @@ def verify_october(october: Path, report: dict, rows: list[dict]) -> dict:
     return {"sql_report_sha256": None, "lines": len(rows), "documents": comp.get("documentos_excel", docs), "sql_match": True}
 
 
-def load_partial(path: Path, report: dict) -> tuple[list[dict], dict]:
+def load_partial(path: Path, report: dict, *,
+                 partial_date: str = PARTIAL_DATE) -> tuple[list[dict], dict]:
     path = Path(path)
     if not path.is_file():
-        raise ImportRejected("ARCHIVO_FALTANTE", "Falta el CSV del parcial del 21/10.")
+        raise ImportRejected("ARCHIVO_FALTANTE", f"Falta el CSV del parcial del {partial_date}.")
     with path.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
         if reader.fieldnames is None or list(reader.fieldnames) != PARTIAL_COLS:
@@ -111,15 +113,15 @@ def load_partial(path: Path, report: dict) -> tuple[list[dict], dict]:
         raw = list(reader)
     docs, times = [], []
     for i, r in enumerate(raw, 1):
-        if (r["fecha"] or "").strip() != PARTIAL_DATE:
-            raise ImportRejected("PARCIAL_INVALIDO", f"La linea {i} del parcial no es del {PARTIAL_DATE}.")
+        if (r["fecha"] or "").strip() != partial_date:
+            raise ImportRejected("PARCIAL_INVALIDO", f"La linea {i} del parcial no es del {partial_date}.")
         try:
             t = datetime.strptime((r["hora_documento"] or "").strip(), "%H:%M:%S").time()
         except ValueError:
             raise ImportRejected("PARCIAL_INVALIDO", f"La hora de la linea {i} no es valida.") from None
         times.append(t)
         qty, tot = _dec(r["cantidad"], f"cantidad de la linea {i}"), _dec(r["total"], f"total de la linea {i}")
-        docs.append({"linea": i, "fecha": PARTIAL_DATE, "hora_documento": t.isoformat(), "tipo_documento": (r["tipo_documento"] or "").strip(),
+        docs.append({"linea": i, "fecha": partial_date, "hora_documento": t.isoformat(), "tipo_documento": (r["tipo_documento"] or "").strip(),
                      "documento": (r["documento"] or "").strip(), "producto_id": _code(r["producto_id_sql"]),
                      "almacen": (r["almacen"] or "").strip().lstrip("0") or "0", "unidad": (r["unidad"] or "").strip().upper(),
                      "cantidad": _plain(qty), "total": _plain(tot)})
@@ -133,11 +135,14 @@ def load_partial(path: Path, report: dict) -> tuple[list[dict], dict]:
         raise ImportRejected("PARCIAL_INVALIDO", "Las lineas del parcial no son las que declara el informe.")
     if "parcial_21_ultima_hora_documento" in dp and dp["parcial_21_ultima_hora_documento"] != last:
         raise ImportRejected("PARCIAL_INVALIDO", "La ultima hora del parcial no es la que declara el informe.")
-    return docs, {"date": PARTIAL_DATE, "lines": len(docs), "last_document_time": last, "collection": PARTIAL_COLL,
+    return docs, {"date": partial_date, "lines": len(docs), "last_document_time": last, "collection": PARTIAL_COLL,
                   "sha256": h.hexdigest(), "used_for_forecast": False}
 
 
-def prepare(package: Path, october: Path, sql_report: Path, partial_csv: Path, audit_path: Path | None = None) -> Prepared:
+def prepare(package: Path, october: Path, sql_report: Path, partial_csv: Path, audit_path: Path | None = None, *,
+            book_name: str = OCTOBER_NAME, book_window: tuple[date, date] = OCTOBER_WINDOW,
+            partial_date: str = PARTIAL_DATE) -> Prepared:
+    cutoff = book_window[1]
     base = ds.prepare(Path(package), audit_path)             # verifica los 14 libros y el derivado
     october, sql_report = Path(october), Path(sql_report)
     if not october.is_file():
@@ -145,16 +150,16 @@ def prepare(package: Path, october: Path, sql_report: Path, partial_csv: Path, a
     report = _json(sql_report, "informe.json")
     digest = sha256_file(october)
     try:
-        rows, summary = normalize_book(october, digest, Counter(), OCTOBER_WINDOW)
+        rows, summary = normalize_book(october, digest, Counter(), book_window)
     except NormalizationError as exc:
         raise ImportRejected("FUENTE_ALTERADA" if exc.code == "LIBRO_ILEGIBLE" else "DERIVADO_NO_COINCIDE", exc.message) from None
     if len({r["registro_id"] for r in rows}) != len(rows):
         raise ds._mismatch("hay registro_id repetidos en octubre")
     if any(r["_kind"] != "ventas" for r in rows):
         raise ds._mismatch("octubre no es un libro de ventas")
-    verification = verify_october(october, report, rows)
+    verification = verify_october(october, report, rows, book_name=book_name, cutoff=cutoff)
     verification["sql_report_sha256"] = sha256_file(sql_report)
-    partial, partial_head = load_partial(partial_csv, report)
+    partial, partial_head = load_partial(partial_csv, report, partial_date=partial_date)
 
     occ = Counter(r["_signature"] for r in rows)
     docs = {c: list(v) for c, v in base.docs.items()}
@@ -169,7 +174,7 @@ def prepare(package: Path, october: Path, sql_report: Path, partial_csv: Path, a
     classes = Counter(bh["counts"])
     classes.update(r["clasificacion"] for r in rows)
     partitions, content = {}, hashlib.sha256()
-    content.update(f"schema:{SCHEMA_TAG}\nbase:{bh['dataset_id']}:{bh['content_sha256']}\nbook:{OCTOBER_NAME}:{digest}\n".encode())
+    content.update(f"schema:{SCHEMA_TAG}\nbase:{bh['dataset_id']}:{bh['content_sha256']}\nbook:{book_name}:{digest}\n".encode())
     for part, coll in COLLECTIONS.items():
         fp, amounts = _partition_fingerprint(docs[coll])
         partitions[part] = {"collection": coll, "count": len(docs[coll]), "sha256": fp, "importes_por_moneda": amounts,
@@ -178,18 +183,18 @@ def prepare(package: Path, october: Path, sql_report: Path, partial_csv: Path, a
     content.update(f"partial:{partial_head['date']}:{partial_head['lines']}:{partial_head['sha256']}\n".encode())
     content_sha = content.hexdigest()
     sales_dates = [d["fecha"] for d in docs[COLLECTIONS["sales"]]]
-    if max(sales_dates) > CUTOFF.isoformat():
+    if max(sales_dates) > cutoff.isoformat():
         raise ds._mismatch("hay ventas posteriores al corte")
     derived = dict(bh["derived_files"])
     derived["informe.json"] = verification["sql_report_sha256"]
     derived["ventas_parcial_csv"] = sha256_file(partial_csv)
     header = {
         **bh, "dataset_id": f"plds-{content_sha[:12]}", "content_sha256": content_sha, "base_dataset_id": bh["dataset_id"],
-        "window_end": CUTOFF.isoformat(), "sales_cutoff": CUTOFF.isoformat(), "source_rows": bh["source_rows"] + len(rows),
+        "window_end": cutoff.isoformat(), "sales_cutoff": cutoff.isoformat(), "source_rows": bh["source_rows"] + len(rows),
         "counts": dict(classes), "partitions": partitions,
         "repeated_extra_rows": sum(1 for c in COLLECTIONS.values() for d in docs[c] if d["ocurrencia"] > 1),
         "repeated_extra_rows_marked": sum(1 for d in docs[COLLECTIONS["purchases"]] if d["ocurrencia"] > 1),
-        "sources": [*bh["sources"], {"archivo": OCTOBER_NAME, "tipo": "ventas", "sha256": digest, "filas": summary["filas"]}],
+        "sources": [*bh["sources"], {"archivo": book_name, "tipo": "ventas", "sha256": digest, "filas": summary["filas"]}],
         "derived_files": derived, "currencies": sorted({d["moneda"] for c in docs.values() for d in c}),
         "october_verification": verification, "partial": partial_head, "dataset_kind": SCHEMA_TAG,
     }
@@ -198,10 +203,14 @@ def prepare(package: Path, october: Path, sql_report: Path, partial_csv: Path, a
     return Prepared(header, docs, {PARTIAL_COLL: partial})
 
 
-def run(package, october, sql_report, partial_csv, db, audit_path=None, dry_run: bool = False) -> dict:
+def run(package, october, sql_report, partial_csv, db, audit_path=None, dry_run: bool = False, *,
+        book_name: str = OCTOBER_NAME, book_window: tuple[date, date] = OCTOBER_WINDOW,
+        partial_date: str = PARTIAL_DATE) -> dict:
     if db.name in PROTECTED_DBS:
         raise ImportRejected("BASE_PROTEGIDA", "No se escribe en bases de desarrollo, v2 ni publicadas.")
-    return write_dataset(db, prepare(package, october, sql_report, partial_csv, audit_path), dry_run)
+    return write_dataset(db, prepare(package, october, sql_report, partial_csv, audit_path,
+                                     book_name=book_name, book_window=book_window,
+                                     partial_date=partial_date), dry_run)
 
 
 def main(argv=None) -> int:
@@ -213,6 +222,11 @@ def main(argv=None) -> int:
     ap.add_argument("--db", required=True)
     ap.add_argument("--audit", default=None)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--book-name", default=OCTOBER_NAME, help="Nombre del libro de ventas del mes")
+    ap.add_argument("--book-window", nargs=2, metavar=("START", "END"), default=None,
+                    help="Ventana de fechas del libro (YYYY-MM-DD YYYY-MM-DD)")
+    ap.add_argument("--partial-date-value", dest="partial_date_val", default=PARTIAL_DATE,
+                    help="Fecha del parcial (YYYY-MM-DD)")
     args = ap.parse_args(argv)
     if not ds._DB_RE.match(args.db):
         print("Nombre de base invalido.", file=sys.stderr)
@@ -224,7 +238,9 @@ def main(argv=None) -> int:
         if args.audit and not Path(args.audit).is_file():
             raise ImportRejected("ARCHIVO_FALTANTE", "Falta audit.json indicado.")
         audit = Path(args.audit) if args.audit else ds.default_audit(Path(args.package))
-        prep = prepare(Path(args.package), Path(args.october), Path(args.sql_report), Path(args.partial_csv), audit)
+        bw = tuple(date.fromisoformat(d) for d in args.book_window) if args.book_window else OCTOBER_WINDOW
+        prep = prepare(Path(args.package), Path(args.october), Path(args.sql_report), Path(args.partial_csv), audit,
+                       book_name=args.book_name, book_window=bw, partial_date=args.partial_date_val)
         from pymongo import MongoClient
         client = MongoClient(os.environ.get("MONGODB_URI", "mongodb://127.0.0.1:27017"), serverSelectionTimeoutMS=3000)
         try:

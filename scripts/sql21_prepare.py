@@ -144,7 +144,7 @@ def count_rows() -> dict[str, dict]:
 
 
 # ------------------------------------------------------------------ 3. conciliacion de los 50
-def reconcile(sql: Sql, out: Path) -> dict:
+def reconcile(sql: Sql, out: Path, last_full_day: date = LAST_FULL_DAY) -> dict:
     cnt = count_rows()
     sql_id = {c: c.zfill(8) for c in cnt}
     inn = ",".join(f"'{v}'" for v in sql_id.values())
@@ -171,8 +171,8 @@ def reconcile(sql: Sql, out: Path) -> dict:
             by[m["conc"]][0] += m["e"]
             by[m["conc"]][1] += m["s"]
         ent_all, sal_all = sum((m["e"] for m in ms), D(0)), sum((m["s"] for m in ms), D(0))
-        ent20 = sum((m["e"] for m in ms if m["ts"][:10] <= LAST_FULL_DAY.isoformat()), D(0))
-        sal20 = sum((m["s"] for m in ms if m["ts"][:10] <= LAST_FULL_DAY.isoformat()), D(0))
+        ent20 = sum((m["e"] for m in ms if m["ts"][:10] <= last_full_day.isoformat()), D(0))
+        sal20 = sum((m["s"] for m in ms if m["ts"][:10] <= last_full_day.isoformat()), D(0))
         recon_cut, recon_20 = libre + ent_all - sal_all, libre + ent20 - sal20
         sis, res = stock[sid]
         diff = sis - recon_cut
@@ -227,9 +227,9 @@ def purchases(sql: Sql, out: Path, group: set[str]) -> dict:
 
 
 # ------------------------------------------------------------------ 5. datos preparados
-def prepare_sales(sql: Sql, out: Path) -> dict:
+def prepare_sales(sql: Sql, out: Path, last_full_day: date = LAST_FULL_DAY) -> dict:
     digest = sha256_file(DATOS / "octubre.xlsx")
-    recs, summ = normalize_book(DATOS / "octubre.xlsx", digest, Counter(), window=(date(2026, 10, 1), LAST_FULL_DAY))
+    recs, summ = normalize_book(DATOS / "octubre.xlsx", digest, Counter(), window=(date(2026, 10, 1), last_full_day))
     write_csv(out / "ventas_octubre_01_20_normalizadas.csv", FIELDS, [[r[f] for f in FIELDS] for r in recs])
     partial = sorted(sql_lines(sql, "20261021", "20261022"), key=lambda r: (r["_ts"], r["doc"]))
     write_csv(out / "ventas_20261021_parcial_sql.csv",
@@ -304,20 +304,23 @@ def main() -> None:
     ap.add_argument("--server", default="Rogelio")
     ap.add_argument("--db", default="SYDESOFT_2")
     ap.add_argument("--out", default="artifacts/private/sql21_prep")
+    ap.add_argument("--last-full-day", type=date.fromisoformat, default=LAST_FULL_DAY,
+                    help="Ultimo dia completo de ventas (YYYY-MM-DD; default: 2026-10-20)")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     sql = Sql(a.server, a.db)
     code_map: dict[str, str] = {}
+    last_full_day = a.last_full_day
     report: dict = {"generado": datetime.now().isoformat(timespec="seconds"), "solo_lectura": True,
-                    "ultimo_dia_completo": LAST_FULL_DAY.isoformat(),
+                    "ultimo_dia_completo": last_full_day.isoformat(),
                     "libros": {n: sha256_file(DATOS / n) for n in ("setiembre.xlsx", "octubre.xlsx")}}
     report["codigos"] = codes(sql, code_map)
     report["ventas_excel_vs_sql"] = compare_sales(sql, out, code_map)
     group = set(count_rows())
-    report["conciliacion"] = reconcile(sql, out)
+    report["conciliacion"] = reconcile(sql, out, last_full_day)
     report["compras_11452_11455"] = purchases(sql, out, group)
-    report["datos_preparados"] = prepare_sales(sql, out)
+    report["datos_preparados"] = prepare_sales(sql, out, last_full_day)
     (out / "informe.json").write_text(json.dumps(report, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     report["existencia_reconstruida"] = reconstructed_package(sql, out, sha256_file(out / "informe.json"))
     (out / "informe_paquete.json").write_text(json.dumps(report["existencia_reconstruida"], ensure_ascii=False, indent=1), encoding="utf-8")

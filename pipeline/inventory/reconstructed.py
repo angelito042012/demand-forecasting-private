@@ -85,7 +85,7 @@ def _int(raw, what: str, code: str, *, signed: bool = False) -> int:
     return n
 
 
-def load_base(db, base_ref: dict):
+def load_base(db, base_ref: dict, *, base_as_of_local: str = BASE_AS_OF_LOCAL):
     """Snapshot T18 base de la base de datos (o None si no existe): (cabecera, {producto_id: item}). Rechaza una referencia que no cuadra."""
     sid, csv_sha = base_ref.get("snapshot_id"), base_ref.get("csv_sha256")
     snaps = db[BASE_SNAP_COLL]
@@ -95,11 +95,11 @@ def load_base(db, base_ref: dict):
     if found is None and _sha_ok(csv_sha):
         found = snaps.find_one({"source.csv_sha256": csv_sha}, {"_id": 0}, sort=[("version", -1)])
     if found is None:
-        other = snaps.find_one({"status": "current", "as_of_local": BASE_AS_OF_LOCAL}, {"_id": 0})
+        other = snaps.find_one({"status": "current", "as_of_local": base_as_of_local}, {"_id": 0})
         if other is not None:
             raise ImportRejected("CONTEO_BASE_DISTINTO", "El conteo base del paquete no es el conteo vigente de la base.")
         return None
-    if found.get("as_of_local") != BASE_AS_OF_LOCAL or found.get("source", {}).get("csv_sha256") != csv_sha:
+    if found.get("as_of_local") != base_as_of_local or found.get("source", {}).get("csv_sha256") != csv_sha:
         raise ImportRejected("CONTEO_BASE_DISTINTO", "El conteo base del paquete no coincide con el snapshot base de la base.")
     if sid and found["snapshot_id"] != sid:
         raise ImportRejected("CONTEO_BASE_DISTINTO", "El snapshot base citado no coincide.")
@@ -111,7 +111,8 @@ def _sha_ok(v) -> bool:
     return isinstance(v, str) and len(v) == 64 and all(c in "0123456789abcdef" for c in v)
 
 
-def prepare(package: Path, db=None, sql_report: Path | None = None) -> Prepared:
+def prepare(package: Path, db=None, sql_report: Path | None = None, *,
+            as_of_local: str = AS_OF_LOCAL, base_as_of_local: str = BASE_AS_OF_LOCAL) -> Prepared:
     package = Path(package)
     mpath, cpath = package / "manifest.json", package / "existencias.csv"
     if not mpath.is_file() or not cpath.is_file():
@@ -134,17 +135,17 @@ def prepare(package: Path, db=None, sql_report: Path | None = None) -> Prepared:
     if not isinstance(wh, dict) or str(wh.get("id")) != "1" or not str(wh.get("name") or "").strip():
         raise ImportRejected("ALMACEN_NO_CONFIRMADO", "El manifiesto debe indicar el almacen 1.")
     asof = _when(man.get("as_of_local"), "as_of_local")
-    if asof.isoformat() != AS_OF_LOCAL:
-        raise ImportRejected("FECHA_ZONA_INVALIDA", "La existencia debe estar fechada al cierre del 20/10/2026 23:59:59-05:00.")
+    if asof.isoformat() != as_of_local:
+        raise ImportRejected("FECHA_ZONA_INVALIDA", f"La existencia debe estar fechada al {as_of_local}.")
     base_ref = man.get("base_count")
     mv = man.get("movements")
     if not isinstance(base_ref, dict) or not isinstance(mv, dict):
         raise ImportRejected("MANIFIESTO_INVALIDO", "El manifiesto no describe el conteo base y los movimientos.")
-    if _when(base_ref.get("as_of_local"), "base_count.as_of_local").isoformat() != BASE_AS_OF_LOCAL or not _sha_ok(base_ref.get("csv_sha256")):
-        raise ImportRejected("CONTEO_BASE_DISTINTO", "El conteo base debe ser el del 18/10/2026 17:00 con su SHA-256.")
+    if _when(base_ref.get("as_of_local"), "base_count.as_of_local").isoformat() != base_as_of_local or not _sha_ok(base_ref.get("csv_sha256")):
+        raise ImportRejected("CONTEO_BASE_DISTINTO", f"El conteo base debe estar fechado al {base_as_of_local} con su SHA-256.")
     base_from, closing = _when(mv.get("from_local"), "movements.from_local"), _when(mv.get("closing_local"), "movements.closing_local")
     last = _when(mv.get("last_movement_local"), "movements.last_movement_local")
-    if base_from.isoformat() != BASE_AS_OF_LOCAL or closing != asof or last < closing:
+    if base_from.isoformat() != base_as_of_local or closing != asof or last < closing:
         raise ImportRejected("FECHA_ZONA_INVALIDA", "Los movimientos deben ir del conteo base al cierre y hasta un ultimo movimiento posterior.")
     if not str(man.get("rule") or "").strip():
         raise ImportRejected("MANIFIESTO_INVALIDO", "El manifiesto no declara la regla de reconstruccion.")
@@ -157,7 +158,7 @@ def prepare(package: Path, db=None, sql_report: Path | None = None) -> Prepared:
     if not rows:
         raise ImportRejected("CSV_ESTRUCTURA_INVALIDA", "existencias.csv no tiene filas.")
 
-    base = load_base(db, base_ref) if db is not None else None
+    base = load_base(db, base_ref, base_as_of_local=base_as_of_local) if db is not None else None
     items, seen = [], set()
     for r in rows:
         code = (r["producto_id"] or "").strip()
@@ -208,7 +209,7 @@ def prepare(package: Path, db=None, sql_report: Path | None = None) -> Prepared:
     ident = hashlib.sha256("\n".join([f"csv:{csv_sha}", f"report:{rep_sha}", f"base:{base_ref['csv_sha256']}",
                                       f"asof:{asof.isoformat()}", f"last:{last.isoformat()}"]).encode()).hexdigest()
     base_block = {"snapshot_id": base[0]["snapshot_id"] if base else base_ref.get("snapshot_id"),
-                  "as_of_local": BASE_AS_OF_LOCAL, "csv_sha256": base_ref["csv_sha256"]}
+                  "as_of_local": base_as_of_local, "csv_sha256": base_ref["csv_sha256"]}
     header = {
         "snapshot_id": f"invrec-{asof:%Y%m%d}-{ident[:12]}", "kind": KIND, "as_of_local": asof.isoformat(),
         "as_of_utc": asof.astimezone(UTC).replace(tzinfo=None), "timezone": "America/Lima",
@@ -269,18 +270,22 @@ def write_snapshot(db, prep: Prepared, dry_run: bool = False) -> dict:
     return _result(action, h, version)
 
 
-def run(package, db, sql_report=None, dry_run: bool = False) -> dict:
+def run(package, db, sql_report=None, dry_run: bool = False, *,
+        as_of_local: str = AS_OF_LOCAL, base_as_of_local: str = BASE_AS_OF_LOCAL) -> dict:
     if db.name in PROTECTED_DBS:
         raise ImportRejected("BASE_PROTEGIDA", "No se escribe en bases de desarrollo, v2 ni publicadas.")
-    return write_snapshot(db, prepare(Path(package), db, Path(sql_report) if sql_report else None), dry_run)
+    return write_snapshot(db, prepare(Path(package), db, Path(sql_report) if sql_report else None,
+                                      as_of_local=as_of_local, base_as_of_local=base_as_of_local), dry_run)
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Importa la existencia reconstruida al cierre del 20/10")
+    ap = argparse.ArgumentParser(description="Importa la existencia reconstruida")
     ap.add_argument("--package", required=True)
     ap.add_argument("--db", required=True)
     ap.add_argument("--sql-report", default=None)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--as-of-local", default=AS_OF_LOCAL, help="Fecha/hora de cierre (ISO 8601 con zona)")
+    ap.add_argument("--base-as-of-local", default=BASE_AS_OF_LOCAL, help="Fecha/hora del conteo base (ISO 8601 con zona)")
     args = ap.parse_args(argv)
     if not _DB_RE.match(args.db):
         print("Nombre de base invalido.", file=sys.stderr)
@@ -292,7 +297,8 @@ def main(argv=None) -> int:
         from pymongo import MongoClient
         client = MongoClient(os.environ.get("MONGODB_URI", "mongodb://127.0.0.1:27017"), serverSelectionTimeoutMS=3000)
         try:
-            res = run(args.package, client[args.db], args.sql_report, args.dry_run)
+            res = run(args.package, client[args.db], args.sql_report, args.dry_run,
+                      as_of_local=args.as_of_local, base_as_of_local=args.base_as_of_local)
         finally:
             client.close()
     except ImportRejected as exc:
