@@ -184,3 +184,14 @@ No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTP
 | Confirmar las compras 11452/11455 y las 13 diferencias de inventario | — | — | Lo confirma la empresa; luego soporte actualiza los datos |
 - **Estado del sistema** (administrador): indica si el servicio y la base de datos responden; no depende del plan ni del inventario.
 - **Por qué «Cargar datos» y «Crear análisis» tienen límites:** son reglas del servidor para proteger la evaluación académica (agosto de 2026 es la prueba final reservada); no son textos viejos.
+
+### Documentación técnica complementaria
+
+Para profundizar en el método de pronóstico, las métricas de evaluación y las variables del pipeline:
+
+| Documento | Contenido |
+|---|---|
+| `docs/DICCIONARIO_VARIABLES.md` | Variables, constantes, features y parámetros del pipeline con sus valores, archivos y procedencia |
+| `docs/EVALUACION_T06_T07_METRICAS.md` | Diseño experimental, fórmulas de métricas (WAPE, MAE, RMSE, MAPE, R²) y resultados T06/T07/T12 |
+| `docs/T12_RESULTADOS.md` | Resultados completos de la evaluación final de agosto (evidencia histórica cerrada) |
+| `docs/MODELOS_Y_METODO_OPERATIVO.md` | Explicación del método operativo (promedio 28 días) y por qué se eligió sobre el modelo ML |

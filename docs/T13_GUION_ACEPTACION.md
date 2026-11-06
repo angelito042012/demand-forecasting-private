@@ -117,3 +117,44 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 | P7 | Responder: ¿cuántos productos necesitan compra y por qué hay productos con 0? | 19 con compra (7 y 14 días); 31 con 0 calculado porque su stock cubre el consumo | |
 | P8 | Responder: ¿qué cambiaría si entraran las ventas de octubre o si llegara un pedido en camino? | El plan se recalcula como otra versión con esos datos; hoy son desconocidos y no se suponen cero | |
 | P9 | (Administrador) Cambiar la fecha de decisión al 25/10 y generar | Se calcula en segundo plano y aparece otra versión con llegadas 01/11 y 08/11 (puede retirarse después) | |
+
+## Recorrido para el equipo entrante (Tarea 12)
+
+Requisito: el equipo nuevo reproduce la restauración del entorno, opera el caso emblemático (producto 3110044) y explica las limitaciones del sistema. Este bloque complementa los pasos anteriores y se ejecuta de forma independiente.
+
+### Prerequisitos
+
+- Python 3.12 con el venv del proyecto (`requirements.lock.txt`)
+- Docker instalado (para Compose)
+- Acceso al repositorio y a los bundles en `artifacts/private/`
+
+### Documentación de referencia para el equipo
+
+| Documento | Leer antes de | Contenido |
+|---|---|---|
+| `docs/MANUAL_OPERACION.md` | Restauración | Arranque local, Compose, variables, respaldo, §10 actualización de datos |
+| `docs/MANUAL_USUARIO.md` | Recorrido de la app | Pantallas, conceptos, límites, plan operativo v2 |
+| `docs/DICCIONARIO_VARIABLES.md` | Revisar el pipeline | Variables, constantes parametrizadas (CLI), features, métricas |
+| `docs/EVALUACION_T06_T07_METRICAS.md` | Discusión de resultados | Diseño experimental, fórmulas, resultados T12, reproducción |
+| `docs/T12_RESULTADOS.md` | Discusión de resultados | Hallazgo: promedio_28 supera a RF (WAPE 0.7810 vs 0.7910) |
+| `docs/DEMOSTRACION_3110044.md` | Caso emblemático | Recorrido completo del producto 3110044 |
+
+### Pasos del equipo
+
+| N.º | Paso | Resultado esperado | Resultado real / observación |
+|---|---|---|---|
+| E1 | Restaurar el entorno local siguiendo `docs/MANUAL_OPERACION.md` §1–§4 | Demo local arranca en `https://localhost:8443`; `status` muestra la base y las corridas | |
+| E2 | Ingresar como lector y navegar Inicio, Ventas previstas y Compra recomendada | Entiende la estructura: plan operativo (v2) vs análisis histórico | |
+| E3 | Buscar el producto **3110044** en Compra recomendada y abrir «Entender la compra» | Stock conteo 0, ventas previstas 36.429/mes, compra 54 (7d) / 45 (14d); explica por qué 14d compra menos pero pierde más ventas | |
+| E4 | Abrir Existencias y buscar 3110044 | Existencia reconstruida al 20/10; conteo 18/10 + movimientos; puede haber diferencia con el sistema | |
+| E5 | Abrir Evaluación de resultados (evaluación de agosto) | WAPE promedio_28 = 0.7810, RF = 0.7910; no se declara ganador; un solo bloque de 21 días | |
+| E6 | Explicar con sus palabras: ¿por qué se usa promedio_28 y no el modelo ML? | Porque RF no superó al promedio en la evaluación final; la mejora relativa fue negativa (-0.0129) | |
+| E7 | Explicar tres limitaciones del sistema | (1) Inventario simulado con supuestos, no real; (2) ventas censuradas por stock; (3) no incorpora datos posteriores al 20/10 sin procedimiento técnico | |
+| E8 | Leer `docs/MANUAL_OPERACION.md` §10 e identificar los argumentos CLI para un nuevo corte | `--last-full-day`, `--book-name`, `--book-window`, `--partial-date-value`, `--as-of-local`, `--base-as-of-local` | |
+| E9 | Verificar que `docs/DICCIONARIO_VARIABLES.md` §1 coincide con los valores por defecto del código | Los valores de la tabla coinciden con los defaults en `dataset_v2.py`, `reconstructed.py` y `sql21_prepare.py` | |
+
+### Cierre del recorrido del equipo
+
+- ¿El equipo pudo restaurar y operar sin ayuda del equipo saliente? (Sí / No / Parcial): ______________________
+- ¿Pudo explicar el caso 3110044 y las limitaciones? (Sí / No / Parcial): ______________________
+- Observaciones o bloqueos: ______________________

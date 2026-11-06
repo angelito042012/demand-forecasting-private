@@ -127,6 +127,26 @@ Nada de esto está hecho ni autorizado: cuota/permisos efectivos de Container Ap
 - **Costos:** Cost Management API (`type: ActualCost`) — ver `docs/T20_PLAN_NUBE.md` §10 y §11. Aviso en US$ 8 (API y worker a 0 réplicas conservando datos), techo US$ 20; no eliminar recursos sin copia verificada (`artifacts/private/cloud_bundle_20261021/`).
 
 ## 10. Actualizar los datos del plan operativo (procedimiento técnico, 22/10/2026)
-Ver el detalle, el alcance y las limitaciones en `docs/T22_ALCANCE_DATOS_Y_PLAN.md`. Resumen: (1) `python -m scripts.sql21_prepare --server <srv> --db SYDESOFT_2 --out <dir>` (solo lectura; concilia libros con SQL y prepara el paquete de existencias); (2) `python -m pipeline.plan.dataset_v2 --package <datos_preparados> --october <libro> --sql-report <informe.json> --partial-csv <csv> --db <base> [--dry-run]`; (3) `python -m pipeline.inventory.reconstructed --package <paquete> --db <base> --sql-report <informe.json> [--dry-run]`; (4) el administrador genera el plan en «Compra recomendada»; (5) `python -m scripts.cloud_bundle export|verify --env <entorno> --out <dir>` y carga a Atlas con `mongorestore`, luego repetir las pruebas públicas y medir la IP de salida (§9). **Los pasos 1–3 tienen constantes del corte 20/10/2026** (`LAST_FULL_DAY`, `OCTOBER_WINDOW`, `AS_OF_LOCAL`): repetirlos con datos posteriores requiere la función nueva descrita allí (decisión pendiente). «Cargar datos» y «Crear análisis» de la interfaz **no** forman parte de este procedimiento (son del análisis histórico).
+Ver el detalle, el alcance y las limitaciones en `docs/T22_ALCANCE_DATOS_Y_PLAN.md`. Resumen:
+
+1. `python -m scripts.sql21_prepare --server <srv> --db SYDESOFT_2 --out <dir> [--last-full-day YYYY-MM-DD]` (solo lectura; concilia libros con SQL y prepara el paquete de existencias).
+2. `python -m pipeline.plan.dataset_v2 --package <datos_preparados> --october <libro> --sql-report <informe.json> --partial-csv <csv> --db <base> [--dry-run] [--book-name <nombre.xlsx>] [--book-window YYYY-MM-DD YYYY-MM-DD] [--partial-date-value YYYY-MM-DD]`.
+3. `python -m pipeline.inventory.reconstructed --package <paquete> --db <base> --sql-report <informe.json> [--dry-run] [--as-of-local <ISO8601>] [--base-as-of-local <ISO8601>]`.
+4. El administrador genera el plan en «Compra recomendada».
+5. `python -m scripts.cloud_bundle export|verify --env <entorno> --out <dir>` y carga a Atlas con `mongorestore`, luego repetir las pruebas públicas y medir la IP de salida (§9).
+
+**Las constantes del corte 20/10/2026** (`LAST_FULL_DAY`, `OCTOBER_WINDOW`, `AS_OF_LOCAL`, `BASE_AS_OF_LOCAL`, `PARTIAL_DATE`) **están parametrizadas como argumentos CLI** (commit `a409bd1`). Los valores por defecto corresponden al corte 20/10; para un corte posterior, pasar los argumentos con las nuevas fechas. Ver `docs/DICCIONARIO_VARIABLES.md` para la descripción completa de cada constante y su procedencia. «Cargar datos» y «Crear análisis» de la interfaz **no** forman parte de este procedimiento (son del análisis histórico).
 
 - **TRUSTED_PROXIES (23/10/2026):** `192.168.0.1/32` (único salto de confianza: el envoy del entorno; Azure sobrescribe `X-Forwarded-For` con la IP real). El límite de intentos de acceso es por cliente (20 fallos por IP y 5 por usuario+IP en 15 min). Tras cambios de plataforma, repetir la medición (eco temporal con ingreso externo) y recordar que cambiar solo una variable de entorno no renueva la réplica: bajar a 0 y volver a 1.
+
+## 11. Documentación de referencia
+
+| Documento | Contenido |
+|---|---|
+| `docs/DICCIONARIO_VARIABLES.md` | Constantes, features, métricas, parámetros y sus valores, archivos y procedencia |
+| `docs/EVALUACION_T06_T07_METRICAS.md` | Diseño experimental T06/T07/T12, fórmulas de métricas, resultados y guía de reproducción |
+| `docs/T12_RESULTADOS.md` | Resultados completos de la evaluación final (agosto, cerrada) |
+| `docs/T22_ALCANCE_DATOS_Y_PLAN.md` | Alcance del procedimiento de actualización de datos y limitaciones |
+| `docs/DECISIONES_DATOS.md` | Decisiones de exclusión de fechas y tratamiento de datos |
+| `docs/T06_PROTOCOLO.md` | Protocolo de selección de modelos ML |
+| `docs/T13_GUION_ACEPTACION.md` | Guion de recorrido y pruebas de aceptación |
