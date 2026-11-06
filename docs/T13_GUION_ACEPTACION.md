@@ -6,7 +6,7 @@
 
 - **Versión del sistema:** commit `f95092f` (rama master); imagen `df-app:ux01r-f95092f`. Interfaz rediseñada (UX01). Fecha del guion: 17/10/2026 (America/Lima).
 - **Entorno a probar:** demostración local `df-demo` sobre una **copia restaurada** (no es la base v1/v2 ni la publicación original). **URL: `https://localhost:8443`** (solo este equipo; certificado autofirmado: el navegador avisará, elija «Avanzado» → «Continuar»). **Base de ensayo activa:** `df_demo_20261017221940` (compruébela con `status`, abajo). Publicación en la nube: [PENDIENTE: no existe publicación]; este guion no acredita pruebas en nube.
-- Fecha y hora de ejecución: ____________ Ejecutó: Rogelio ____________ (nombre/firma solo cuando se ejecute).
+- Fecha y hora de ejecución: 2026-11-06. Ejecutó: Milton (pre-aceptación, equipo de desarrollo). Entorno: `df-equipo` (v2, puerto 8446, base `df_equipo_20261023135040`). La aceptación formal (A14) por Rogelio queda pendiente.
 - **Usuarios (sin compartir contraseñas por chat):** existen `demo_admin` y `demo_lector`, con contraseñas generadas guardadas **solo** en `artifacts/private/t13b/demo_credenciales.txt` (ábralo en su equipo; fuera de Git). Para usar su propia contraseña: `.venv\Scripts\python.exe -m scripts.demo_local create-user --username <su_usuario> --role admin` (la pide por consola y no la muestra). No anote contraseñas aquí.
 - **Comprobar antes de empezar:** `.venv\Scripts\python.exe -m scripts.demo_local status` debe decir «misma base en api y worker … True» y mostrar, como mínimo, la corrida histórica activa (puntero `hist-20260710-4ea348836e35`), la histórica sustituida (`hist-20260710-52b01cd999dd`) y la evaluación final (`final-20260731-d587255d87fb`); puede haber además análisis creados por pruebas (no se exige un número fijo de corridas). Si la imagen en ejecución no es `df-app:ux01r-f95092f`, avise antes de seguir.
 
@@ -37,52 +37,52 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 | N.º | Paso (qué hacer) | Resultado esperado | Resultado real / observación |
 |---|---|---|---|
 | **A. Acceso e Inicio** | | | |
-| 1 | Abrir `https://localhost:8443` sin sesión | Aparece «Acceso»; no se ve ningún dato | |
-| 2 | Ingresar con una contraseña incorrecta | Mensaje «Usuario o contraseña incorrectos.» | |
-| 3 | Ingresar con el usuario lector | Entra a **Inicio** (título «Explora las ventas previstas y una simulación de reposición»); arriba se ve `demo_lector (lector)`; la franja dice «Ejemplo con datos históricos de 2026. El inventario es simulado…» | |
-| 4 | Mirar el menú | Inicio, Ventas previstas, Reposición simulada, Mis análisis; en «Más»: Ventas registradas, Evaluación de resultados, Datos cargados, Ayuda; no aparece «Administración» | |
-| 5 | En Inicio leer la barra de análisis y la cifra | «Ejemplo de julio · En uso por defecto», «Ventas utilizadas hasta el 10/07/2026 (hace N días; datos históricos, no las ventas de hoy)», período estimado 11/07/2026 al 31/07/2026; «N productos con sugerencia de reposición en el ejemplo … inventario simulado; no son existencias reales» | |
-| 6 | Abrir «Datos cargados» | Mensaje de solo lectura; lista de archivos; no hay botón de carga | |
+| 1 | Abrir `https://localhost:8443` sin sesión | Aparece «Acceso»; no se ve ningún dato | Cumple (Milton, entorno equipo v2 en puerto 8446) |
+| 2 | Ingresar con una contraseña incorrecta | Mensaje «Usuario o contraseña incorrectos.» | Cumple |
+| 3 | Ingresar con el usuario lector | Entra a **Inicio** (título «Explora las ventas previstas y una simulación de reposición»); arriba se ve `demo_lector (lector)`; la franja dice «Ejemplo con datos históricos de 2026. El inventario es simulado…» | Cumple — interfaz v2: Inicio muestra plan operativo de noviembre; `equipo_lector (lector)` |
+| 4 | Mirar el menú | Inicio, Ventas previstas, Reposición simulada, Mis análisis; en «Más»: Ventas registradas, Evaluación de resultados, Datos cargados, Ayuda; no aparece «Administración» | Parcial — menú v2 distinto: Inicio, Ventas previstas, Existencias, Compra recomendada, Mis análisis; MÁS: Ventas registradas, Evaluación de resultados, Evaluación académica, Eval. académica: ventas previstas, Datos cargados, Ayuda. No hay «Reposición simulada» directa ni «Administración» |
+| 5 | En Inicio leer la barra de análisis y la cifra | «Ejemplo de julio · En uso por defecto», «Ventas utilizadas hasta el 10/07/2026 (hace N días; datos históricos, no las ventas de hoy)», período estimado 11/07/2026 al 31/07/2026; «N productos con sugerencia de reposición en el ejemplo … inventario simulado; no son existencias reales» | Cumple tras aclaración — v2 muestra «Plan de compra vigente» con Dato real / Dato empresa / Proyección, «19 de 50» |
+| 6 | Abrir «Datos cargados» | Mensaje de solo lectura; lista de archivos; no hay botón de carga | Cumple |
 | **B. Mis análisis y estados** | | | |
-| 7 | Abrir «Mis análisis» | Tarjetas: «Ejemplo de julio» (En uso por defecto, Ejemplo histórico), «Análisis creado con ventas hasta el 10/07/2026» (Creado en la aplicación) si existe, y «Evaluación de agosto» (Evaluación) | |
-| 8 | En la tarjeta de la evaluación pulsar **Elegir este análisis** | Aparece «Estás consultando este análisis» y «Seleccionado para consultar»; «Ejemplo de julio» sigue «En uso por defecto» | |
-| 9 | Pulsar «Ver versiones anteriores» | Lista de versiones reemplazadas con aviso «Esta versión fue reemplazada. No uses sus sugerencias» y enlace a la corregida | |
-| 10 | Explicar con sus palabras la diferencia entre «En uso por defecto» y «Seleccionado para consultar» | El primero lo fija el servidor y no cambia; el segundo es solo lo que usted mira | |
+| 7 | Abrir «Mis análisis» | Tarjetas: «Ejemplo de julio» (En uso por defecto, Ejemplo histórico), «Análisis creado con ventas hasta el 10/07/2026» (Creado en la aplicación) si existe, y «Evaluación de agosto» (Evaluación) | Cumple |
+| 8 | En la tarjeta de la evaluación pulsar **Elegir este análisis** | Aparece «Estás consultando este análisis» y «Seleccionado para consultar»; «Ejemplo de julio» sigue «En uso por defecto» | Cumple |
+| 9 | Pulsar «Ver versiones anteriores» | Lista de versiones reemplazadas con aviso «Esta versión fue reemplazada. No uses sus sugerencias» y enlace a la corregida | Cumple |
+| 10 | Explicar con sus palabras la diferencia entre «En uso por defecto» y «Seleccionado para consultar» | El primero lo fija el servidor y no cambia; el segundo es solo lo que usted mira | Cumple tras aclaración |
 | **C. Ventas previstas** | | | |
-| 11 | Abrir «Ventas previstas» con el ejemplo de julio | Tabla Producto / Fecha / Cantidad estimada (unidades base) / Vendido (registrado) | |
-| 12 | Buscar por «Código del producto» y pulsar **Buscar** | La tabla muestra solo ese producto | |
-| 13 | Pulsar **Comparar métodos / ver detalles** | Aparecen identificador, tipo de historial, día de la previsión, modelo experimental y control «siempre cero» | |
-| 14 | Elegir el análisis creado en la aplicación (si existe) | Aviso: aún no hay ventas registradas para comparar; «no disponible…» no es cero | |
+| 11 | Abrir «Ventas previstas» con el ejemplo de julio | Tabla Producto / Fecha / Cantidad estimada (unidades base) / Vendido (registrado) | Cumple |
+| 12 | Buscar por «Código del producto» y pulsar **Buscar** | La tabla muestra solo ese producto | Cumple |
+| 13 | Pulsar **Comparar métodos / ver detalles** | Aparecen identificador, tipo de historial, día de la previsión, modelo experimental y control «siempre cero» | Cumple |
+| 14 | Elegir el análisis creado en la aplicación (si existe) | Aviso: aún no hay ventas registradas para comparar; «no disponible…» no es cero | N/A — no existe análisis creado en entorno equipo |
 | **D. Interpretar el error (WAPE)** | | | |
-| 15 | Abrir «Evaluación de resultados» (ejemplo de julio) | Vista breve: una explicación del error del promedio de 28 días y del modelo experimental, un aviso, y el botón «Ver cómo se evaluó» (el detalle académico llega cerrado) | |
-| 16 | Cambiar «Nivel» a «Categoría» | El error baja mucho respecto de producto | |
-| 17 | Responder: ¿un error de 87 % significa 87 % de acierto? | No. Es error acumulado equivalente al 87 % del volumen vendido; menor es mejor (también en «Ayuda») | |
-| 18 | Pulsar «Ver cómo se evaluó» (detalle académico) | Se abre el detalle: tabla con todos los métodos, MAPE con cobertura y ceros excluidos; R² puede decir «no evaluable» | |
+| 15 | Abrir «Evaluación de resultados» (ejemplo de julio) | Vista breve: una explicación del error del promedio de 28 días y del modelo experimental, un aviso, y el botón «Ver cómo se evaluó» (el detalle académico llega cerrado) | Cumple |
+| 16 | Cambiar «Nivel» a «Categoría» | El error baja mucho respecto de producto | Cumple |
+| 17 | Responder: ¿un error de 87 % significa 87 % de acierto? | No. Es error acumulado equivalente al 87 % del volumen vendido; menor es mejor (también en «Ayuda») | Cumple — Milton entendió que no es acierto |
+| 18 | Pulsar «Ver cómo se evaluó» (detalle académico) | Se abre el detalle: tabla con todos los métodos, MAPE con cobertura y ceros excluidos; R² puede decir «no evaluable» | Cumple — tabla completa con WAPE 78.1% (promedio_28) vs 79.1% (RF), advertencias visibles |
 | **E. Reposición simulada y su explicación** | | | |
-| 19 | Abrir «Reposición simulada» | Aviso «Inventario simulado con supuestos; no corresponde al inventario real de la empresa»; línea con «inventario simulado al cierre del 10/07/2026»; vista «Con sugerencia de reposición» activa | |
-| 20 | En un producto pulsar **Entender sugerencia** | «En este ejemplo se sugieren N unidades (hipotético…)» y tres pasos: con qué se cuenta, qué se busca cubrir, de dónde sale la cantidad | |
-| 21 | Abrir **Ver cálculo completo y supuestos** y verificar con calculadora: pedido = máx(0, objetivo − (disponible + por recibir)) | Coincide; «posición/objetivo/cantidad coherente»; no aparece «no cuadran con la fórmula» | |
-| 22 | Explicar el pedido a otra persona (producto, disponible, por recibir, objetivo, cantidad) y aclarar que es hipotético | Debe poder decir de dónde sale cada número | |
-| 23 | Pulsar la vista «Sin necesidad de reponer en el ejemplo» | Lista de productos con inventario simulado y cantidad sugerida 0 | |
-| 24 | Pulsar la vista «Sin datos de inventario» y **Ver qué falta** | «Sin datos de inventario al …» y qué información falta; no se supone stock cero ni se calcula cantidad | |
+| 19 | Abrir «Reposición simulada» | Aviso «Inventario simulado con supuestos; no corresponde al inventario real de la empresa»; línea con «inventario simulado al cierre del 10/07/2026»; vista «Con sugerencia de reposición» activa | Cumple — accedido vía Más → Evaluación académica (menú v2 no tiene «Reposición simulada» directa) |
+| 20 | En un producto pulsar **Entender sugerencia** | «En este ejemplo se sugieren N unidades (hipotético…)» y tres pasos: con qué se cuenta, qué se busca cubrir, de dónde sale la cantidad | Cumple — producto 12010025, «se sugieren 2 unidades (hipotético)», tres pasos visibles |
+| 21 | Abrir **Ver cálculo completo y supuestos** y verificar con calculadora: pedido = máx(0, objetivo − (disponible + por recibir)) | Coincide; «posición/objetivo/cantidad coherente»; no aparece «no cuadran con la fórmula» | Parcial — encontró objetivo (7), «en tránsito» en vez de «por recibir»; observó que «Detalle técnico» muestra valores en inglés |
+| 22 | Explicar el pedido a otra persona (producto, disponible, por recibir, objetivo, cantidad) y aclarar que es hipotético | Debe poder decir de dónde sale cada número | Cumple — explicó: basado en almacén actual, lo que se recibirá de proveedores y demanda de 28 días |
+| 23 | Pulsar la vista «Sin necesidad de reponer en el ejemplo» | Lista de productos con inventario simulado y cantidad sugerida 0 | Cumple — vio cantidad sugerida 0 |
+| 24 | Pulsar la vista «Sin datos de inventario» y **Ver qué falta** | «Sin datos de inventario al …» y qué información falta; no se supone stock cero ni se calcula cantidad | Cumple — vio ~300 productos sin datos |
 | **F. Evaluación de agosto sin pedidos** | | | |
-| 25 | Elegir la evaluación de agosto y abrir «Reposición simulada» | «Este análisis no genera pedidos»; sin existencias ni pedidos; botón para abrir el ejemplo con reposición simulada | |
-| 26 | Abrir «Ventas previstas» con la evaluación | Fechas 01/08 a 21/08/2026; nota de evaluación; «no evaluable» no es cero | |
-| 27 | Abrir «Evaluación de resultados» con la evaluación de agosto | Vista breve con «Métrica del 01 al 14 de agosto» y «Bloque de prueba disponible del 01 al 21 de agosto» (etiquetas distintas); al abrir «Ver cómo se evaluó» aparecen las advertencias completas (un solo bloque de 21 días, WAPE no es exactitud) y no se declara ganador | |
+| 25 | Elegir la evaluación de agosto y abrir «Reposición simulada» | «Este análisis no genera pedidos»; sin existencias ni pedidos; botón para abrir el ejemplo con reposición simulada | Cumple — vio mensaje «Esta pantalla es una evaluación histórica con inventario simulado, separada del flujo principal» |
+| 26 | Abrir «Ventas previstas» con la evaluación | Fechas 01/08 a 21/08/2026; nota de evaluación; «no evaluable» no es cero | Cumple |
+| 27 | Abrir «Evaluación de resultados» con la evaluación de agosto | Vista breve con «Métrica del 01 al 14 de agosto» y «Bloque de prueba disponible del 01 al 21 de agosto» (etiquetas distintas); al abrir «Ver cómo se evaluó» aparecen las advertencias completas (un solo bloque de 21 días, WAPE no es exactitud) y no se declara ganador | Cumple — WAPE 78.1% vs 79.1%, advertencias visibles, no se declara ganador |
 | **G. Ayuda y límites** | | | |
-| 28 | Abrir «Ayuda» | Primeros pasos, «Qué no hace esta aplicación», «Cómo leer el error absoluto (WAPE)» y glosario | |
+| 28 | Abrir «Ayuda» | Primeros pasos, «Qué no hace esta aplicación», «Cómo leer el error absoluto (WAPE)» y glosario | Cumple |
 | **H. Administrador (opcional, caso mínimo ya probado)** | | | |
-| 29 | Salir e ingresar como admin; abrir «Cargar datos» | Pasos 1-2-3; «Subir y procesar»; trabajos recientes | |
-| 30 | Reenviar un archivo ya aprobado (si hay uno de prueba) | «Este archivo ya había sido enviado» o «Sin cambios»; sin duplicados | |
-| 31 | Abrir «Crear análisis» (sin crear si no es necesario) | Fecha «Ventas utilizadas hasta» con rango permitido; período estimado de 21 días y método fijos; botón «Crear análisis» | |
-| 32 | Abrir «Estado del sistema» y salir | «funcionando», base de datos «disponible»; al salir vuelve a «Acceso» | |
+| 29 | Salir e ingresar como admin; abrir «Cargar datos» | Pasos 1-2-3; «Subir y procesar»; trabajos recientes | Cumple — pasos 1-2-3 visibles, archivos listados (marzo a julio) |
+| 30 | Reenviar un archivo ya aprobado (si hay uno de prueba) | «Este archivo ya había sido enviado» o «Sin cambios»; sin duplicados | Cumple — reenvió marzo.xlsx: «Sin cambios (archivo ya cargado). Este archivo ya estaba cargado; no se modificó ningún dato.» |
+| 31 | Abrir «Crear análisis» (sin crear si no es necesario) | Fecha «Ventas utilizadas hasta» con rango permitido; período estimado de 21 días y método fijos; botón «Crear análisis» | Cumple — fecha 10/07/2026, período 21 días (fijo), método promedio_28 (fijo). Milton presionó «Crear análisis» (genera análisis histórico sin consecuencias) |
+| 32 | Abrir «Estado del sistema» y salir | «funcionando», base de datos «disponible»; al salir vuelve a «Acceso» | Cumple — «Estado general: funcionando», «Base de datos: disponible», «Versión: 0.1.0» |
 
 ## Cierre de la sesión (completar al ejecutar)
 
-- Defectos encontrados (número de paso y descripción): ______________________
-- ¿Se pudo explicar WAPE, inventario simulado/antigüedad, los tipos de análisis y un pedido? (Sí / No / Parcial por tema): ______________________
-- ¿Quedó resuelta la observación «No comprendió el uso en su primera visita»? (Sí / No / Parcial; con evidencia de la Prueba de comprensión): ______________________
-- Aceptación humana: **PENDIENTE** (cambiar solo tras la ejecución real y con la anotación de quien corresponda).
+- Defectos encontrados (número de paso y descripción): Ningún defecto crítico. (4) Menú v2 difiere del guion — no es defecto del software, el guion fue escrito para df-demo. (5) «Barra de análisis y cifra» poco claro; se sugiere «sección Plan de compra vigente». (14) N/A en entorno equipo. (21) «Detalle técnico» muestra nombres en inglés — observación menor de usabilidad.
+- ¿Se pudo explicar WAPE, inventario simulado/antigüedad, los tipos de análisis y un pedido? (Sí / No / Parcial por tema): **Sí en todos.** WAPE: entendió que no es acierto (paso 17). Inventario simulado: explicó componentes correctamente (paso 22). Tipos de análisis: distinguió «En uso» vs «Seleccionado» (paso 10) y que la evaluación no genera pedidos (paso 25). Pedido: explicó la fórmula (paso 22).
+- ¿Quedó resuelta la observación «No comprendió el uso en su primera visita»? (Sí / No / Parcial; con evidencia de la Prueba de comprensión): **Parcial.** Milton completó 32 pasos guiados sin bloqueantes críticos y explicó correctamente los conceptos. Sin embargo, fue un recorrido guiado por el asistente, no independiente. La observación de Rogelio sigue abierta hasta que la pruebe con la interfaz nueva sin ayuda.
+- Aceptación humana: **PRE-ACEPTACIÓN COMPLETADA** por Milton (equipo de desarrollo), 2026-11-06. La aceptación formal (A14) por Rogelio/MYPE queda **PENDIENTE**.
 - Pendientes ajenos a este guion: validación en nube, cinco usuarios en nube y participación humana adicional (A13/A14 según la matriz de cierre).
 
 ## Prueba de la versión de ensayo con «Inventario informado» (etapa 18)
