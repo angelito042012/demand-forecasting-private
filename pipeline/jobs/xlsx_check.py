@@ -150,9 +150,9 @@ def _check_sheet_handle(handle, *, allowed_months: tuple[str, ...], max_rows: in
         if len(months) > 1:
             raise XlsxRejected(422, "MES_AMBIGUO", "Las primeras filas contienen fechas de más de un mes.")
         month = next(iter(months))
-        if month >= "2026-08":
-            raise XlsxRejected(422, "AGOSTO_RESERVADO", "Agosto de 2026 está reservado para la prueba final.")
         if month not in allowed_months:
+            if month >= "2026-08":
+                raise XlsxRejected(422, "AGOSTO_RESERVADO", "Agosto de 2026 está reservado para la prueba final.")
             raise XlsxRejected(422, "MES_FUERA_DE_ALCANCE", "El mes detectado está fuera de marzo a julio de 2026.")
         return month
     finally:

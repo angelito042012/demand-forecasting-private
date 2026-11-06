@@ -32,6 +32,15 @@
     "origen_elegible": "min(fecha de negocio Lima de la ranura, origen_maximo) acotado a origen_minimo",
     "sin_cambios": "si la corrida de esa entrada ya existe (misma identidad) se registra sin cambios y se conserva el resultado anterior"
   },
+  "politica_operativa": {
+    "nota": "Politica para importacion operativa: acepta meses nuevos mas alla del periodo academico. El CLI import_operativo.py usa esta seccion en vez de politica_desarrollo.",
+    "meses_adicionales_permitidos": ["2026-08", "2026-09", "2026-10", "2026-11", "2026-12"],
+    "ultimo_dia_de_datos_operativo": "2026-12-31",
+    "agosto_reservado": false,
+    "origen_maximo_operativo": "2026-12-31",
+    "horizonte_maximo": 21,
+    "metodos_permitidos": ["promedio_28"]
+  },
   "generador": {"version": "gen-promedio28-1", "ventana_dias": 28, "recomendacion": {"escenario": "L7_S7_promedio_28", "horizonte_pedido_dias": 14, "seguridad_dias": 7}},
   "etiqueta_simulado": "Inventario simulado con supuestos; no corresponde al inventario real de la empresa"
 }
