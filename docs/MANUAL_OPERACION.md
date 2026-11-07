@@ -139,6 +139,43 @@ Ver el detalle, el alcance y las limitaciones en `docs/T22_ALCANCE_DATOS_Y_PLAN.
 
 - **TRUSTED_PROXIES (23/10/2026):** `192.168.0.1/32` (único salto de confianza: el envoy del entorno; Azure sobrescribe `X-Forwarded-For` con la IP real). El límite de intentos de acceso es por cliente (20 fallos por IP y 5 por usuario+IP en 15 min). Tras cambios de plataforma, repetir la medición (eco temporal con ingreso externo) y recordar que cambiar solo una variable de entorno no renueva la réplica: bajar a 0 y volver a 1.
 
+## 10.1 Importación operativa sin mongorestore (07/11/2026)
+
+El CLI `scripts/import_operativo.py` permite importar nuevos cortes de ventas y stock directamente a MongoDB sin necesidad de mongorestore ni del procedimiento completo de la sección 10. Usa la `politica_operativa` de `config/t10_config.json` (meses agosto-diciembre 2026, sin reserva de agosto).
+
+**Modos:**
+
+| Modo | Qué hace | Escribe en la base |
+|---|---|---|
+| `preview` | Valida el archivo y muestra qué se importaría | No |
+| `importar` | Valida e importa ventas y/o stock | Sí |
+| `activar` | Regenera pronóstico tras importar | Sí |
+
+**Uso:**
+
+```
+# 1. Preview (sin escribir nada)
+python -m scripts.import_operativo preview --ventas noviembre.xlsx
+
+# 2. Importar ventas
+python -m scripts.import_operativo importar --ventas noviembre.xlsx --db <base>
+
+# 3. Importar stock (directorio con conteo_reportado.csv y review.json)
+python -m scripts.import_operativo importar --stock <carpeta_conteo> --db <base>
+
+# 4. Importar ambos en un paso
+python -m scripts.import_operativo importar --ventas noviembre.xlsx --stock <carpeta_conteo> --db <base>
+
+# 5. Regenerar pronóstico
+python -m scripts.import_operativo activar --db <base> --origin 2026-10-20
+```
+
+**Restricciones:**
+- No toca bases protegidas (`demand_forecasting_dev`, `demand_forecasting_v2`, `demand_forecasting_pub`).
+- La importación de ventas es idempotente (SHA-256): reenviar el mismo archivo no duplica datos.
+- La carga web (interfaz del administrador) sigue restringida a los meses académicos (marzo-julio). Solo el CLI acepta meses operativos.
+- Para publicar en la nube tras importar localmente, sigue siendo necesario el paso 5 de la sección 10 (export + mongorestore a Atlas).
+
 ## 11. Documentación de referencia
 
 | Documento | Contenido |
@@ -150,3 +187,5 @@ Ver el detalle, el alcance y las limitaciones en `docs/T22_ALCANCE_DATOS_Y_PLAN.
 | `docs/DECISIONES_DATOS.md` | Decisiones de exclusión de fechas y tratamiento de datos |
 | `docs/T06_PROTOCOLO.md` | Protocolo de selección de modelos ML |
 | `docs/T13_GUION_ACEPTACION.md` | Guion de recorrido y pruebas de aceptación |
+| `docs/T13D_ACTA_RECORRIDO.md` | Acta del recorrido de aceptación humana (Milton, 06/11) |
+| `docs/BACKLOG_OPERATIVO.md` | Tareas pendientes post-entrega con estado y dependencias |

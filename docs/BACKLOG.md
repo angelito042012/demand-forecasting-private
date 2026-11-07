@@ -1,5 +1,7 @@
 # Backlog de ejecución
 
+**07/11 — Trabajo post-entrega:** T13 pre-aceptacion humana completada por Milton (commits `6172649`, `e407ac2`). T1 CLI de importacion operativa entregado (commit `114efcd`). Parametrizacion del pipeline, diccionario de variables y metricas formalizados (commits `a409bd1`, `e6029bc`, `d47712d`). Backlog operativo detallado en `docs/BACKLOG_OPERATIVO.md`. Pendientes ejecutables sin la empresa: completar secciones del informe Capstone, actualizar manuales, preparar video. Bloqueados: politica real de reposicion, compras 11452/11455, fuente de stock, credencial Atlas.
+
 **21/10 — R21 cerrado por Codex (ffa877f/5a3d535):** rutas y flujo del plan vigente revisados; 8 pruebas frontend dirigidas propias aprobadas. Sigue despliegue condicionado a presupuesto concreto, credito y accesos Atlas; verificar capacidad real con indices y mantener acceso limitado. Publicacion HTTPS y aceptacion humana aun pendientes. Ver cierre en REVISION_CODEX_20.md.
 
 **21/10 — revision Codex T20:** checkpoint 3c94ab8/8a66457 revisado en alcance dirigido: 54 pruebas propias aprobadas y 100 compras sin diferencias al repetir recalculo contra evidencia guardada. Pendiente R21: Inicio y Ventas previstas aun llevan al ejemplo historico; conectar al plan v2 y preservar historicos en apartado academico. Leer REVISION_CODEX_20.md. Preparacion de nube puede continuar; presupuesto concreto, saldo de credito, publicacion verificada y aceptacion humana pendientes.

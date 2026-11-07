@@ -4,7 +4,7 @@
 
 **Cómo leer este manual.** La parte **A** (al final: «Versión de noviembre», «Cómo leer las pantallas principales» y «Qué puedes hacer tú y qué requiere soporte técnico») describe el **plan operativo entregado**. La parte **B** (secciones 1–9) conserva la descripción del **análisis histórico académico** (Mis análisis, Evaluación de resultados, reposición simulada), que sigue disponible en «Más» con su etiqueta «Inventario simulado con supuestos; no corresponde al inventario real de la empresa»; donde la parte B hable de la franja o del menú anterior, **prevalece la parte A**. Material de apoyo: `docs/GUIA_RAPIDA.md`, `docs/EXPLICACION_SIMPLE.md`, `docs/DEMOSTRACION_3110044.md`, `docs/MODELOS_Y_METODO_OPERATIVO.md`, `docs/PREGUNTAS_FRECUENTES_EXPOSICION.md`.
 
-**Límites de esta entrega:** no ejecuta compras; no incorpora datos posteriores al 20/10 desde la aplicación (requiere un procedimiento técnico: `docs/T22_ALCANCE_DATOS_Y_PLAN.md`); no demuestra ahorro; las compras 11452/11455 y 13 diferencias de inventario están pendientes de confirmar por la empresa.
+**Límites de esta entrega:** no ejecuta compras; no incorpora datos posteriores al 20/10 desde la interfaz web (desde 07/11/2026 existe un CLI de importación operativa: `scripts/import_operativo.py`; ver `docs/MANUAL_OPERACION.md` §10.1 y `docs/T22_ALCANCE_DATOS_Y_PLAN.md`); no demuestra ahorro; las compras 11452/11455 y 13 diferencias de inventario están pendientes de confirmar por la empresa.
 
 ## Parte B — Análisis histórico académico
 
@@ -179,7 +179,7 @@ No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTP
 | Generar una versión nueva del plan con otros parámetros (decisión, plazos, reserva, mínimo, múltiplo, pedidos por recibir) | No | **Sí**: «Compra recomendada» → «Generar plan». Si todo es idéntico se reutiliza la versión existente | — |
 | Cargar un Excel mensual en «Cargar datos» | No | Sí, **solo ventas de marzo a julio de 2026** (agosto reservado; otros meses se rechazan): alimenta los análisis históricos, **no el plan de noviembre** | — |
 | «Crear análisis» | No | Sí, **solo históricos**: cortes del 01/06 al 10/07/2026, 21 días, promedio de 28 días | — |
-| Incorporar ventas o existencias posteriores al 20/10/2026 y actualizar el plan de noviembre con ellas | No | **No** (la interfaz no lo permite) | **Sí**: conciliación con la base de la empresa, nueva versión de datos y publicación en la nube; hoy exige adaptar el procedimiento (ver `docs/T22_ALCANCE_DATOS_Y_PLAN.md`) |
+| Incorporar ventas o existencias posteriores al 20/10/2026 y actualizar el plan de noviembre con ellas | No | **No** (la interfaz no lo permite) | **Sí**: desde 07/11 disponible el CLI `scripts/import_operativo.py` (ver `docs/MANUAL_OPERACION.md` §10.1) para importar a MongoDB local sin mongorestore. La publicación a la nube sigue requiriendo el paso 5 de §10 (ver `docs/T22_ALCANCE_DATOS_Y_PLAN.md`) |
 | Cambiar las reglas del servidor (meses permitidos, cortes, horizonte) | No | No | Sí, con encargo aparte posterior a la evaluación final |
 | Confirmar las compras 11452/11455 y las 13 diferencias de inventario | — | — | Lo confirma la empresa; luego soporte actualiza los datos |
 - **Estado del sistema** (administrador): indica si el servicio y la base de datos responden; no depende del plan ni del inventario.
