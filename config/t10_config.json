@@ -7,7 +7,7 @@
     "horizonte_maximo": 21,
     "metodos_permitidos": ["promedio_28"],
     "ultimo_dia_de_datos": "2026-07-31",
-    "meses_permitidos_de_carga": ["2026-03", "2026-04", "2026-05", "2026-06", "2026-07"],
+    "meses_permitidos_de_carga": ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"],
     "origen_demostracion": "2026-07-10"
   },
   "subidas": {

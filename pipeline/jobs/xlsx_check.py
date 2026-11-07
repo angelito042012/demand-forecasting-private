@@ -13,7 +13,7 @@ from datetime import date, datetime
 
 import openpyxl
 
-from pipeline.data.importer import REQUIRED_HEADERS
+from pipeline.data.importer import REQUIRED_HEADERS, normalize_header_row
 
 ZIP_SIGNATURES = (b"PK\x03\x04",)
 MAX_RATIO = 200            # relacion de compresion maxima por entrada (un xlsx real ronda 5-30)
@@ -124,8 +124,9 @@ def _check_sheet_handle(handle, *, allowed_months: tuple[str, ...], max_rows: in
                 if headers is None:
                     if n > HEADER_SCAN_ROWS:
                         break
-                    if "ID_PEDIDO" in row and "FECHA" in row:
-                        headers = [str(v).strip() if v is not None else "" for v in row]
+                    normalized = normalize_header_row(row)
+                    if normalized is not None:
+                        headers = normalized
                         missing = [c for c in REQUIRED_HEADERS if c not in headers]
                         if missing:
                             raise XlsxRejected(422, "ENCABEZADOS_INVALIDOS",
@@ -153,7 +154,7 @@ def _check_sheet_handle(handle, *, allowed_months: tuple[str, ...], max_rows: in
         if month not in allowed_months:
             if month >= "2026-08":
                 raise XlsxRejected(422, "AGOSTO_RESERVADO", "Agosto de 2026 está reservado para la prueba final.")
-            raise XlsxRejected(422, "MES_FUERA_DE_ALCANCE", "El mes detectado está fuera de marzo a julio de 2026.")
+            raise XlsxRejected(422, "MES_FUERA_DE_ALCANCE", f"El mes detectado ({month}) no está en los meses permitidos.")
         return month
     finally:
         book.close()

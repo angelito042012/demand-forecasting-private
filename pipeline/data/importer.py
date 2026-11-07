@@ -70,6 +70,50 @@ REQUIRED_HEADERS = ["ID_PEDIDO", "TIPO_DOC", "SERIE_NUMERO", "FECHA", "MONEDA", 
                     "ID_ALMACEN", "CANTIDAD", "PRECIO", "TOTAL_LINEA", "ID_UM", "EQUIVALENCIA",
                     "UM_BASE", "CANTIDAD_UM_BASE", "GRUPO", "VEN_ESTADO"]
 
+HEADER_ALIASES = {
+    "Fecha": "FECHA",
+    "Tipo documento": "TIPO_DOC",
+    "Serie y número": "SERIE_NUMERO",
+    "Código artículo": "ID_ARTICULO",
+    "Artículo": "ARTICULO",
+    "Cantidad": "CANTIDAD",
+    "Unidad": "ID_UM",
+    "Precio": "PRECIO",
+    "Descuento línea": "DSCTO",
+    "Total línea": "TOTAL_LINEA",
+    "Código cliente": "ID_CLIENTE",
+    "Cliente": "CLIENTE",
+    "Tipo de pago": "TIPOPAGO",
+    "Código tienda": "ID_TIENDA",
+    "Tienda": "TIENDA",
+    "Moneda": "MONEDA",
+    "Vendedor": "VENDEDOR",
+    "Almacén": "ID_ALMACEN",
+    "Pedido": "ID_PEDIDO",
+    "Equivalencia": "EQUIVALENCIA",
+    "UM base": "UM_BASE",
+    "Cantidad UM base": "CANTIDAD_UM_BASE",
+    "Categoría": "GRUPO",
+    "Subcategoría": "SUBGRUPO",
+    "Marca": "MARCA",
+    "Estado": "VEN_ESTADO",
+    "RUC proveedor": "RUC_Proveedor",
+    "Proveedor": "Proveedor",
+    "Departamento": "DEPARTAMENTO",
+    "Provincia": "PROVINCIA",
+    "Distrito": "DISTRITO",
+}
+
+
+def normalize_header_row(row):
+    """Detecta fila de encabezados (formato clasico o alternativo) y normaliza."""
+    stripped = [str(v).strip() if v is not None else "" for v in row]
+    if "ID_PEDIDO" in stripped and "FECHA" in stripped:
+        return stripped
+    if "Fecha" in stripped and ("Pedido" in stripped or "Código artículo" in stripped):
+        return [HEADER_ALIASES.get(h, h) for h in stripped]
+    return None
+
 
 class ImportInvariantError(RuntimeError):
     pass
@@ -146,7 +190,12 @@ def _text(v) -> str:
 
 def infer_month(path):
     stem = Path(path).stem.lower()
-    return (DEFAULT_YEAR, MONTHS[stem]) if stem in MONTHS else None
+    if stem in MONTHS:
+        return (DEFAULT_YEAR, MONTHS[stem])
+    m = re.search(r"(\w+)-(\d{4})$", stem)
+    if m and m.group(1) in MONTHS:
+        return (int(m.group(2)), MONTHS[m.group(1)])
+    return None
 
 
 def _norm_month(expected_month):
@@ -171,8 +220,9 @@ def read_rows(path):
             if headers is None:
                 if n > 20:
                     break
-                if "ID_PEDIDO" in row and "FECHA" in row:
-                    headers = [str(v).strip() if v is not None else "" for v in row]
+                normalized = normalize_header_row(row)
+                if normalized is not None:
+                    headers = normalized
                 continue
             if not any(v is not None and str(v).strip() != "" for v in row):
                 continue
@@ -220,10 +270,15 @@ def classify_row(rec: dict, month: tuple):
     amount = rec.get("TOTAL_LINEA")
     if not _num(amount):
         return rej("IMPORTE_NO_NUMERICO")
-    tipo = rec.get("TIPO_DOC")
-    if not _num(tipo) or int(tipo) != tipo:
+    tipo_raw = rec.get("TIPO_DOC")
+    if _num(tipo_raw):
+        if int(tipo_raw) != tipo_raw:
+            return rej("TIPO_DOC_INVALIDO")
+        tipo = int(tipo_raw)
+    elif isinstance(tipo_raw, str) and tipo_raw.strip().isdigit():
+        tipo = int(tipo_raw.strip())
+    else:
         return rej("TIPO_DOC_INVALIDO")
-    tipo = int(tipo)
     if _text(rec.get("MONEDA")).upper() not in ACCEPTED_CURRENCIES:
         return rej("MONEDA_NO_PEN")
     if _text(rec.get("VEN_ESTADO")).upper() not in ACCEPTED_STATUS:
