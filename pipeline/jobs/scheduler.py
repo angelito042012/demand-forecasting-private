@@ -61,10 +61,19 @@ def slot_start(slot: int, interval_minutes: int) -> datetime:
     return datetime.fromtimestamp(slot * interval_minutes * 60, tz=UTC)
 
 
-def eligible_origin(start_utc: datetime, cfg: dict) -> date:
-    """min(fecha de negocio Lima de la ranura, origen_maximo) acotado a origen_minimo."""
-    pol = cfg["politica_desarrollo"]
+def eligible_origin(start_utc: datetime, cfg: dict, *, operational: bool = False) -> date:
+    """min(fecha de negocio Lima de la ranura, origen_maximo) acotado a origen_minimo.
+
+    Con operational=True usa politica_operativa (meses ampliados, sin tope de julio).
+    """
     lima_day = start_utc.astimezone(LIMA).date()
+    if operational and "politica_operativa" in cfg:
+        ops = cfg["politica_operativa"]
+        origin_max = date.fromisoformat(ops.get("origen_maximo_operativo", "2026-12-31"))
+        dev = cfg["politica_desarrollo"]
+        origin_min = date.fromisoformat(dev["origen_minimo"])
+        return max(origin_min, min(lima_day, origin_max))
+    pol = cfg["politica_desarrollo"]
     return max(date.fromisoformat(pol["origen_minimo"]), min(lima_day, date.fromisoformat(pol["origen_maximo"])))
 
 
@@ -76,13 +85,15 @@ def _summary(outcome: str, slot: int, start: datetime, origin, job_id=None, **ex
 
 
 def tick(db, now: datetime, interval_minutes: int | None = None, cfg: dict | None = None, *,
-         wall=lambda: datetime.now(UTC)) -> dict:
+         operational: bool = False, wall=lambda: datetime.now(UTC)) -> dict:
     """Un tick: reserva la ranura (unica, con propietario y lease) y encola la generacion con la clave estandar.
 
     Una ranura NO completada no cierra el camino: si quedo `error`, o `procesando` con lease vencido (el proceso murio
     antes o despues de encolar), otro tick la recupera con un CAS (dos timers: gana uno). Como el trabajo tiene
     clave de idempotencia, un job ya creado se reutiliza (`recuperado`) y nunca se duplica. `wall` = reloj real del
-    lease (el `now` controlado solo decide la ranura)."""
+    lease (el `now` controlado solo decide la ranura).
+
+    Con operational=True usa politica_operativa para origen, horizonte y método."""
     cfg = cfg or load_t10_config()
     tmp = cfg["temporizador"]
     interval = int(interval_minutes or tmp["intervalo_normal_minutos"])
@@ -93,8 +104,11 @@ def tick(db, now: datetime, interval_minutes: int | None = None, cfg: dict | Non
     queue.ensure_indexes(db)
     slot = slot_of(now, interval)
     start = slot_start(slot, interval)
-    origin = eligible_origin(start, cfg)
-    pol = cfg["politica_desarrollo"]
+    origin = eligible_origin(start, cfg, operational=operational)
+    if operational and "politica_operativa" in cfg:
+        pol = cfg["politica_operativa"]
+    else:
+        pol = cfg["politica_desarrollo"]
     horizon, method = int(pol["horizonte_maximo"]), str(pol["metodos_permitidos"][0])
     where = {"interval_minutes": interval, "slot": slot}
     t = wall()
@@ -161,11 +175,12 @@ def effective_instant(now: datetime, interval_minutes: int, cfg: dict) -> dateti
 
 
 def run_loop(db, interval_minutes: int, cfg: dict, stop: threading.Event, *, poll_seconds: float = 30.0,
-             clock=lambda: datetime.now(UTC)) -> None:
+             operational: bool = False, clock=lambda: datetime.now(UTC)) -> None:
     """Repite hasta `stop`: en cada vuelta intenta la ranura vigente (el indice unico evita duplicados)."""
     while not stop.is_set():
         try:
-            res = tick(db, effective_instant(clock(), interval_minutes, cfg), interval_minutes, cfg)
+            res = tick(db, effective_instant(clock(), interval_minutes, cfg), interval_minutes, cfg,
+                       operational=operational)
             if res["outcome"] != "ranura_ya_procesada":
                 log.info("tick: %s (origen %s, trabajo %s)", res["outcome"], res.get("origin"), res.get("job_id"))
         except PyMongoError:
@@ -204,6 +219,8 @@ def main(argv=None) -> int:
     mode.add_argument("--once", action="store_true", help="ejecuta un tick y sale")
     mode.add_argument("--loop", action="store_true", help="repite cada intervalo (exige --enable)")
     ap.add_argument("--enable", action="store_true", help="habilitacion explicita del modo --loop")
+    ap.add_argument("--operational", action="store_true",
+                    help="usar politica_operativa (meses ampliados, origen sin tope de julio)")
     ap.add_argument("--now", default=None, help="solo --once: instante ISO-8601 (reloj controlado para pruebas)")
     ap.add_argument("--interval-minutes", type=int, default=int(tmp["intervalo_normal_minutos"]))
     ap.add_argument("--db", default=os.environ.get("MONGODB_DATABASE", "demand_forecasting_v2"))
@@ -227,11 +244,13 @@ def main(argv=None) -> int:
         db = client[args.db]
         if args.once:
             now = _parse_now(args.now) if args.now else datetime.now(UTC)
-            print(json.dumps(tick(db, now, args.interval_minutes, cfg), ensure_ascii=False))
+            print(json.dumps(tick(db, now, args.interval_minutes, cfg, operational=args.operational),
+                             ensure_ascii=False))
             return 0
         stop = threading.Event()
         try:
-            run_loop(db, args.interval_minutes, cfg, stop, poll_seconds=args.poll_seconds, clock=_loop_clock())
+            run_loop(db, args.interval_minutes, cfg, stop, poll_seconds=args.poll_seconds,
+                     operational=args.operational, clock=_loop_clock())
         except KeyboardInterrupt:
             stop.set()
         return 0
