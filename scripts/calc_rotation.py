@@ -204,7 +204,9 @@ def main(argv=None) -> int:
     print(f"  Ventas totales: {total_ventas:,} u | Stock total: {total_stock:,} u")
     if total_stock > 0:
         rot_global = total_ventas / total_stock
-        print(f"  Rotación global: {rot_global:.4f} ({coverage_days(rot_global, month_days):.1f} días cobertura)")
+        cov = coverage_days(rot_global, month_days)
+        cov_str = f"{cov:.1f}" if cov is not None else "—"
+        print(f"  Rotación global: {rot_global:.4f} ({cov_str} días cobertura)")
     print(f"  Sin movimiento: {no_movement}")
     print()
 
