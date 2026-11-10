@@ -20,14 +20,46 @@ MongoDB Atlas (cluster M0 free tier, São Paulo). Elegimos MongoDB porque los da
 
 **¿Cómo se despliega la aplicación?**
 - **Local:** Docker Compose con 4 servicios (API Python/FastAPI, frontend Angular, Caddy como proxy HTTPS, MongoDB)
-- **Nube:** Azure Container Apps (API + worker) + Atlas (base de datos) + Caddy (HTTPS gestionado por Azure)
-- La imagen Docker se construye desde el repositorio y se sube a Azure Container Registry
+- **Nube:** Azure Container Apps (API + worker) + Atlas (base de datos). HTTPS gestionado por Azure
+- La imagen Docker es multi-stage (3 etapas: Angular build → Python deps → runtime), se construye localmente y se sube a Azure Container Registry
+
+**¿Qué pasos se siguieron para desplegar en Azure?**
+1. `az login` — autenticación con cuenta Azure for Students
+2. Registrar proveedores (`Microsoft.ContainerRegistry`, `Microsoft.App`, `Microsoft.OperationalInsights`)
+3. Crear grupo de recursos `rg-capstone` en Brazil South (región más cercana a Perú)
+4. Crear Azure Container Registry (`capstonecr2026`) para almacenar la imagen Docker
+5. Construir imagen Docker multi-stage (`docker build`) y subirla al ACR (`docker push`)
+6. Crear el entorno Container Apps (`capstone-env`) con Log Analytics automático
+7. Desplegar contenedor API: ingress externo, puerto 8000, secretos para MongoDB URI y AUTH_SECRET
+8. Desplegar contenedor Worker: sin ingress público, solo procesa jobs internos
+9. Verificar health endpoint (`/api/v1/health` → status:ok, database:ok)
+10. Configurar Atlas Network Access con la IP estática del entorno Azure
+- Detalle completo con cada comando en `docs/DESPLIEGUE_AZURE.md`
+
+**¿Por qué eligieron Azure Container Apps y no App Service o una VM?**
+- Container Apps permite escalar a cero réplicas (costo $0 cuando no hay tráfico), ideal para un proyecto académico
+- Soporta múltiples contenedores en el mismo entorno (API + Worker), a diferencia de App Service que necesitaría dos planes
+- El cold start tarda ~20 segundos, aceptable para nuestro caso de uso
+- Una VM requeriría administrar sistema operativo, parches, certificados HTTPS — Container Apps lo gestiona automáticamente
+
+**¿Cómo manejan los secretos en el despliegue?**
+- Las credenciales (MongoDB URI, AUTH_SECRET) se almacenan como **secretos de Azure Container Apps**, encriptados en reposo
+- Las variables de entorno referencian los secretos por nombre (`secretref:mongo-uri`), nunca contienen el valor en texto plano
+- El AUTH_SECRET es un token aleatorio de 64 caracteres generado al desplegar, no reutilizado de ningún otro sistema
+- Nunca se guardan credenciales en el código, Dockerfile, repositorio ni logs
 
 **¿Cuánto cuesta mantener esto en producción?**
 - Atlas M0: gratis (hasta 512 MB)
-- Azure Container Apps: ~$3-5/mes con uso mínimo (1 réplica API + 1 worker)
-- Con créditos de estudiante ($100): alcanza para ~20 meses de operación
+- Azure Container Apps (min-replicas=0): ~$3-5/mes con uso mínimo
+- Azure Container Registry (Basic): ~$5/mes
+- **Total: ~$8-10/mes**
+- Con créditos de estudiante ($100): alcanza para ~10-12 meses de operación
 - Si la empresa asume: el costo es marginal comparado con el beneficio de automatizar la reposición
+
+**¿Qué pasa cuando se acaban los créditos de estudiante?**
+- La aplicación se detiene pero los datos en Atlas (free tier) persisten indefinidamente
+- Se puede migrar a GCP (free tier o créditos de $300/3 meses) o a un plan pay-as-you-go
+- Alternativa: desplegar con Docker Compose en una VM económica (~$5/mes en cualquier proveedor)
 
 ---
 
@@ -129,3 +161,21 @@ Porque requiere una fuente de stock estable y actualizada. Sin un compromiso de 
 
 **"¿Qué pasa si la credencial de Atlas se filtra?"**
 Tenemos un procedimiento documentado de 4 pasos para rotarla (`docs/PROCEDIMIENTO_ROTACION_CREDENCIAL.md`). La migración a credenciales propias de Milton ya se ejecutó, lo cual efectivamente rota la credencial operativa.
+
+**"¿Por qué dos contenedores separados y no uno solo?"**
+Separar API y Worker es una práctica de microservicios. Si el worker se traba procesando un pronóstico largo, la API sigue respondiendo consultas. Además, podemos escalar cada uno de forma independiente: más workers si hay muchos jobs, más API si hay muchos usuarios. En producción real, el worker podría correr en horarios nocturnos para ahorrar costos.
+
+**"¿Qué pasa si Azure se cae? ¿Tienen un plan de contingencia?"**
+El sistema está diseñado para funcionar también localmente con Docker Compose. Si Azure se cae, la versión local con MongoDB local puede operar. Los datos en Atlas persisten independientemente de Azure. Para una empresa real recomendaríamos replicación multi-región, pero para un proyecto académico la disponibilidad de una sola región es suficiente.
+
+**"¿Cómo garantizan que nadie accede a la base de datos desde fuera?"**
+Atlas Network Access restringe conexiones por IP: solo la IP estática del entorno Azure (20.201.103.203) y las IPs del equipo de desarrollo pueden conectarse. Además, la autenticación requiere usuario y contraseña con rol limitado a una sola base de datos (readWrite sobre `demand_forecasting_pub`). La conexión es TLS/SSL obligatorio.
+
+**"¿Hicieron ustedes el despliegue o lo hizo una IA?"**
+El despliegue fue ejecutado por el equipo con asistencia de herramientas de IA para automatizar los comandos. Cada paso está documentado en `docs/DESPLIEGUE_AZURE.md` con los comandos exactos, y podemos reproducirlo desde cero. Lo importante es que entendemos cada decisión: por qué Container Apps, por qué secretos, por qué dos contenedores, por qué Brazil South. La IA ayudó a ejecutar más rápido, pero las decisiones arquitectónicas son del equipo.
+
+**"Muéstrenme que la app funciona en la nube"**
+URL: `https://capstone-api.icypebble-fc2fe1de.brazilsouth.azurecontainerapps.io/`
+- La página de login carga (Angular servido desde el contenedor)
+- El health check (`/api/v1/health`) retorna: `{"status":"ok","database":"ok","version":"0.1.0","environment":"production"}`
+- Nota: con min-replicas=0, la primera carga puede tardar ~20s (cold start)
