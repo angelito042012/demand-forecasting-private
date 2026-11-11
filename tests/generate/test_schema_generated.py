@@ -37,7 +37,7 @@ def test_generated_forecast_allows_null_rf_and_observed():
     {"pred": {"promedio_28": -1.0, "rf_categoria_distribuido": None, "cero": 0.0}},
     {"pred": {"promedio_28": 1.0, "rf_categoria_distribuido": -2.0, "cero": 0.0}},
     {"pred": {"promedio_28": 1.0, "rf_categoria_distribuido": None}},
-    {"target_date": "2026-08-01"}])
+    {"target_date": "2026-10-22"}])
 def test_generated_forecast_rejections(over):
     with pytest.raises(SchemaError):
         validate_doc("forecasts", fc(**over))

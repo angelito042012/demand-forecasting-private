@@ -183,7 +183,7 @@ export class ForecastsPage {
   generated = computed(() => isGenerated(this.shownRun()?.kind));
   final = computed(() => isFinal(this.shownRun()?.kind));
   showObserved = computed(() => this.details() || !this.generated() || this.anyObserved());
-  maxDate = computed(() => (this.final() ? '2026-08-21' : '2026-09-30'));
+  maxDate = computed(() => (this.final() ? '2026-08-21' : '2026-10-21'));
 
   constructor() { this.store.ensure(); }
 

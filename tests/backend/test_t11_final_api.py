@@ -110,18 +110,18 @@ def test_non_final_runs_have_no_final_package(reader):
 
 # ---------------------------------------------------------------- fechas
 def test_historical_dates_within_allowed_range(reader):
-    assert get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-09-30").status_code == 200
-    r = get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-10-01")
+    assert get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-10-21").status_code == 200
+    r = get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-10-22")
     assert r.status_code == 422 and code(r) == "FUERA_DE_RANGO"
-    r = get(reader, "/forecasts?from=2026-10-01")
+    r = get(reader, "/forecasts?from=2026-10-22")
     assert r.status_code == 422 and code(r) == "FUERA_DE_RANGO"
-    r = get(reader, "/forecasts?run_id=" + fx.GEN_ID + "&to=2026-10-01")
+    r = get(reader, "/forecasts?run_id=" + fx.GEN_ID + "&to=2026-10-22")
     assert r.status_code == 422 and code(r) == "FUERA_DE_RANGO"
     assert get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-07-31").status_code == 200
 
 
 def test_unknown_run_with_out_of_range_date_keeps_general_barrier(reader):
-    r = get(reader, "/forecasts?run_id=no-existe&to=2026-10-05")
+    r = get(reader, "/forecasts?run_id=no-existe&to=2026-10-22")
     assert r.status_code == 422 and code(r) == "FUERA_DE_RANGO"
     assert get(reader, "/forecasts?run_id=no-existe").status_code == 404
 
@@ -226,7 +226,7 @@ def test_roles_reader_and_admin_read_anonymous_denied(reader, admin, anon):
 
 
 def test_general_barrier_constants_unchanged():
-    assert common.LAST_ALLOWED_DATE.isoformat() == "2026-09-30"
+    assert common.LAST_ALLOWED_DATE.isoformat() == "2026-10-21"
     with pytest.raises(Exception) as e:
-        common.check_dates(None, date(2026, 10, 1))
+        common.check_dates(None, date(2026, 10, 22))
     assert getattr(e.value, "code", "") == "FUERA_DE_RANGO"

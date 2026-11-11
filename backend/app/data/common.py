@@ -22,7 +22,7 @@ User = Annotated[CurrentUser, Depends(require_user)]
 Page = Annotated[int, Query(ge=1, le=100000)]
 PageSize = Annotated[int, Query(ge=1, le=200)]
 
-LAST_ALLOWED_DATE = date(2026, 9, 30)
+LAST_ALLOWED_DATE = date(2026, 10, 21)
 # T11 §1: unica excepcion, solo al CONSULTAR una corrida kind=final_evaluation (nunca para otros tipos).
 FINAL_KIND = "final_evaluation"
 FINAL_FIRST_DATE = date(2026, 8, 1)

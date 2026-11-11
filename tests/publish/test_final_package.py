@@ -281,20 +281,20 @@ def test_nan_prediction_is_not_published_as_zero(tmp_path):
 
 
 def test_date_limit_only_for_final_kind():
-    base = {"run_id": "r", "level": "sku", "entity_id": "1|1", "categoria": "C", "target_date": "2026-08-05", "h": 1,
+    base = {"run_id": "r", "level": "sku", "entity_id": "1|1", "categoria": "C", "target_date": "2026-10-22", "h": 1,
             "pred": {"promedio_28": 1.0, "rf_categoria_distribuido": 1.0, "cero": 0.0}, "evaluable": True,
             "provenance": "OBSERVED_EXCEL", "schema_version": 1}
     with pytest.raises(SchemaError):
-        validate_doc("forecasts", base)                                       # historica: sigue limitada a 31/07
+        validate_doc("forecasts", base)                                       # historica: limitada a 2026-10-21
     with pytest.raises(SchemaError):
         validate_doc("forecasts", {**base, "run_kind": "generated_baseline", "observed": None, "evaluable": False})
-    validate_doc("forecasts", {**base, "run_kind": "final_evaluation"})
+    validate_doc("forecasts", {**base, "run_kind": "final_evaluation", "target_date": "2026-08-05"})
     validate_doc("forecasts", {**base, "run_kind": "final_evaluation", "target_date": "2026-08-21"})
     with pytest.raises(SchemaError):
         validate_doc("forecasts", {**base, "run_kind": "final_evaluation", "target_date": "2026-08-22"})
     with pytest.raises(SchemaError):
         validate_doc("forecasts", {**base, "run_kind": "final_evaluation", "target_date": "2026-07-31"})
-    validate_doc("forecasts", {**base, "target_date": "2026-07-31"})
+    validate_doc("forecasts", {**base, "target_date": "2026-10-21"})
 
 
 def test_protected_databases_refused(pkg):

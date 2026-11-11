@@ -11,6 +11,7 @@ from datetime import date, timedelta
 
 from pipeline.publish import builders as b
 from pipeline.publish.protocol import PublishValidationError
+from pipeline.publish.schema import LAST_HISTORIC_DATE
 from pipeline.publish.signals import parse_fraction
 
 
@@ -36,7 +37,7 @@ def validate_generated(db, run_id: str, expected: dict, *, origin: date, horizon
         raise PublishValidationError("campos futuros (observed/evaluable) en una corrida generada")
     lo, hi = (origin + timedelta(days=1)).isoformat(), (origin + timedelta(days=horizon)).isoformat()
     if f.count_documents({"run_id": run_id, "$or": [{"target_date": {"$lt": lo}}, {"target_date": {"$gt": hi}},
-                                                    {"target_date": {"$gt": "2026-09-30"}}]}):
+                                                    {"target_date": {"$gt": LAST_HISTORIC_DATE}}]}):
         raise PublishValidationError("fecha objetivo fuera de la ventana permitida")
     has_rf = f.count_documents({"run_id": run_id, "pred.rf_categoria_distribuido": {"$ne": None}})
     if comparator and has_rf != got["forecasts_sku"] + got["forecasts_categoria"]:
