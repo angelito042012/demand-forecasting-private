@@ -83,14 +83,14 @@ Variables requeridas en Azure (ya configuradas):
 
 ## Versionado de imagenes
 
-Ultimo deploy: **v5** (11/11/2026), revision `capstone-api--0000005`.
+Ultimo deploy: **v6** (11/11/2026), revision `capstone-api--0000006`.
 
 Para futuros deploys, incrementar la etiqueta (`v6`, `v7`, etc.) o usar el sha corto del commit:
 
 ```bash
-docker build -t capstone-app:v6 .
-docker tag capstone-app:v6 capstonecr2026.azurecr.io/capstone-app:v6
-docker push capstonecr2026.azurecr.io/capstone-app:v6
-az containerapp update --name capstone-worker --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v6
-az containerapp update --name capstone-api --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v6
+docker build -t capstone-app:v7 .
+docker tag capstone-app:v7 capstonecr2026.azurecr.io/capstone-app:v7
+docker push capstonecr2026.azurecr.io/capstone-app:v7
+az containerapp update --name capstone-worker --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v7
+az containerapp update --name capstone-api --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v7
 ```

@@ -11,7 +11,7 @@
 Todo el codigo, documentacion tecnica y despliegue estan listos:
 
 - 115+ documentos de evidencia en `docs/`
-- Deploy en Azure Container Apps (imagen v5, revision `capstone-api--0000005`)
+- Deploy en Azure Container Apps (imagen v6, revision `capstone-api--0000006`)
 - URL publica: `https://capstone-api.icypebble-fc2fe1de.brazilsouth.azurecontainerapps.io`
 - Atlas Network Access configurado (temporal 1 semana)
 - 13/13 requisitos funcionales implementados, 7/7 no funcionales cumplidos

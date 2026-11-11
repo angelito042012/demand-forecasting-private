@@ -140,7 +140,7 @@ frontend/src/environments/
 
 | Componente | Tecnologia | Estado |
 |---|---|---|
-| API + Worker | Azure Container Apps | Desplegado (imagen `v5`, revision `capstone-api--0000005`, 11/11/2026) |
+| API + Worker | Azure Container Apps | Desplegado (imagen `v6`, revision `capstone-api--0000006`, 11/11/2026) |
 | Base de datos | MongoDB Atlas (Free Tier, 512 MB) | Operativo (~246 MB) |
 | Registro de imagenes | Azure Container Registry | Configurado |
 | Proxy HTTPS | Caddy (local) / Azure managed (nube) | Configurado |
