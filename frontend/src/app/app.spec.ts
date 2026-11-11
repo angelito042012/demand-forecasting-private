@@ -4,9 +4,9 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { App } from './app';
 import { routes } from './app.routes';
-import { AuthService } from './core/auth.service';
-import { DemoMode } from './core/demo';
-import { apiInterceptor } from './core/http.interceptor';
+import { AuthService } from './core/services/auth.service';
+import { DemoMode } from './core/interceptors';
+import { apiInterceptor } from './core/interceptors';
 import { session } from './testing/fixtures';
 
 describe('App shell', () => {

@@ -4,8 +4,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
-import { AuthService } from '../core/auth.service';
+import { apiInterceptor } from '../core/interceptors';
+import { AuthService } from '../core/services/auth.service';
 import { CurrentPlanStore } from '../core/current-plan.store';
 import { App } from '../app';
 import { HomePage } from './home.page';
@@ -271,7 +271,7 @@ describe('R21 · franja de contexto y rutas', () => {
     for (const u of ['/sistema', '/ayuda']) { await router.navigateByUrl(u); await settle(f); expect(el.querySelector('[data-testid="context-strip"]'), u).toBeNull(); }
     for (const u of ['/cargas', '/resumen']) {
       const t2 = await strip(u);
-      expect(t2, u).toContain('Ventas históricas del análisis académico (marzo a julio de 2026)');
+      expect(t2, u).toContain('Ventas históricas del análisis académico (enero a septiembre de 2026)');
       expect(t2, u).toContain('No son el plan de compra de noviembre');
       expect(t2, u).not.toMatch(/inventario simulado/i);
     }

@@ -15,11 +15,12 @@ TIMEZONE = "America/Lima"
 
 EXCLUDED_DATES = frozenset({date(2026, 4, 3), date(2026, 4, 12), date(2026, 6, 7)})
 
-# Agosto 2026 queda reservado como test final: no se usa para entrenar,
-# elegir modelos, categorias ni hiperparametros.
+# T12 (agosto 2026) fue la evaluación final cerrada. Para corridas generadas
+# con origen posterior a julio se usa entrenamiento hasta septiembre; T12
+# permanece como evidencia histórica y no se reutiliza como prueba final.
 FINAL_TEST_START = date(2026, 8, 1)
-FINAL_TEST_END = date(2026, 8, 31)
-LAST_TRAIN_DATE = date(2026, 7, 31)  # corte reservado
+FINAL_TEST_END = date(2026, 8, 21)
+LAST_TRAIN_DATE = date(2026, 9, 30)
 
 
 def to_date(value) -> date:

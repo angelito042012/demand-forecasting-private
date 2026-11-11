@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
+import { apiInterceptor } from '../core/interceptors';
 import { InventoryPage } from './inventory.page';
 import { routes } from '../app.routes';
 import { visibleText } from '../testing/mount';

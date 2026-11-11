@@ -2,7 +2,7 @@
 
 Todo codigo de features/modelos debe leer ventas SOLO a traves de estas
 funciones; nunca consultar `sales` directamente. Garantias:
-  - el corte debe ser <= LAST_TRAIN_DATE (2026-07-31): agosto y posteriores no
+  - el corte debe ser <= LAST_TRAIN_DATE (2026-09-30): datos posteriores no
     son accesibles desde la ruta de entrenamiento ni de validacion de folds;
   - solo fecha <= corte del fold; el catalogo de categorias se construye con el
     mismo corte; las notas de credito no forman parte del objetivo;
@@ -76,9 +76,9 @@ class FoldData:
 
 def _check_cutoff(value) -> date:
     cutoff = to_date(value)
-    if cutoff > LAST_TRAIN_DATE or cutoff >= FINAL_TEST_START:
+    if cutoff > LAST_TRAIN_DATE:
         raise TrainingCutoffError(
-            f"corte {cutoff} posterior a {LAST_TRAIN_DATE}: agosto 2026 esta reservado como test final")
+            f"corte {cutoff} posterior a {LAST_TRAIN_DATE}")
     return cutoff
 
 
@@ -111,7 +111,7 @@ def _fingerprint(rows, cutoff: date, catalog: dict, report: SourceReport) -> str
 
 
 def load_training_data(db, cutoff, *, start=None, required_months=None) -> TrainingData:
-    """Ventas de entrenamiento con fecha <= corte (corte <= 2026-07-31), solo de fuentes
+    """Ventas de entrenamiento con fecha <= corte (corte <= 2026-09-30), solo de fuentes
     aprobadas. `required_months` (por defecto 2026-03..mes del corte) debe tener fuente aprobada."""
     last = _check_cutoff(cutoff)
     first = to_date(start) if start is not None else None
@@ -133,7 +133,7 @@ def load_training_data(db, cutoff, *, start=None, required_months=None) -> Train
 
 def load_fold(db, train_cutoff, validation_end, *, start=None, required_months=None) -> FoldData:
     """Fold temporal: entrenamiento <= corte; validacion en (corte, validation_end].
-    validation_end tambien debe ser <= 2026-07-31 (agosto no se usa para elegir)."""
+    validation_end tambien debe ser <= 2026-09-30."""
     train = load_training_data(db, train_cutoff, start=start, required_months=required_months)
     end = _check_cutoff(validation_end)
     if end <= train.cutoff:

@@ -3,11 +3,11 @@
   "politica_desarrollo": {
     "nota": "Configuracion del SERVIDOR: el cliente no puede ampliarla. Tras la evaluacion final se ampliara en un encargo separado.",
     "origen_minimo": "2026-06-01",
-    "origen_maximo": "2026-07-10",
+    "origen_maximo": "2026-09-30",
     "horizonte_maximo": 21,
     "metodos_permitidos": ["promedio_28"],
-    "ultimo_dia_de_datos": "2026-07-31",
-    "meses_permitidos_de_carga": ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"],
+    "ultimo_dia_de_datos": "2026-09-30",
+    "meses_permitidos_de_carga": ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"],
     "origen_demostracion": "2026-07-10"
   },
   "subidas": {
@@ -18,7 +18,7 @@
     "max_filas_hoja": 200000,
     "directorio_privado": "data/private/uploads",
     "nombre_cliente": "solo etiqueta saneada (<= 80 caracteres [A-Za-z0-9._ -]); nunca decide rutas",
-    "rechazar": ["macros (vbaProject.bin)", "enlaces externos", "contenido no zip", "encabezados distintos a los del importador", "fechas fuera de marzo-julio 2026"]
+    "rechazar": ["macros (vbaProject.bin)", "enlaces externos", "contenido no zip", "encabezados distintos a los del importador", "fechas fuera de enero-septiembre 2026"]
   },
   "cola": {"tipos": ["import_excel", "generate_run", "generate_plan"], "lease_segundos": 60, "latido_segundos": 15, "max_intentos": 5,
            "backoff_base_segundos": 5, "backoff_publicacion_en_curso_segundos": 65, "sondeo_segundos": 3},

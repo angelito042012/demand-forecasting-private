@@ -4,12 +4,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
-import { demoInterceptor } from '../core/demo';
-import { AuthService } from '../core/auth.service';
+import { apiInterceptor } from '../core/interceptors';
+import { demoInterceptor } from '../core/interceptors';
+import { AuthService } from '../core/services/auth.service';
 import { ForecastsPage } from './forecasts.page';
 import { RecommendationsPage } from './recommendations.page';
-import { calcSteps, simpleSteps } from '../core/reco-calc';
+import { calcSteps, simpleSteps } from '../core/utils/reco-calc';
 import { Recommendation } from '../core/models';
 import { forecast, page, recoNoSnap, recoOk, runSummary } from '../testing/fixtures';
 import { realRecoDetail, realRecoPage, realRunSummary } from '../testing/real-shapes';
@@ -123,11 +123,11 @@ describe('UX01 Ventas previstas', () => {
     expect(txt(m.el, 'forecast-table')).toContain('Modelo experimental');
   });
 
-  it('no evaluación: tope 31/07 y sin advertencias de la evaluación', async () => {
+  it('no evaluación: tope 30/09 y sin advertencias de la evaluación', async () => {
     const m = await mountAs(ForecastsPage);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
     await ok(m.f, one(m.http, '/api/v1/forecasts'), page([]));
-    expect((q(m.el, 'f-to') as HTMLInputElement).getAttribute('max')).toBe('2026-07-31');
+    expect((q(m.el, 'f-to') as HTMLInputElement).getAttribute('max')).toBe('2026-09-30');
     expect(q(m.el, 'final-warnings')).toBeNull();
     expect(txt(m.el, 'analysis-name')).toBe('Ejemplo de julio');
     expect(m.el.querySelector('[data-state="empty"]')?.textContent).toContain('No hay estimaciones');

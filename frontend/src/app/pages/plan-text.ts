@@ -1,7 +1,7 @@
 // T19: textos de presentación de «Planificar compras». SOLO formato: los valores los entrega la API (cantidades en texto decimal).
-import { fmtDec } from '../core/format';
+import { fmtDec } from '../core/utils/format';
 import { PlanScenario, PlanStatus } from '../core/models';
-import { monthName } from '../core/ux-text';
+import { monthName } from '../core/utils/ux-text';
 
 export const NOT_COMPUTABLE = 'No se puede calcular';
 export const NOT_REPORTED = 'No informado';

@@ -22,7 +22,7 @@ User = Annotated[CurrentUser, Depends(require_user)]
 Page = Annotated[int, Query(ge=1, le=100000)]
 PageSize = Annotated[int, Query(ge=1, le=200)]
 
-LAST_ALLOWED_DATE = date(2026, 7, 31)
+LAST_ALLOWED_DATE = date(2026, 9, 30)
 # T11 §1: unica excepcion, solo al CONSULTAR una corrida kind=final_evaluation (nunca para otros tipos).
 FINAL_KIND = "final_evaluation"
 FINAL_FIRST_DATE = date(2026, 8, 1)
@@ -83,7 +83,7 @@ def check_sort(sort: str | None, allowed: dict[str, list[tuple[str, int]]], defa
 def check_dates(frm: date | None, to: date | None) -> None:
     for d in (frm, to):
         if d is not None and d > LAST_ALLOWED_DATE:
-            raise ApiError(422, "AGOSTO_RESERVADO", "Agosto de 2026 está reservado para la prueba final.")
+            raise ApiError(422, "FUERA_DE_RANGO", "La fecha solicitada excede el último día de datos permitido.")
     if frm and to:
         if frm > to:
             raise invalid("El rango de fechas es inválido (from > to).")

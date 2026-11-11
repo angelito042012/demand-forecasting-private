@@ -1,5 +1,5 @@
 import { ComparisonPage } from './comparison.page';
-import { fmtInt, fmtPct, fmtPen, fmtPp } from '../core/format';
+import { fmtInt, fmtPct, fmtPen, fmtPp } from '../core/utils/format';
 import { BacktestDetail } from '../core/models';
 import { realBacktest, realBacktestList, realRunSummary } from '../testing/real-shapes';
 import { page } from '../testing/fixtures';

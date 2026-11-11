@@ -1,23 +1,25 @@
 import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../core/services/auth.service';
 import { RunChoice, isFinal, isGenerated, kindLabel } from '../core/run-choice';
 import { RunsStore } from '../core/runs-store';
 import { FinalPackage, LoadState, RunDetail, RunSummary } from '../core/models';
-import { fmtDate, fmtInt } from '../core/format';
-import { analysisName, analysisPurpose, isReplaced, kindWords, longDate, runStatusChip } from '../core/ux-text';
-import { PageHeader } from '../ui/page-header';
-import { StatePanel } from '../ui/state-panel';
-import { DataTree } from '../ui/data-tree';
-import { FinalWarnings } from '../ui/notices';
+import { fmtDate, fmtInt } from '../core/utils/format';
+import { analysisName, analysisPurpose, isReplaced, kindWords, longDate, runStatusChip } from '../core/utils/ux-text';
+import { PageHeader } from '../shared/components/page-header';
+import { StatePanel } from '../shared/components/state-panel';
+import { DataTree } from '../shared/components/data-tree';
+import { FinalWarnings } from '../shared/components/notices';
+import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
+import { MessageModule } from 'primeng/message';
 
-/** Período estimado en una frase con fechas en español (vacío si la API no lo publica). */
 function periodWords(r: Pick<RunSummary, 'target_start' | 'target_end'>): string {
   return r.target_start && r.target_end ? `del ${longDate(r.target_start)} al ${longDate(r.target_end)}` : '';
 }
 
-/** Todo el detalle publicado de un análisis (identificadores, fases, correcciones, cobertura, método, procedencia). Va plegado. */
 @Component({
   selector: 'app-run-tech',
   imports: [RouterLink, DataTree, FinalWarnings],
@@ -111,7 +113,6 @@ export class RunTech {
   corrections(p: FinalPackage): string[] {
     return (p.corrections ?? []).map((c) => typeof c === 'string' ? c : this.scalars(c).map((kv) => `${kv[0]}: ${kv[1]}`).join(' · '));
   }
-  /** Pares clave/valor escalares de un objeto publicado (sin rutas ni anidados). */
   scalars(o: object): [string, string][] {
     return Object.entries(o).filter(([, v]) => ['string', 'number', 'boolean'].includes(typeof v)).map(([k, v]) => [k, String(v)]);
   }
@@ -125,58 +126,60 @@ export class RunTech {
   }
 }
 
-/** Tarjeta de un análisis: nombre, ventas utilizadas hasta, período, estado, propósito y acciones; lo técnico va plegado. */
 @Component({
   selector: 'app-analysis-card',
-  imports: [RouterLink, StatePanel, RunTech],
+  imports: [RouterLink, StatePanel, RunTech, CardModule, ButtonModule, TagModule, MessageModule],
   template: `
     @let r = run();
-    <article class="card" [class.selected]="consulting()" [attr.data-testid]="'run-card-' + r.run_id">
-      <h2 data-testid="run-name">{{ name() }}</h2>
-      <p class="chips">
-        <span class="chip" [class.ok]="chip().tone === 'ok'" [class.info]="chip().tone === 'info'" [class.bad]="chip().tone === 'bad'" data-testid="run-status">{{ chip().text }}</span>
-        <span class="chip" data-testid="run-kind">{{ kindText() }}</span>
-        @if (consulting()) { <span class="chip info" data-testid="run-consulting">Estás consultando este análisis</span> }
-      </p>
-      <p data-testid="run-purpose">{{ purpose() }}</p>
+    <p-card [attr.data-testid]="'run-card-' + r.run_id" [styleClass]="consulting() ? 'border-primary' : ''">
+      <ng-template #header>
+        <div class="card-header">
+          <h2 data-testid="run-name">{{ name() }}</h2>
+          <div class="flex flex-wrap gap-2">
+            <p-tag [severity]="tagSeverity()" [value]="chip().text" data-testid="run-status" />
+            <p-tag severity="secondary" [value]="kindText()" data-testid="run-kind" />
+            @if (consulting()) { <p-tag severity="info" value="Estás consultando este análisis" data-testid="run-consulting" /> }
+          </div>
+        </div>
+      </ng-template>
+      <p class="muted" data-testid="run-purpose">{{ purpose() }}</p>
       <p data-testid="run-used">Ventas utilizadas hasta el <strong>{{ used() }}</strong></p>
       @if (period(); as p) { <p data-testid="run-period">Período estimado: <strong>{{ p }}</strong></p> }
       @if (replaced()) {
-        <div class="notice danger" role="alert" data-testid="replaced-notice">
+        <p-message severity="error" role="alert" data-testid="replaced-notice" styleClass="w-full my-2">
           <strong>Esta versión fue reemplazada. No uses sus sugerencias.</strong>
           @if (r.quality_issue?.superseded_by; as nxt) { <a [routerLink]="['/corridas']" [queryParams]="{ run: nxt }" data-testid="replaced-link">Ver el análisis corregido</a> }
-          <details class="tech"><summary>Motivo</summary><p data-testid="replaced-reason">{{ reason() }}</p></details>
-        </div>
+        </p-message>
       }
-      <div class="actions">
-        <a class="btn" [class.secondary]="!primary()" [routerLink]="['/evaluacion/ventas-previstas']" [queryParams]="{ run: r.run_id }" data-testid="to-forecasts">Ver previsión</a>
-        @if (!final()) { <a class="btn secondary" [routerLink]="['/recomendaciones']" [queryParams]="{ run: r.run_id }" data-testid="to-reco">Ver reposición</a> }
-        <a class="btn secondary" [routerLink]="['/comparacion']" [queryParams]="{ run: r.run_id }" data-testid="to-compare">Ver evaluación</a>
-        @if (!consulting()) { <button type="button" class="secondary" (click)="pick.emit(r.run_id)" data-testid="choose">Elegir este análisis</button> }
-      </div>
-      <details class="tech" [attr.data-testid]="'tech-' + r.run_id" (toggle)="onToggle($event)">
-        <summary>Detalles técnicos</summary>
-        @if (opened()) {
-          @if (detail(); as st) {
-            <app-state-panel [state]="st" (retry)="techOpen.emit(r.run_id)">
-              @if (doc(); as d) { <app-run-tech [detail]="d" /> }
-            </app-state-panel>
-          }
+      <ng-template #footer>
+        <div class="flex flex-wrap gap-2">
+          <p-button label="Ver previsión" icon="pi pi-chart-bar" [outlined]="!primary()" [routerLink]="['/evaluacion/ventas-previstas']" [queryParams]="{ run: r.run_id }" data-testid="to-forecasts" />
+          @if (!final()) { <p-button label="Ver reposición" icon="pi pi-box" [outlined]="true" [routerLink]="['/recomendaciones']" [queryParams]="{ run: r.run_id }" data-testid="to-reco" /> }
+          <p-button label="Ver evaluación" icon="pi pi-check-circle" [outlined]="true" [routerLink]="['/comparacion']" [queryParams]="{ run: r.run_id }" data-testid="to-compare" />
+          @if (!consulting()) { <p-button label="Elegir este análisis" icon="pi pi-check" [outlined]="true" (onClick)="pick.emit(r.run_id)" data-testid="choose" /> }
+        </div>
+      </ng-template>
+    </p-card>
+    <details class="tech" [attr.data-testid]="'tech-' + r.run_id" (toggle)="onToggle($event)">
+      <summary>Detalles técnicos</summary>
+      @if (opened()) {
+        @if (detail(); as st) {
+          <app-state-panel [state]="st" (retry)="techOpen.emit(r.run_id)">
+            @if (doc(); as d) { <app-run-tech [detail]="d" /> }
+          </app-state-panel>
         }
-      </details>
-    </article>
+      }
+    </details>
   `,
   styles: `
-    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; }
-    .card p { color: var(--ink); }
-    .card .chips + p { color: var(--muted); }
+    .card-header { padding: 1rem 1rem 0; }
+    .card-header h2 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+    :host ::ng-deep .border-primary { border: 2px solid var(--accent); }
   `,
 })
 export class AnalysisCard {
   run = input.required<RunSummary>();
-  /** El análisis que se está consultando (elegido en la dirección, o el de uso por defecto si no hay elección). */
   consulting = input(false);
-  /** Resalta «Ver previsión» como acción principal (solo en el análisis en uso por defecto). */
   primary = input(false);
   detail = input<LoadState<RunDetail> | null | undefined>(null);
   pick = output<string>();
@@ -196,6 +199,10 @@ export class AnalysisCard {
     return q?.reason ?? q?.message ?? 'Reemplazada por una corrección de precisión; no uses sus sugerencias.';
   });
   doc = computed(() => { const s = this.detail(); return s && s.kind === 'data' ? s.data : null; });
+  tagSeverity = computed(() => {
+    const t = this.chip().tone;
+    return t === 'ok' ? 'success' : t === 'bad' ? 'danger' : 'info';
+  });
 
   onToggle(ev: Event) {
     const open = (ev.target as HTMLDetailsElement).open;
@@ -206,12 +213,14 @@ export class AnalysisCard {
 
 @Component({
   selector: 'app-runs-page',
-  imports: [RouterLink, PageHeader, StatePanel, AnalysisCard],
+  imports: [RouterLink, PageHeader, StatePanel, AnalysisCard, ButtonModule],
   template: `
     <app-page-header title="Mis análisis"
       lead="Elige qué resultado quieres consultar. Elegir un análisis solo cambia lo que ves; no modifica cuál se usa por defecto." />
     @if (isAdmin) {
-      <p><a class="btn secondary" [routerLink]="['/crear-analisis']" queryParamsHandling="preserve" data-testid="to-create">Crear un análisis nuevo</a></p>
+      <div class="mb-3">
+        <p-button label="Crear un análisis nuevo" icon="pi pi-plus" [outlined]="true" [routerLink]="['/crear-analisis']" queryParamsHandling="preserve" data-testid="to-create" />
+      </div>
     }
     <app-state-panel [state]="store.state()" (retry)="store.refresh()">
       @if (current().length === 0 && old().length === 0) {
@@ -246,13 +255,10 @@ export class RunsPage {
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   protected store = inject(RunsStore);
-  /** Solo orientación: el servidor rechaza igual las escrituras del lector. */
   isAdmin = this.auth.isAdmin;
-  /** Análisis elegido en la dirección (`run`); null = el que está en uso por defecto. */
   choice = new RunChoice(this.route, this.router, this.destroyRef, () => undefined);
   details = signal<Record<string, LoadState<RunDetail>>>({});
 
-  /** El de uso por defecto va primero; el resto conserva el orden del servidor. */
   current = computed(() => {
     const l = this.store.runs().filter((r) => !isReplaced(r));
     return [...l.filter((r) => r.is_active), ...l.filter((r) => !r.is_active)];
@@ -269,7 +275,6 @@ export class RunsPage {
     return id ? r.run_id === id : r.is_active;
   }
 
-  /** Carga el detalle completo la primera vez que se abre «Detalles técnicos» (o tras un error). */
   loadDetail(id: string) {
     const cur = this.details()[id];
     if (cur && cur.kind !== 'error') return;

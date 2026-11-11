@@ -144,11 +144,11 @@ def test_forecasts_invalid_params_422(env, qs):
     assert r.status_code == 422 and r.json()["error"]["code"] == "ENTRADA_INVALIDA"
 
 
-@pytest.mark.parametrize("qs", ["from=2026-08-01", "to=2026-08-15", "from=2026-07-01&to=2026-09-01"])
-def test_august_is_rejected(env, qs):
+@pytest.mark.parametrize("qs", ["from=2026-10-01", "to=2026-10-15", "from=2026-07-01&to=2026-11-01"])
+def test_out_of_range_dates_rejected(env, qs):
     for route in ("/forecasts?", "/sales/summary?"):
         r = _get(env, route + qs)
-        assert r.status_code == 422 and r.json()["error"]["code"] == "AGOSTO_RESERVADO"
+        assert r.status_code == 422 and r.json()["error"]["code"] == "FUERA_DE_RANGO"
 
 
 @pytest.mark.parametrize("qs", [

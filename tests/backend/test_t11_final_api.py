@@ -3,6 +3,7 @@ con datos SINTETICOS de prueba; solo lectura, sin ejecutar modelos."""
 from __future__ import annotations
 
 import json
+from datetime import date
 
 import pytest
 from fastapi import FastAPI
@@ -108,19 +109,20 @@ def test_non_final_runs_have_no_final_package(reader):
 
 
 # ---------------------------------------------------------------- fechas
-def test_historical_august_stays_reserved(reader):
-    r = get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-08-01")
-    assert r.status_code == 422 and code(r) == "AGOSTO_RESERVADO"
-    r = get(reader, "/forecasts?from=2026-08-01")                      # corrida activa por defecto
-    assert r.status_code == 422 and code(r) == "AGOSTO_RESERVADO"
-    r = get(reader, "/forecasts?run_id=" + fx.GEN_ID + "&to=2026-08-01")
-    assert r.status_code == 422 and code(r) == "AGOSTO_RESERVADO"
+def test_historical_dates_within_allowed_range(reader):
+    assert get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-09-30").status_code == 200
+    r = get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-10-01")
+    assert r.status_code == 422 and code(r) == "FUERA_DE_RANGO"
+    r = get(reader, "/forecasts?from=2026-10-01")
+    assert r.status_code == 422 and code(r) == "FUERA_DE_RANGO"
+    r = get(reader, "/forecasts?run_id=" + fx.GEN_ID + "&to=2026-10-01")
+    assert r.status_code == 422 and code(r) == "FUERA_DE_RANGO"
     assert get(reader, "/forecasts?run_id=" + fx.HIST_ID + "&to=2026-07-31").status_code == 200
 
 
-def test_unknown_run_with_august_date_keeps_general_barrier(reader):
-    r = get(reader, "/forecasts?run_id=no-existe&to=2026-08-05")
-    assert r.status_code == 422 and code(r) == "AGOSTO_RESERVADO"
+def test_unknown_run_with_out_of_range_date_keeps_general_barrier(reader):
+    r = get(reader, "/forecasts?run_id=no-existe&to=2026-10-05")
+    assert r.status_code == 422 and code(r) == "FUERA_DE_RANGO"
     assert get(reader, "/forecasts?run_id=no-existe").status_code == 404
 
 
@@ -224,7 +226,7 @@ def test_roles_reader_and_admin_read_anonymous_denied(reader, admin, anon):
 
 
 def test_general_barrier_constants_unchanged():
-    assert common.LAST_ALLOWED_DATE.isoformat() == "2026-07-31"
+    assert common.LAST_ALLOWED_DATE.isoformat() == "2026-09-30"
     with pytest.raises(Exception) as e:
-        common.check_dates(None, common.FINAL_LAST_DATE)
-    assert getattr(e.value, "code", "") == "AGOSTO_RESERVADO"
+        common.check_dates(None, date(2026, 10, 1))
+    assert getattr(e.value, "code", "") == "FUERA_DE_RANGO"

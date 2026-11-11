@@ -4,22 +4,24 @@ import { catchError, map, of, tap, throwError } from 'rxjs';
 import { RunChoice, isFinal, isGenerated } from '../core/run-choice';
 import { ApiService } from '../core/api.service';
 import { RunsStore } from '../core/runs-store';
-import { load } from '../core/load';
+import { load } from '../core/utils/load';
 import { BacktestDetail, BacktestItem, Cohorte, Page, PredRow } from '../core/models';
 import {
   AGREGADO, BASE_POLICY, COHORTES, METHOD_INFO, POLICIES, PRED_COHORTES, SIM_LABELS, SimRow, VISTAS,
   coverageOf, foldsOf, kindOf, predRows, simRows,
 } from '../core/backtest';
-import { DASH, fmtDate, fmtInt, fmtPct, fmtPen, fmtPp, fmtDec } from '../core/format';
-import { analysisName, isReplaced } from '../core/ux-text';
-import { StatePanel } from '../ui/state-panel';
-import { SimNotice, SupersededBanner, isRunInvalid } from '../ui/notices';
-import { PageHeader } from '../ui/page-header';
-import { AnalysisBar } from '../ui/analysis-bar';
-import { EvalConclusion } from '../ui/eval-conclusion';
-import { EvalSummary } from '../ui/eval-summary';
-import { EvalTab, EvalTabs } from '../ui/eval-tabs';
+import { DASH, fmtDate, fmtInt, fmtPct, fmtPen, fmtPp, fmtDec } from '../core/utils/format';
+import { analysisName, isReplaced } from '../core/utils/ux-text';
+import { StatePanel } from '../shared/components/state-panel';
+import { SimNotice, SupersededBanner, isRunInvalid } from '../shared/components/notices';
+import { PageHeader } from '../shared/components/page-header';
+import { AnalysisBar } from '../shared/components/analysis-bar';
+import { EvalConclusion } from '../shared/components/eval-conclusion';
+import { EvalSummary } from '../shared/components/eval-summary';
+import { EvalTab, EvalTabs } from '../shared/components/eval-tabs';
 import { FinalEvaluation } from './final-evaluation';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
 import { GENERATED_NO_EVAL, NOT_EVALUABLE, WINDOW_NOTE, biasText, compareSentence, errorText, mainExplanation, simConclusion, simpleScope, addDays } from './eval-text';
 
 const EVAL_START = '2026-06-01';
@@ -31,7 +33,7 @@ interface KeyRow { id: string; label: string; role: string; n: string; error: st
 
 @Component({
   selector: 'app-comparison-page',
-  imports: [StatePanel, SimNotice, SupersededBanner, RouterLink, FinalEvaluation, PageHeader, AnalysisBar, EvalConclusion, EvalSummary, EvalTabs],
+  imports: [StatePanel, SimNotice, SupersededBanner, RouterLink, FinalEvaluation, PageHeader, AnalysisBar, EvalConclusion, EvalSummary, EvalTabs, ButtonModule, MessageModule],
   template: `
     <app-page-header title="Evaluación de resultados" lead="¿Qué tan cerca estuvieron las estimaciones de las ventas registradas?" />
     <app-analysis-bar [runId]="barRun()" />
@@ -52,7 +54,7 @@ interface KeyRow { id: string; label: string; role: string; n: string; error: st
     </app-state-panel>
 
     @if (list.state().kind === 'empty') {
-      <section class="notice info" data-testid="no-backtest" aria-label="Sin comparación para este análisis">
+      <section class="surface" data-testid="no-backtest" aria-label="Sin comparación para este análisis" style="border-left: 4px solid var(--p-blue-500); padding: 1rem;">
         @if (choice.id()) {
           @if (generatedChoice()) {
             <p><strong>Este análisis se creó en la aplicación y todavía no tiene una comparación con ventas registradas.</strong></p>
@@ -64,8 +66,8 @@ interface KeyRow { id: string; label: string; role: string; n: string; error: st
           <p><strong>Todavía no hay una comparación con ventas registradas publicada.</strong></p>
         }
         <p class="toolbar-links">
-          <a class="btn secondary" [routerLink]="['/corridas']" [queryParams]="choice.id() ? { run: choice.id() } : {}" data-testid="to-analyses">Ir a «Mis análisis»</a>
-          @if (histRun(); as h) { <a class="btn secondary" [routerLink]="['/comparacion']" [queryParams]="{ run: h }" data-testid="hist-link">Ver el análisis que sí tiene comparación</a> }
+          <p-button label="Ir a «Mis análisis»" [outlined]="true" [routerLink]="['/corridas']" [queryParams]="choice.id() ? { run: choice.id() } : {}" data-testid="to-analyses" />
+          @if (histRun(); as h) { <p-button label="Ver el análisis que sí tiene comparación" [outlined]="true" [routerLink]="['/comparacion']" [queryParams]="{ run: h }" data-testid="hist-link" /> }
         </p>
       </section>
     }
@@ -80,7 +82,7 @@ interface KeyRow { id: string; label: string; role: string; n: string; error: st
           <div role="tabpanel" id="panel-est" aria-labelledby="tab-est" tabindex="0" [hidden]="tab() !== 'est'" data-testid="panel-est">
           <section id="sec-estimaciones" aria-labelledby="h-est" data-testid="sec-estimaciones">
             <h2 id="h-est">Estimaciones frente a ventas registradas</h2>
-            <app-eval-summary context="Resultados históricos de desarrollo, calculados sobre meses ya conocidos (junio y julio de 2026). Este ejemplo no incluye agosto: agosto se evalúa aparte."
+            <app-eval-summary context="Resultados históricos de desarrollo, calculados sobre meses ya conocidos del período de evaluación."
               [scope]="simple()" [explanation]="explanation()" [notice]="briefNotice()" (openDetail)="openDetail()" />
             <details class="academic" id="academic-detail" data-testid="academic-detail" [open]="acOpen()" (toggle)="acOpen.set($any($event.target).open)">
             <summary id="academic-summary">Ver cómo se evaluó: detalle académico</summary>
@@ -144,7 +146,7 @@ interface KeyRow { id: string; label: string; role: string; n: string; error: st
               </div>
             </fieldset>
 
-            <section class="notice info" data-testid="limits" aria-labelledby="h-leer">
+            <section class="surface" data-testid="limits" aria-labelledby="h-leer" style="border-left: 4px solid var(--p-blue-500); padding: 1rem; margin: 0.75rem 0;">
               <h3 id="h-leer">Cómo leer estos resultados</h3>
               <ul class="plain">
                 <li>El método elegido es el <strong>promedio de 28 días</strong>. {{ windowNote }} El <strong>modelo experimental</strong> (bosque aleatorio) se compara con él, pero no se usa para decidir.</li>

@@ -3,40 +3,41 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { RunChoice, isFinal, isGenerated } from '../core/run-choice';
 import { FormsModule } from '@angular/forms';
 import { ApiService, ForecastQuery } from '../core/api.service';
-import { load } from '../core/load';
+import { load } from '../core/utils/load';
 import { ForecastItem, ForecastPage } from '../core/models';
 import { RunsStore } from '../core/runs-store';
-import { analysisName, categoryLabel, isReplaced, productLabel } from '../core/ux-text';
-import { StatePanel } from '../ui/state-panel';
-import { Pager } from '../ui/pager';
-import { PageHeader } from '../ui/page-header';
-import { AnalysisBar } from '../ui/analysis-bar';
-import { fmtDate, fmtDec } from '../core/format';
-import { FinalWarnings } from '../ui/notices';
+import { analysisName, categoryLabel, isReplaced, productLabel } from '../core/utils/ux-text';
+import { StatePanel } from '../shared/components/state-panel';
+import { Pager } from '../shared/components/pager';
+import { PageHeader } from '../shared/components/page-header';
+import { AnalysisBar } from '../shared/components/analysis-bar';
+import { fmtDate, fmtDec } from '../core/utils/format';
+import { FinalWarnings } from '../shared/components/notices';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectButtonModule } from 'primeng/selectbutton';
 
 export const NA = 'no disponible para esta corrida';
 
-/**
- * UX01 «Ventas previstas»: tabla corta (producto, fecha, cantidad estimada y, si existen, ventas registradas). Las columnas
- * técnicas (día de la previsión, tipo de historial, modelo experimental, control cero, evaluable) están en «Comparar métodos / ver detalles».
- */
 @Component({
   selector: 'app-forecasts-page',
-  imports: [StatePanel, Pager, FormsModule, FinalWarnings, PageHeader, AnalysisBar],
+  imports: [StatePanel, Pager, FormsModule, FinalWarnings, PageHeader, AnalysisBar, ButtonModule, MessageModule, SelectModule, InputTextModule, SelectButtonModule],
   template: `
     <app-page-header title="Ventas previstas" lead="Unidades que se estima vender de cada producto o categoría en las fechas del análisis elegido." />
     <app-analysis-bar [runId]="choice.id()" />
 
     @if (final()) {
-      <p class="notice info" data-testid="final-note">
+      <p-message severity="info" data-testid="final-note" styleClass="w-full mb-3">
         <strong>{{ name() }}.</strong> Cada fila compara la estimación fijada el {{ d(shownRun()?.origin ?? shownRun()?.cutoff) }} con la venta registrada
         ({{ d(shownRun()?.target_start) }} al {{ d(shownRun()?.target_end) }}). Un día sin ningún registro se rotula «no evaluable»; no es una venta cero.
         Son datos históricos: esta evaluación no pronostica octubre.
-      </p>
+      </p-message>
       <app-final-warnings [warnings]="shownRun()?.warnings" />
     }
     @if (replaced()) {
-      <p class="notice danger" role="alert" data-testid="forecast-replaced">Esta versión fue reemplazada. No uses sus resultados.</p>
+      <p-message severity="error" role="alert" data-testid="forecast-replaced" text="Esta versión fue reemplazada. No uses sus resultados." styleClass="w-full mb-3" />
     }
 
     <section class="toolbar" aria-label="Filtros de ventas previstas">
@@ -50,15 +51,15 @@ export const NA = 'no disponible para esta corrida';
             </select>
           </label>
         }
-        <label>Código del producto <input name="sku" [(ngModel)]="f.sku" autocomplete="off" /></label>
-        <label>Categoría <input name="cat" [(ngModel)]="f.categoria" autocomplete="off" /></label>
+        <label>Código del producto <input pInputText name="sku" [(ngModel)]="f.sku" autocomplete="off" /></label>
+        <label>Categoría <input pInputText name="cat" [(ngModel)]="f.categoria" autocomplete="off" /></label>
         <label>Desde <input type="date" name="from" [(ngModel)]="f.from" [attr.min]="final() ? '2026-08-01' : null" [attr.max]="maxDate()" data-testid="f-from" /></label>
         <label>Hasta <input type="date" name="to" [(ngModel)]="f.to" [attr.min]="final() ? '2026-08-01' : null" [attr.max]="maxDate()" data-testid="f-to" /></label>
-        <button type="submit" data-testid="f-apply">Buscar</button>
+        <p-button type="submit" label="Buscar" icon="pi pi-search" data-testid="f-apply" />
         <details class="help more">
           <summary>Más filtros</summary>
           <div class="filters">
-            <label>Tipo de historial <input name="coh" [(ngModel)]="f.cohorte" list="cohortes" /></label>
+            <label>Tipo de historial <input pInputText name="coh" [(ngModel)]="f.cohorte" list="cohortes" /></label>
             <datalist id="cohortes"><option value="primaria"></option><option value="historia_corta"></option></datalist>
             <label>Orden
               <select name="sort" [(ngModel)]="f.sort">
@@ -72,8 +73,8 @@ export const NA = 'no disponible para esta corrida';
       </form>
       <fieldset class="seg" aria-label="Ver por">
         <legend>Ver por</legend>
-        <button type="button" class="secondary" data-testid="level-sku" [attr.aria-pressed]="f.level === 'sku'" (click)="setLevel('sku')">Producto</button>
-        <button type="button" class="secondary" data-testid="level-cat" [attr.aria-pressed]="f.level === 'categoria'" (click)="setLevel('categoria')">Categoría</button>
+        <p-button type="button" label="Producto" [outlined]="f.level !== 'sku'" data-testid="level-sku" [attr.aria-pressed]="f.level === 'sku'" (onClick)="setLevel('sku')" size="small" />
+        <p-button type="button" label="Categoría" [outlined]="f.level !== 'categoria'" data-testid="level-cat" [attr.aria-pressed]="f.level === 'categoria'" (onClick)="setLevel('categoria')" size="small" />
       </fieldset>
     </section>
 
@@ -89,12 +90,12 @@ export const NA = 'no disponible para esta corrida';
     <app-state-panel [state]="l.state()" emptyText="No hay estimaciones para estos filtros. Prueba quitar el código o ampliar las fechas." (retry)="l.reload()">
       @if (data(); as page) {
         @if (insufficient()) {
-          <p class="notice warn" data-testid="insufficient">Datos insuficientes para evaluar algunas filas: se marcan «no evaluable» y no cuentan para la comparación.</p>
+          <p-message severity="warn" data-testid="insufficient" text="Datos insuficientes para evaluar algunas filas: se marcan «no evaluable» y no cuentan para la comparación." styleClass="w-full mb-3" />
         }
         @if (generated() && !anyObserved()) {
-          <p class="notice info" data-testid="no-observed-note">Aún no hay ventas registradas para comparar: este análisis no incluye una evaluación contra ventas registradas, por diseño. No es un cero.</p>
+          <p-message severity="info" data-testid="no-observed-note" text="Aún no hay ventas registradas para comparar: este análisis no incluye una evaluación contra ventas registradas, por diseño. No es un cero." styleClass="w-full mb-3" />
         }
-        <p><button type="button" class="secondary small" data-testid="toggle-details" [attr.aria-pressed]="details()" (click)="details.set(!details())">Comparar métodos / ver detalles</button></p>
+        <p><p-button type="button" label="Comparar métodos / ver detalles" [outlined]="true" size="small" icon="pi pi-eye" data-testid="toggle-details" [attr.aria-pressed]="details()" (onClick)="details.set(!details())" /></p>
         <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla de ventas previstas">
         <table data-testid="forecast-table">
           <thead>
@@ -163,7 +164,6 @@ export class ForecastsPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
-  /** Análisis elegido (parámetro de URL «run»); sin él, el que está en uso por defecto. */
   choice = new RunChoice(this.route, this.router, this.destroyRef, () => { this.page.set(1); this.l.reload(); });
   f = { level: 'sku' as 'sku' | 'categoria', sku: '', categoria: '', cohorte: '', from: '', to: '', sort: 'target_date' };
   details = signal(false);
@@ -174,30 +174,23 @@ export class ForecastsPage {
   l = load<ForecastPage>(() => this.api.forecasts({ ...this.q(), run_id: this.choice.id() ?? undefined }), (d) => d.items.length === 0);
   data = computed(() => { const s = this.l.state(); return s.kind === 'data' ? s.data : null; });
   insufficient = computed(() => !this.generated() && (this.data()?.items ?? []).some((x) => x.evaluable === false || (x.evaluable === null && x.observed !== null)));
-  /** El modelo experimental solo se muestra si alguna fila trae valores. */
   hasRf = computed(() => (this.data()?.items ?? []).some((x) => x.pred.rf_categoria_distribuido !== null && x.pred.rf_categoria_distribuido !== undefined));
-  /** Hay al menos un valor registrado (cero real incluido) o un día marcado «no evaluable». */
   anyObserved = computed(() => (this.data()?.items ?? []).some((x) => (x.observed !== null && x.observed !== undefined) || x.evaluable === false));
   runs = computed(() => this.store.runs());
-  /** El análisis mostrado: el elegido o, por defecto, el que está en uso. */
   shownRun = computed(() => this.store.resolve(this.choice.id()));
   name = computed(() => analysisName(this.shownRun()));
   replaced = computed(() => isReplaced(this.shownRun()));
   generated = computed(() => isGenerated(this.shownRun()?.kind));
   final = computed(() => isFinal(this.shownRun()?.kind));
-  /** La columna «Vendido (registrado)» aparece si el análisis tiene ventas registradas o al abrir los detalles. */
   showObserved = computed(() => this.details() || !this.generated() || this.anyObserved());
-  /** Última fecha objetivo admitida: 21/08/2026 solo para la evaluación; 31/07/2026 en las demás (agosto reservado). */
-  maxDate = computed(() => (this.final() ? '2026-08-21' : '2026-07-31'));
+  maxDate = computed(() => (this.final() ? '2026-08-21' : '2026-09-30'));
 
   constructor() { this.store.ensure(); }
 
-  /** «Producto 1010004 · Higiene capilar» (sin nombres inventados); en el nivel categoría, solo la categoría. */
   who(x: ForecastItem): string {
     return x.level === 'categoria' ? categoryLabel(x.categoria ?? x.entity_id) : productLabel(x.sku ?? x.entity_id, x.categoria);
   }
 
-  /** Vendido (registrado): un día sin registros es «no evaluable» y un dato ausente es «sin dato»; ninguno es cero. */
   observedText(x: { observed?: number | null; evaluable?: boolean | null }): string {
     if (x.evaluable === false) return 'no evaluable';
     return x.observed === null || x.observed === undefined ? this.na : this.dec(x.observed);

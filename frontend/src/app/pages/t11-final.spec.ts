@@ -5,14 +5,14 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
-import { demoInterceptor } from '../core/demo';
-import { AuthService } from '../core/auth.service';
+import { apiInterceptor } from '../core/interceptors';
+import { demoInterceptor } from '../core/interceptors';
+import { AuthService } from '../core/services/auth.service';
 import { RunsPage } from './runs.page';
 import { ForecastsPage } from './forecasts.page';
 import { RecommendationsPage } from './recommendations.page';
 import { ComparisonPage } from './comparison.page';
-import { fmtInt, fmtPct, fmtPen, fmtPp } from '../core/format';
+import { fmtInt, fmtPct, fmtPen, fmtPp } from '../core/utils/format';
 import { page } from '../testing/fixtures';
 import { realBacktest, realBacktestList } from '../testing/real-shapes';
 import { visibleText } from '../testing/mount';
@@ -146,11 +146,11 @@ describe('T11A Pronósticos: evaluación final', () => {
     expect(q(m.el, 'insufficient')).toBeTruthy();
   });
 
-  it('una corrida no final conserva el tope del 31/07 y no muestra textos de la final', async () => {
+  it('una corrida no final conserva el tope del 30/09 y no muestra textos de la final', async () => {
     const m = await mountAs(ForecastsPage);
     await ok(m.f, one(m.http, '/api/v1/runs'), page([finalRun, histRun]));
     await ok(m.f, one(m.http, '/api/v1/forecasts'), page([]));
-    expect((q(m.el, 'f-to') as HTMLInputElement).getAttribute('max')).toBe('2026-07-31');
+    expect((q(m.el, 'f-to') as HTMLInputElement).getAttribute('max')).toBe('2026-09-30');
     expect(q(m.el, 'final-warnings')).toBeNull();
     expect(txt(m.el, 'analysis-name')).toBe('Ejemplo de julio');
   });

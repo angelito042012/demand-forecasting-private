@@ -1,9 +1,8 @@
 """Repositorios de lectura de ventas observadas e importaciones (T08 §3).
 
-- Ventas: solo fecha <= 2026-07-31 y fuentes aprobadas (pipeline.data.sources); los dias de
+- Ventas: solo fecha <= 2026-09-30 y fuentes aprobadas (pipeline.data.sources); los dias de
   la mascara (03/04, 12/04, 07/06) no se suman ni se convierten en ceros: se listan aparte.
 - Importaciones: sin filas ni datos de clientes; rechazos solo como conteos por motivo.
-  Los meses reservados (agosto) se listan sin cifras de ventas.
 """
 from __future__ import annotations
 
@@ -19,10 +18,10 @@ from pipeline.data.sources import approved_sources
 
 from .common import LAST_ALLOWED_DATE, check_dates, iso_utc
 
-RESERVED_FROM_MONTH = "2026-08"
+RESERVED_FROM_MONTH = "2026-10"
 _COUNT_FIELDS = ("filas_leidas", "ventas_aceptadas", "notas_credito", "rechazadas", "insertadas",
                  "ya_existentes", "en_conflicto")
-DEFAULT_FROM = date(2026, 3, 1)
+DEFAULT_FROM = date(2026, 1, 1)
 
 
 def _list_item(d: dict) -> dict:

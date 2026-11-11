@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { authGuard } from './core/guards';
+import { roleGuard } from './core/guards';
 
 /**
  * UX01: los nombres de ruta heredados se conservan (enlaces y parámetro `run`); solo cambian los textos del menú.
@@ -17,7 +18,7 @@ export const routes: Routes = [
       { path: 'ayuda', title: 'Ayuda', loadComponent: () => import('./pages/help.page').then((m) => m.HelpPage) },
       { path: 'resumen', title: 'Ventas registradas', loadComponent: () => import('./pages/summary.page').then((m) => m.SummaryPage) },
       { path: 'cargas', title: 'Datos cargados', loadComponent: () => import('./pages/imports.page').then((m) => m.ImportsPage) },
-      { path: 'crear-analisis', title: 'Crear análisis', loadComponent: () => import('./pages/create-run.page').then((m) => m.CreateRunPage) },
+      { path: 'crear-analisis', title: 'Crear análisis', canActivate: [roleGuard('admin')], loadComponent: () => import('./pages/create-run.page').then((m) => m.CreateRunPage) },
       { path: 'corridas', title: 'Mis análisis', loadComponent: () => import('./pages/runs.page').then((m) => m.RunsPage) },
       { path: 'pronosticos', title: 'Ventas previstas', loadComponent: () => import('./pages/plan-forecasts.page').then((m) => m.PlanForecastsPage) },
       // Versión histórica (RunsStore/run_id), conservada intacta como evaluación académica.
@@ -28,7 +29,7 @@ export const routes: Routes = [
       // «inventario» = conteo informado (T18), enlazado desde «Existencias»
       { path: 'inventario', title: 'Inventario informado', loadComponent: () => import('./pages/inventory.page').then((m) => m.InventoryPage) },
       { path: 'comparacion', title: 'Evaluación de resultados', loadComponent: () => import('./pages/comparison.page').then((m) => m.ComparisonPage) },
-      { path: 'sistema', title: 'Estado del sistema', loadComponent: () => import('./pages/system.page').then((m) => m.SystemPage) },
+      { path: 'sistema', title: 'Estado del sistema', canActivate: [roleGuard('admin')], loadComponent: () => import('./pages/system.page').then((m) => m.SystemPage) },
     ],
   },
   { path: '**', redirectTo: 'inicio' },

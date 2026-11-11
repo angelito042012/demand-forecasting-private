@@ -3,27 +3,30 @@ import { Component, DestroyRef, computed, effect, inject, signal } from '@angula
 import { FormsModule } from '@angular/forms';
 import { map, tap } from 'rxjs';
 import { ApiService } from '../core/api.service';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../core/services/auth.service';
 import { JobBoard, STAGE_LABELS } from '../core/jobs';
-import { load } from '../core/load';
+import { load } from '../core/utils/load';
 import { CurrentPlanStore, defaultPlanId } from '../core/current-plan.store';
 import { ActivatedRoute } from '@angular/router';
 import {
   AppError, JobType, PlanAccepted, PlanCompareResponse, StockDiscrepancyPlan, PlanCreateBody, PlanDailyRow, PlanHeader, PlanInputs, PlanList, PlanRef, PlanResultDetail,
   PlanResultsPage, PlanScenario, PlanStep,
 } from '../core/models';
-import { fmtDate } from '../core/format';
-import { useWideMain } from '../core/wide-main';
-import { jobStatusWords, longDate, monthName } from '../core/ux-text';
-import { PageHeader } from '../ui/page-header';
-import { StatePanel } from '../ui/state-panel';
-import { Pager } from '../ui/pager';
+import { fmtDate } from '../core/utils/format';
+import { useWideMain } from '../core/utils/wide-main';
+import { jobStatusWords, longDate, monthName } from '../core/utils/ux-text';
+import { PageHeader } from '../shared/components/page-header';
+import { StatePanel } from '../shared/components/state-panel';
+import { Pager } from '../shared/components/pager';
 import { PlanForm } from './plan-form';
 import { localDay, localStamp, zoneLabel } from './inventory.page';
 import { stampWords } from './stock.page';
 import {
   NOT_COMPUTABLE, NOT_REPORTED, PENDING_NATURE, STATUS_FILTERS, purchaseText, qtyText, statusText, statusTone, stepValue,
 } from './plan-text';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { InputTextModule } from 'primeng/inputtext';
 
 const SORTS: { value: string; label: string }[] = [
   { value: 'producto_id', label: 'Código (menor a mayor)' },
@@ -36,12 +39,12 @@ const SORTS: { value: string; label: string }[] = [
 /** T19: Planificar compras. Muestra lo que entrega la API; ninguna cifra se calcula en el navegador. */
 @Component({
   selector: 'app-plan-page',
-  imports: [FormsModule, PageHeader, StatePanel, Pager, PlanForm],
+  imports: [FormsModule, PageHeader, StatePanel, Pager, PlanForm, ButtonModule, MessageModule, InputTextModule],
   template: `
     <app-page-header title="Compra recomendada" />
 
     @if (forbidden()) {
-      <p class="notice danger" role="alert" data-testid="plan-forbidden">No tienes permiso para ver los planes de compra. Ingresa con otro usuario o avisa al administrador.</p>
+      <p-message severity="error" role="alert" data-testid="plan-forbidden" text="No tienes permiso para ver los planes de compra. Ingresa con otro usuario o avisa al administrador." styleClass="w-full mb-2" />
     } @else {
       <app-state-panel [state]="inp.state()" emptyText="No hay datos disponibles para planificar." (retry)="loadInputs()">
         @if (inputs(); as i) {
@@ -51,11 +54,11 @@ const SORTS: { value: string; label: string }[] = [
             </p>
           }
           @if (cutoff(); as c) {
-            <p class="notice warn compact plan-cutoff" data-testid="plan-cutoff" role="note">
+            <p-message severity="warn" data-testid="plan-cutoff" role="note" styleClass="w-full mb-2">
               <strong data-testid="plan-band">Plan de compra bajo supuestos</strong>, no es un pedido ejecutado.
               Ventas registradas hasta el <strong>{{ longDate(c) }}</strong>; lo posterior es desconocido, no es cero.
               @if (!planId() && pendingNote(); as n) { <strong data-testid="plan-pending-note">{{ n }}</strong> }
-            </p>
+            </p-message>
           }
           <section class="plan-summary" aria-label="Resumen del plan" data-testid="plan-summary-card">
               <div class="plan-line1">
@@ -145,7 +148,9 @@ const SORTS: { value: string; label: string }[] = [
           <app-state-panel [state]="hdr.state()" (retry)="hdr.reload()"></app-state-panel>
 
           @if (notCurrent()) {
-            <p class="notice info" role="note" data-testid="plan-not-current">Estás viendo una versión que no es la vigente. «Inicio» y «Ventas previstas» siguen mostrando la versión vigente ({{ versionLabel(versions()[0]) }}).</p>
+            <p-message severity="info" role="note" data-testid="plan-not-current" styleClass="w-full mb-2">
+              Estás viendo una versión que no es la vigente. «Inicio» y «Ventas previstas» siguen mostrando la versión vigente ({{ versionLabel(versions()[0]) }}).
+            </p-message>
           }
 
           <app-state-panel [state]="res.state()" emptyText="Este plan no tiene productos." (retry)="res.reload()">
@@ -325,7 +330,7 @@ const SORTS: { value: string; label: string }[] = [
               @if (compareOpen()) {
                 <app-state-panel [state]="cmp.state()" emptyText="No hay productos para comparar." (retry)="cmp.reload()">
                   @if (compared(); as c) {
-                    <p class="notice warn" data-testid="cmp-note" role="note">Las existencias de las dos versiones son de fechas distintas: cada una parte del cierre de su propia fecha de existencias, así que las diferencias de compra no se deben solo a la previsión.{{ c.note ? ' ' + c.note : '' }}</p>
+                    <p-message severity="warn" data-testid="cmp-note" role="note" styleClass="w-full mb-2">Las existencias de las dos versiones son de fechas distintas: cada una parte del cierre de su propia fecha de existencias, así que las diferencias de compra no se deben solo a la previsión.{{ c.note ? ' ' + c.note : '' }}</p-message>
                     <div class="table-wrap" tabindex="0" role="region" aria-label="Comparación de versiones del plan">
                       <table data-testid="cmp-table">
                         <caption class="muted">A = {{ sideLabel(c.base) }} · B = {{ sideLabel(c.other) }}</caption>
@@ -405,13 +410,14 @@ const SORTS: { value: string; label: string }[] = [
           </section>
         }
         @if (reusedNote()) {
-          <p class="notice ok" role="status" data-testid="plan-reused">Ya existía un plan con exactamente estos datos: se reutilizó y no se calculó de nuevo.</p>
+          <p-message severity="success" role="status" data-testid="plan-reused" text="Ya existía un plan con exactamente estos datos: se reutilizó y no se calculó de nuevo." styleClass="w-full mb-2" />
         }
         @if (genError(); as e) {
-          <div class="notice danger" role="alert" data-testid="plan-gen-error">
-            <p>{{ e }}</p>
-            <button type="button" class="secondary small" data-testid="plan-retry" (click)="retryGenerate()">Reintentar</button>
-          </div>
+          <p-message severity="error" role="alert" data-testid="plan-gen-error" styleClass="w-full mb-2">
+            <div>{{ e }}
+              <p-button label="Reintentar" icon="pi pi-refresh" [outlined]="true" size="small" data-testid="plan-retry" (onClick)="retryGenerate()" styleClass="ml-2" />
+            </div>
+          </p-message>
         }
         @if (inputs(); as i) {
           @if (i.dataset && i.snapshot && i.defaults) { <app-plan-form [inputs]="i" [sending]="sending()" (submitted)="generate($event)" /> }

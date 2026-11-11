@@ -1,0 +1,90 @@
+// Diagrama de Arquitectura — Sistema de Previsión de Demanda y Reposición
+// Pegar en eraser.io → New Diagram → Cloud Architecture
+
+Dispositivos [icon: user, color: black] {
+  PC [icon: desktop]
+  Laptop [icon: computer]
+  Smartphone [icon: smartphone]
+}
+
+Usuarios [icon: users]
+
+Azure Container Apps [icon: azure, color: blue] {
+  HTTPS [icon: https, label: HTTPS Automático]
+
+  capstone-api [icon: docker, color: blue, label: capstone-api] {
+    Frontend Angular [icon: angular, color: red] {
+      Componentes [icon: angular, color: blue]
+      PrimeNG [icon: angular, color: red]
+      TailwindCSS [icon: tailwind-css, color: blue]
+      Guards [icon: angular, color: green]
+      Services [icon: angular, color: yellow]
+    }
+    Backend FastAPI [icon: python, color: green] {
+      Endpoints REST [icon: http]
+      Autenticación [icon: key, color: orange]
+      Pipeline ML [icon: cpu, color: purple, label: Pipeline Pronóstico]
+      Importador [icon: upload, color: blue, label: Import Operativo]
+      Simulador [icon: bar-chart, color: green, label: Simulador Reposición]
+    }
+  }
+
+  capstone-worker [icon: docker, color: orange, label: capstone-worker] {
+    Jobs [icon: refresh-cw, label: Procesamiento Jobs]
+    Scheduler [icon: clock, label: Scheduler (deshabilitado)]
+  }
+}
+
+Azure Container Registry [icon: azure, color: blue] {
+  Docker Image [icon: docker, label: capstone-app:v3] {
+    Node Build [icon: nodejs, label: Angular Build]
+    Python Deps [icon: python, label: Python 3.12 Deps]
+    Runtime [icon: server, label: Runtime No-Root]
+  }
+}
+
+MongoDB Atlas [icon: mongodb, color: green] {
+  Database [icon: database, label: demand_forecasting_pub, color: green] {
+    plan_sales [label: Ventas 130K docs, icon: receipt]
+    forecast_results [label: Pronósticos, icon: trending-up]
+    purchase_plans [label: Planes de Compra, icon: shopping-cart]
+    inv_snapshots [label: Inventario Snapshots, icon: package]
+    inv_items [label: Inventario Items, icon: archive]
+    users [label: Usuarios, icon: users]
+  }
+}
+
+GitHub [icon: github] {
+  Repo Privado [icon: github, label: demand-forecasting-private]
+}
+
+Empresa MYPE [icon: building, color: orange] {
+  Excel Ventas [icon: file-spreadsheet, label: 14 Archivos Excel]
+}
+
+Secrets [icon: shield, color: red, label: Azure Secrets] {
+  MONGODB_URI [icon: key, label: MongoDB URI]
+  AUTH_SECRET [icon: key, label: Session Key 64 chars]
+}
+
+// Conexiones
+Usuarios > Dispositivos
+Dispositivos > Azure Container Apps: HTTPS (puerto 443)
+
+capstone-api > MongoDB Atlas: TLS/SSL (secretref:mongo-uri)
+capstone-worker > MongoDB Atlas: TLS/SSL (secretref:mongo-uri)
+
+Secrets > capstone-api: Variables de entorno encriptadas
+Secrets > capstone-worker: Variables de entorno encriptadas
+
+Repo Privado > Azure Container Registry: docker build + push
+Azure Container Registry > Azure Container Apps: Pull imagen v3
+
+Empresa MYPE > capstone-api: Importación CSV/Excel
+
+// Notas
+// Región: Brazil South
+// API: 0.5 vCPU, 1 GB RAM, min-replicas=0
+// Worker: 0.5 vCPU, 1 GB RAM, sin ingress público
+// Atlas: M0 Free Tier, São Paulo, 135 MB / 512 MB
+// Costo: ~$8-10/mes con créditos de estudiante ($100)

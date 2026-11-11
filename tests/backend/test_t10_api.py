@@ -267,10 +267,8 @@ def test_wrong_headers(admin_s, db):
     assert db.jobs.count_documents({}) == 0
 
 
-def test_august_and_out_of_range_months(admin_s, db):
-    r = admin_s.upload(make_xlsx(date(2026, 8, 5)))
-    assert r.status_code == 422 and code(r) == "AGOSTO_RESERVADO"
-    r = admin_s.upload(make_xlsx(date(2026, 2, 5)))
+def test_out_of_range_months(admin_s, db):
+    r = admin_s.upload(make_xlsx(date(2026, 10, 5)))
     assert r.status_code == 422 and code(r) == "MES_FUERA_DE_ALCANCE"
     r = admin_s.upload(make_xlsx(date(2025, 6, 5)))
     assert r.status_code == 422 and code(r) == "MES_FUERA_DE_ALCANCE"

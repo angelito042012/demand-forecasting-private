@@ -1,0 +1,33 @@
+// Design tokens — importar en componentes que necesiten valores SCSS.
+// Las variables CSS (custom properties) ya están en :root (styles.scss).
+
+$ink: #1f2933;
+$muted: #4b5563;
+$line: #d3d9e0;
+$bg: #f5f7fa;
+$surface: #ffffff;
+$soft: #eef2f6;
+$link: #0a58ca;
+$accent: #0b5a9e;
+$accent-ink: #ffffff;
+$accent-soft: #e6f0fa;
+$accent-soft-ink: #083d73;
+
+$sim-bg: #e6f0fa;
+$sim-ink: #083d73;
+$sim-line: #a9c9ea;
+$warn-bg: #fff3cd;
+$warn-ink: #5c4400;
+$warn-line: #ffda6a;
+$danger-bg: #f8d7da;
+$danger-ink: #721c24;
+$danger-line: #f1aeb5;
+$ok-bg: #d1e7dd;
+$ok-ink: #0a3622;
+$ok-line: #a3cfbb;
+
+$radius: 8px;
+$nav-w: 16rem;
+
+$font-stack: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-mono: ui-monospace, Consolas, 'Liberation Mono', monospace;

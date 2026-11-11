@@ -308,7 +308,7 @@ def build_run_doc(src: VerifiedSource, run_id: str, key: str, fingerprint: str, 
                       "signals_skus": len(signals.per_sku) if signals else None,
                       "reference": src.entry.get("approved_reference", {}).get("commit")},
         "provenance_notes": [
-            "Ventas observadas: OBSERVED_EXCEL (Excel de la empresa, marzo a julio de 2026).",
+            "Ventas observadas: OBSERVED_EXCEL (Excel de la empresa, enero a septiembre de 2026).",
             "Stock, tránsito, costos y pedidos: SYNTHETIC_NOT_REAL_INVENTORY. " + SIM_LABEL + ".",
             "Corrida histórica de desarrollo; las recomendaciones son sugerencias hipotéticas de vista previa.",
             "Los faltantes de ventas por stock real son desconocidos; la demanda proxy es la venta observada."],

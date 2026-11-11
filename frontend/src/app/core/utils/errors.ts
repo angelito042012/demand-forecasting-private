@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { AppError, ErrorCode } from './models';
+import type { AppError, ErrorCode } from '../models';
 
 const KNOWN: ErrorCode[] = [
   'NO_AUTENTICADO', 'SESION_EXPIRADA', 'PROHIBIDO', 'NO_ENCONTRADO', 'ENTRADA_INVALIDA',
-  'DEMASIADOS_INTENTOS', 'CSRF_INVALIDO', 'ORIGEN_NO_PERMITIDO', 'AGOSTO_RESERVADO', 'SERVICIO_NO_DISPONIBLE',
+  'DEMASIADOS_INTENTOS', 'CSRF_INVALIDO', 'ORIGEN_NO_PERMITIDO', 'FUERA_DE_RANGO', 'SERVICIO_NO_DISPONIBLE',
 ];
 
 export const UNAVAILABLE_MSG = 'Servicio no disponible, reintente en unos minutos.';

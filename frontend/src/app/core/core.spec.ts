@@ -4,13 +4,13 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { ApiService } from './api.service';
-import { AuthService } from './auth.service';
-import { authGuard } from './auth.guard';
-import { apiInterceptor } from './http.interceptor';
-import { demoInterceptor } from './demo';
+import { AuthService } from './services/auth.service';
+import { authGuard } from './guards';
+import { apiInterceptor } from './interceptors';
+import { demoInterceptor } from './interceptors';
 import { AppError } from './models';
-import { calcSteps } from './reco-calc';
-import { isStaleAge } from './age';
+import { calcSteps } from './utils/reco-calc';
+import { isStaleAge } from './utils/age';
 import { recoNoSnap, recoOk, session } from '../testing/fixtures';
 
 @Component({ template: '' })
@@ -144,7 +144,7 @@ describe('guard de rutas', () => {
 describe('mapeo de errores', () => {
   const cases: [number, object | string, string][] = [
     [403, { error: { code: 'PROHIBIDO', message: 'x' } }, 'PROHIBIDO'],
-    [422, { error: { code: 'AGOSTO_RESERVADO', message: 'agosto de 2026 está reservado para la prueba final' } }, 'AGOSTO_RESERVADO'],
+    [422, { error: { code: 'FUERA_DE_RANGO', message: 'La fecha solicitada excede el último día de datos permitido.' } }, 'FUERA_DE_RANGO'],
     [503, { error: { code: 'SERVICIO_NO_DISPONIBLE', message: 'interno' } }, 'SERVICIO_NO_DISPONIBLE'],
     [404, { error: { code: 'NO_ENCONTRADO', message: 'no' } }, 'NO_ENCONTRADO'],
     [500, 'proxy sin cuerpo JSON', 'SERVICIO_NO_DISPONIBLE'],

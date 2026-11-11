@@ -5,11 +5,11 @@ import {
   FINAL_BASE, FINAL_METHOD_INFO, FINAL_VISTAS, blockOf, diffOf, finalCoverageRows, finalRows, newSkus, primaryFinding,
   scalarsOf, scenarioOf, serviceVsInventory, universe,
 } from '../core/final-eval';
-import { DASH, fmtDate, fmtDec, fmtInt, fmtPct, fmtPen, fmtPp } from '../core/format';
-import { FinalWarnings, SimNotice } from '../ui/notices';
-import { EvalConclusion } from '../ui/eval-conclusion';
-import { EvalSummary } from '../ui/eval-summary';
-import { EvalTab, EvalTabs } from '../ui/eval-tabs';
+import { DASH, fmtDate, fmtDec, fmtInt, fmtPct, fmtPen, fmtPp } from '../core/utils/format';
+import { FinalWarnings, SimNotice } from '../shared/components/notices';
+import { EvalConclusion } from '../shared/components/eval-conclusion';
+import { EvalSummary } from '../shared/components/eval-summary';
+import { EvalTab, EvalTabs } from '../shared/components/eval-tabs';
 import { NOT_EVALUABLE, WINDOW_NOTE, compareSentence, errorText, mainExplanation, metricPeriods, simConclusion, simpleScope } from './eval-text';
 
 const NE = NOT_EVALUABLE;

@@ -131,10 +131,10 @@ def test_upload_import_duplicate_conflict_corrupt_august_and_reader_denied(stack
     bad = tmp / "corrupto.xlsx"
     bad.write_bytes(good.read_bytes()[: len(good.read_bytes()) // 2])
     assert _upload(admin, csrf, bad).status_code in (415, 422)
-    rows = [make_row(FECHA=datetime(2026, 8, 3))]
-    aug = write_xlsx(tmp / "agosto_x.xlsx", rows)
-    ra = _upload(admin, csrf, aug)
-    assert ra.status_code == 422 and ra.json()["error"]["code"] == "AGOSTO_RESERVADO"
+    rows = [make_row(FECHA=datetime(2026, 10, 3))]
+    oct_f = write_xlsx(tmp / "octubre_x.xlsx", rows)
+    ra = _upload(admin, csrf, oct_f)
+    assert ra.status_code == 422 and ra.json()["error"]["code"] == "MES_FUERA_DE_ALCANCE"
     assert db.jobs.count_documents({}) == 2
     # lector: sin escritura y sin ver trabajos
     reader, rcsrf = _login(url, "lector_t")

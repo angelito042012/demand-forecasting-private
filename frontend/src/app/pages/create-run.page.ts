@@ -2,69 +2,70 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { tap } from 'rxjs';
 import { ApiService } from '../core/api.service';
-import { AuthService } from '../core/auth.service';
-import { load } from '../core/load';
+import { AuthService } from '../core/services/auth.service';
+import { load } from '../core/utils/load';
 import { JobBoard, summarize } from '../core/jobs';
 import { RunsStore } from '../core/runs-store';
 import { AppError, RunOptions } from '../core/models';
-import { longDate } from '../core/ux-text';
-import { PageHeader } from '../ui/page-header';
-import { StatePanel } from '../ui/state-panel';
-import { JobsPanel } from '../ui/jobs-panel';
+import { longDate } from '../core/utils/ux-text';
+import { PageHeader } from '../shared/components/page-header';
+import { StatePanel } from '../shared/components/state-panel';
+import { JobsPanel } from '../shared/components/jobs-panel';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { PanelModule } from 'primeng/panel';
 
-/**
- * Crear análisis (solo administrador; el servidor decide). Se extrae de la antigua pantalla de corridas sin ampliar rangos
- * ni quitar controles: el origen solo puede estar dentro de [origin_min, origin_max] que publica la API.
- */
 @Component({
   selector: 'app-create-run-page',
-  imports: [RouterLink, PageHeader, StatePanel, JobsPanel],
+  imports: [RouterLink, PageHeader, StatePanel, JobsPanel, ButtonModule, MessageModule, PanelModule],
   template: `
     <app-page-header title="Crear análisis" lead="Crea un análisis histórico con el promedio de los últimos 28 días para las fechas elegidas; no reentrena modelos." />
-    <p class="notice info" data-testid="runs-scope" role="note"><strong>Análisis histórico (académico), no el plan de compra.</strong> Las fechas permitidas (abajo), el horizonte de 21 días y el método son una regla del servidor: sirven para comparar estimaciones con ventas ya registradas. El plan operativo de noviembre se genera y consulta en «Compra recomendada».</p>
+    <p-message severity="info" data-testid="runs-scope" role="note" styleClass="w-full mb-3">
+      <strong>Análisis histórico (académico), no el plan de compra.</strong> Las fechas permitidas (abajo), el horizonte de 21 días y el método son una regla del servidor: sirven para comparar estimaciones con ventas ya registradas. El plan operativo de noviembre se genera y consulta en «Compra recomendada».
+    </p-message>
     @if (!isAdmin) {
-      <p class="notice info" role="status" data-testid="admin-only">Solo el administrador puede crear análisis.</p>
-      <p><a class="btn secondary" [routerLink]="['/corridas']" queryParamsHandling="preserve">Ir a Mis análisis</a></p>
+      <p-message severity="info" role="status" data-testid="admin-only" text="Solo el administrador puede crear análisis." styleClass="w-full mb-3" />
+      <p-button label="Ir a Mis análisis" icon="pi pi-list" [outlined]="true" [routerLink]="['/corridas']" queryParamsHandling="preserve" />
     } @else {
-      <section class="surface" aria-labelledby="h-gen" data-testid="gen-section">
-        <h2 id="h-gen">Elegir las ventas que se usarán</h2>
+      <p-panel header="Elegir las ventas que se usarán" data-testid="gen-section" styleClass="mb-3">
         <app-state-panel [state]="opt.state()" (retry)="opt.reload()">
           @if (options(); as o) {
-            <form class="filters" (submit)="$event.preventDefault(); generate()" aria-label="Crear análisis">
-              <label>Ventas utilizadas hasta (fecha)
+            <form class="flex flex-wrap align-items-center gap-3" (submit)="$event.preventDefault(); generate()" aria-label="Crear análisis">
+              <label class="field">Ventas utilizadas hasta (fecha)
                 <input type="date" name="origin" data-testid="origin" [min]="o.origin_min" [max]="o.origin_max" [value]="origin()" (input)="setOrigin($any($event.target).value)" />
               </label>
               <span data-testid="horizon">Período estimado: <strong>los 21 días siguientes</strong> (fijo)</span>
               <span data-testid="gen-method">Método: <strong>promedio de los últimos 28 días</strong> (promedio_28, fijo)</span>
-              <button type="submit" class="btn" data-testid="generate-btn" [disabled]="!originOk() || sending()">Crear análisis</button>
+              <p-button type="submit" label="Crear análisis" icon="pi pi-plus-circle" [disabled]="!originOk() || sending()" [loading]="sending()" data-testid="generate-btn" />
             </form>
-            <p class="muted" data-testid="origin-range">Fechas permitidas en esta versión: del {{ date(o.origin_min) }} al {{ date(o.origin_max) }}. Agosto sigue reservado.</p>
-            @if (origin() && !originOk()) { <p class="notice warn" role="alert" data-testid="origin-warning">Esa fecha no está permitida. Elige una fecha entre el {{ date(o.origin_min) }} y el {{ date(o.origin_max) }}.</p> }
+            <p class="muted mt-2" data-testid="origin-range">Fechas permitidas en esta versión: del {{ date(o.origin_min) }} al {{ date(o.origin_max) }}. Agosto sigue reservado.</p>
+            @if (origin() && !originOk()) { <p-message severity="warn" role="alert" data-testid="origin-warning" [text]="'Esa fecha no está permitida. Elige una fecha entre el ' + date(o.origin_min) + ' y el ' + date(o.origin_max) + '.'" styleClass="w-full mt-2" /> }
           }
         </app-state-panel>
-        @if (genError(); as e) { <p class="notice danger" role="alert" data-testid="gen-error">{{ e }}</p> }
+        @if (genError(); as e) { <p-message severity="error" role="alert" data-testid="gen-error" [text]="e" styleClass="w-full mt-2" /> }
         @if (created(); as c) {
-          <div class="notice ok" role="status" data-testid="gen-done">
-            <p><strong>Listo: el análisis se creó.</strong> Ya puedes consultar sus ventas previstas.</p>
-            <p class="actions">
-              <a class="btn secondary" [routerLink]="['/evaluacion/ventas-previstas']" [queryParams]="{ run: c }" data-testid="gen-view">Ver previsión</a>
-              <a class="btn secondary" [routerLink]="['/corridas']" [queryParams]="{ run: c }" data-testid="gen-view-runs">Ver en Mis análisis</a>
-            </p>
-          </div>
+          <p-message severity="success" role="status" data-testid="gen-done" styleClass="w-full mt-3">
+            <div>
+              <p><strong>Listo: el análisis se creó.</strong> Ya puedes consultar sus ventas previstas.</p>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <p-button label="Ver previsión" icon="pi pi-chart-bar" [outlined]="true" [routerLink]="['/evaluacion/ventas-previstas']" [queryParams]="{ run: c }" data-testid="gen-view" />
+                <p-button label="Ver en Mis análisis" icon="pi pi-list" [outlined]="true" [routerLink]="['/corridas']" [queryParams]="{ run: c }" data-testid="gen-view-runs" />
+              </div>
+            </div>
+          </p-message>
         }
-      </section>
+      </p-panel>
       <h2>Trabajos recientes</h2>
       <app-jobs-panel [jobs]="board.jobs()" [listError]="board.listError()" [pollError]="board.pollError()" />
     }
   `,
-  styles: `.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }`,
+  styles: `.field { display: grid; gap: 0.25rem; font-weight: 600; }`,
 })
 export class CreateRunPage {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private store = inject(RunsStore);
   private destroyRef = inject(DestroyRef);
-  /** Solo orientación: el servidor rechaza igual las escrituras del lector. */
   isAdmin = this.auth.isAdmin;
 
   board = new JobBoard(this.api, 'generate_run', (j) => {
@@ -80,9 +81,7 @@ export class CreateRunPage {
   origin = signal('');
   sending = signal(false);
   genError = signal<string | null>(null);
-  /** Id del último análisis creado en esta pantalla (para ofrecer «Ver previsión»). */
   created = signal<string | null>(null);
-  /** Solo valores dentro de [origin_min, origin_max] publicados por la API (el servidor revalida). */
   originOk = computed(() => {
     const o = this.options(); const v = this.origin();
     return !!o && /^\d{4}-\d{2}-\d{2}$/.test(v) && v >= o.origin_min && v <= o.origin_max;

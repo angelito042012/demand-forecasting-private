@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { RunQuality } from '../core/models';
+import { RunQuality } from '../../core/models';
 import { isRunInvalid } from './notices';
 
 /**

@@ -1,7 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { ApiService } from './api.service';
-import { AuthService } from './auth.service';
-import { load } from './load';
+import { AuthService } from './services/auth.service';
+import { load } from './utils/load';
 import { Page, RunSummary } from './models';
 
 /**

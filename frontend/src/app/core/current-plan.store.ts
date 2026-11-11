@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { switchMap, of, map } from 'rxjs';
 import { ApiService } from './api.service';
-import { isAppError } from './load';
+import { isAppError } from './utils/load';
 import { AppError, LoadState, PlanHeader, PlanInputs, PlanRef } from './models';
 
 /** Regla ÚNICA para elegir el plan por defecto: el primer elemento de GET /plans del mes (la usa también «Compra recomendada»). */

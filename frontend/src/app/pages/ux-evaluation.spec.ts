@@ -7,11 +7,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
-import { demoInterceptor } from '../core/demo';
+import { apiInterceptor } from '../core/interceptors';
+import { demoInterceptor } from '../core/interceptors';
 import { ComparisonPage } from './comparison.page';
 import { SummaryPage } from './summary.page';
-import { fmtInt, fmtPct, fmtPen } from '../core/format';
+import { fmtInt, fmtPct, fmtPen } from '../core/utils/format';
 import { page } from '../testing/fixtures';
 import { realBacktest, realBacktestList, realRunSummary } from '../testing/real-shapes';
 import { FINAL_ID, finalBacktest, finalBacktestList, finalRun, genRun, histRun } from '../testing/final-shapes';
@@ -348,15 +348,14 @@ describe('UX01 Ventas registradas (/resumen)', () => {
     return m;
   }
 
-  it('título, propósito, aviso de observadas, sin agosto y sin ser la bienvenida', async () => {
+  it('título, propósito, aviso de observadas y sin ser la bienvenida', async () => {
     const m = await openSummary();
     expect(m.el.querySelectorAll('h1').length).toBe(1);
     expect(txt(m.el, 'page-title')).toBe('Ventas registradas');
     expect(txt(m.el, 'page-lead')).toBe('Ventas reales ya cargadas, en unidades y soles; sirven de base para las estimaciones.');
     expect(m.el.textContent).toContain('OBSERVED_EXCEL');
-    expect(txt(m.el, 'no-august')).toContain('no incluye ventas de agosto de 2026');
-    expect((m.el.querySelector('input[name="to"]') as HTMLInputElement).getAttribute('max')).toBe('2026-07-31');
-    expect((m.el.querySelector('input[name="from"]') as HTMLInputElement).getAttribute('max')).toBe('2026-07-31');
+    expect((m.el.querySelector('input[name="to"]') as HTMLInputElement).getAttribute('max')).toBe('2026-09-30');
+    expect((m.el.querySelector('input[name="from"]') as HTMLInputElement).getAttribute('max')).toBe('2026-09-30');
     expect(m.el.querySelectorAll('.btn').length).toBe(1);          // una sola acción primaria
   });
 
@@ -406,9 +405,9 @@ describe('UX01 Ventas registradas (/resumen)', () => {
     expect(m.el.querySelector('[data-state="empty"]')!.textContent).toContain('Prueba con otras fechas');
   });
 
-  it('error del servidor (p. ej. rango en agosto): mensaje y reintento, sin tabla', async () => {
+  it('error del servidor (p. ej. rango fuera de alcance): mensaje y reintento, sin tabla', async () => {
     const e = await mountAt(SummaryPage, '/resumen');
-    one(e.http, '/api/v1/sales/summary').flush({ error: { code: 'AGOSTO_RESERVADO', message: 'agosto de 2026 está reservado para la prueba final' } }, { status: 422, statusText: 'x' });
+    one(e.http, '/api/v1/sales/summary').flush({ error: { code: 'FUERA_DE_RANGO', message: 'La fecha solicitada excede el último día de datos permitido.' } }, { status: 422, statusText: 'x' });
     await settle(e.f);
     expect(e.el.querySelector('[data-state="error"] button')?.textContent).toContain('Reintentar');
     expect(e.el.querySelector('[data-testid="sales-table"]')).toBeNull();

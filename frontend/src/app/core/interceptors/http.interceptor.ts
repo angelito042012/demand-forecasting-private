@@ -2,8 +2,8 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
-import { AuthService } from './auth.service';
-import { toAppError } from './errors';
+import { AuthService } from '../services/auth.service';
+import { toAppError } from '../utils/errors';
 
 const MUTATIONS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 

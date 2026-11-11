@@ -1,8 +1,8 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { RunsStore } from '../core/runs-store';
-import { fmtDate } from '../core/format';
-import { ageWords, analysisName, isReplaced, kindWords, periodText, runStatusChip } from '../core/ux-text';
+import { RunsStore } from '../../core/runs-store';
+import { fmtDate } from '../../core/utils/format';
+import { ageWords, analysisName, isReplaced, kindWords, periodText, runStatusChip } from '../../core/utils/ux-text';
 
 /**
  * Franja de contexto del análisis consultado: nombre, ventas utilizadas hasta, período estimado y estado, siempre en palabras

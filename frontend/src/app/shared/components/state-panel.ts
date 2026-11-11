@@ -1,5 +1,5 @@
 import { Component, input, output } from '@angular/core';
-import { LoadState } from '../core/models';
+import { LoadState } from '../../core/models';
 
 @Component({
   selector: 'app-state-panel',

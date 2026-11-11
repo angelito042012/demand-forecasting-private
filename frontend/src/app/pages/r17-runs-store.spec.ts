@@ -6,9 +6,9 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { provideRouter, Router } from '@angular/router';
 import { HomePage } from './home.page';
 import { ForecastsPage } from './forecasts.page';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../core/services/auth.service';
 import { RunsStore } from '../core/runs-store';
-import { apiInterceptor } from '../core/http.interceptor';
+import { apiInterceptor } from '../core/interceptors';
 import { page, runSummary, session } from '../testing/fixtures';
 
 const RUNS = '/api/v1/runs';

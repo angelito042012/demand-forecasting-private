@@ -1,20 +1,25 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { load } from '../core/load';
+import { load } from '../core/utils/load';
 import { AppError, ImportDetail, ImportItem, Page } from '../core/models';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../core/services/auth.service';
 import { JobBoard } from '../core/jobs';
-import { JobsPanel } from '../ui/jobs-panel';
-import { PageHeader } from '../ui/page-header';
-import { StatePanel } from '../ui/state-panel';
-import { Pager } from '../ui/pager';
-import { DataTree } from '../ui/data-tree';
-import { fmtInt } from '../core/format';
+import { JobsPanel } from '../shared/components/jobs-panel';
+import { PageHeader } from '../shared/components/page-header';
+import { StatePanel } from '../shared/components/state-panel';
+import { Pager } from '../shared/components/pager';
+import { DataTree } from '../shared/components/data-tree';
+import { fmtInt } from '../core/utils/format';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { TableModule } from 'primeng/table';
+import { StepperModule } from 'primeng/stepper';
+import { FileUploadModule } from 'primeng/fileupload';
+import { PanelModule } from 'primeng/panel';
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
-/** Aviso temprano en el cliente; el servidor decide siempre. */
 export function earlyWarning(f: { name: string; size: number } | null): string | null {
   if (!f) return null;
   if (!f.name.toLowerCase().endsWith('.xlsx')) return 'El archivo debe tener extensión .xlsx. Elige el Excel mensual de ventas.';
@@ -33,53 +38,58 @@ export function uploadErrorText(e: AppError): string {
 
 @Component({
   selector: 'app-imports-page',
-  imports: [RouterLink, PageHeader, StatePanel, Pager, DataTree, JobsPanel],
+  imports: [RouterLink, PageHeader, StatePanel, Pager, DataTree, JobsPanel, ButtonModule, MessageModule, TableModule, StepperModule, FileUploadModule, PanelModule],
   template: `
     @if (isAdmin) {
       <app-page-header title="Cargar datos" lead="Sube el Excel mensual de ventas y revisa qué se aceptó. Cargar no crea análisis ni cambia los ya publicados." />
-      <section class="notice info" data-testid="imports-scope" role="note">
-        <p><strong>Para qué sirve esta carga.</strong> Alimenta los <strong>análisis históricos</strong> del ejemplo (ventas de marzo a julio de 2026). Agosto de 2026 queda reservado para la prueba final y los demás meses no se aceptan: es una regla del servidor, no un texto desactualizado.</p>
-        <p><strong>No actualiza el plan de compra de noviembre.</strong> Ese plan usa ventas hasta el 20/10 y existencias al cierre del 20/10, y los incorpora el soporte técnico con un procedimiento aparte (ver Ayuda). Desde «Compra recomendada» el administrador sí puede generar otra versión del plan con otros parámetros.</p>
-      </section>
-      <ol class="stepper" aria-label="Pasos para cargar datos" data-testid="upload-steps">
-        <li><strong>1. Elegir archivo</strong> <span class="muted">un Excel mensual (.xlsx)</span></li>
-        <li><strong>2. Revisar el resultado</strong> <span class="muted">qué se aceptó y qué se rechazó</span></li>
-        <li><strong>3. Consultar</strong> <span class="muted">las <a [routerLink]="['/resumen']" queryParamsHandling="preserve" data-testid="step-sales">ventas registradas</a> o la <a [routerLink]="['/evaluacion/ventas-previstas']" queryParamsHandling="preserve" data-testid="step-forecast">previsión del ejemplo</a></span></li>
-      </ol>
-      <section class="surface" aria-labelledby="h-up" data-testid="upload-section">
-        <h2 id="h-up">1. Elegir el archivo</h2>
-        <p class="muted">Un archivo .xlsx mensual con ventas de marzo a julio de 2026 (hasta 25 MiB). Agosto de 2026 está reservado: la carga general no acepta ventas de ese mes. El navegador solo avisa de forma temprana: el servidor revisa el contenido y decide. El procesamiento ocurre en segundo plano; puedes recargar esta página sin perder el trabajo.</p>
-        <form class="filters" (submit)="$event.preventDefault(); upload()" aria-label="Cargar archivo">
-          <label>Archivo .xlsx <input type="file" accept=".xlsx" data-testid="file-input" (change)="pick($event)" /></label>
-          <button type="submit" class="btn" data-testid="upload-btn" [disabled]="!file() || !!warning() || sending()">Subir y procesar</button>
+      <p-message severity="info" data-testid="imports-scope" styleClass="w-full mb-3">
+        <div>
+          <p><strong>Para qué sirve esta carga.</strong> Alimenta los <strong>análisis históricos</strong> del ejemplo (ventas de enero a septiembre de 2026). Los demás meses no se aceptan: es una regla del servidor.</p>
+          <p><strong>No actualiza el plan de compra de noviembre.</strong> Ese plan usa ventas hasta el 20/10 y existencias al cierre del 20/10, y los incorpora el soporte técnico con un procedimiento aparte (ver Ayuda). Desde «Compra recomendada» el administrador sí puede generar otra versión del plan con otros parámetros.</p>
+        </div>
+      </p-message>
+
+      <div class="stepper" aria-label="Pasos para cargar datos" data-testid="upload-steps">
+        <div class="step"><span class="step-num">1</span> <strong>Elegir archivo</strong> <span class="muted">un Excel mensual (.xlsx)</span></div>
+        <div class="step"><span class="step-num">2</span> <strong>Revisar el resultado</strong> <span class="muted">qué se aceptó y qué se rechazó</span></div>
+        <div class="step"><span class="step-num">3</span> <strong>Consultar</strong> <span class="muted">las <a [routerLink]="['/resumen']" queryParamsHandling="preserve" data-testid="step-sales">ventas registradas</a> o la <a [routerLink]="['/evaluacion/ventas-previstas']" queryParamsHandling="preserve" data-testid="step-forecast">previsión del ejemplo</a></span></div>
+      </div>
+
+      <p-panel header="1. Elegir el archivo" data-testid="upload-section" styleClass="mb-3">
+        <p class="muted">Un archivo .xlsx mensual con ventas de enero a septiembre de 2026 (hasta 25 MiB). El navegador solo avisa de forma temprana: el servidor revisa el contenido y decide. El procesamiento ocurre en segundo plano; puedes recargar esta página sin perder el trabajo.</p>
+        <form class="flex flex-wrap align-items-center gap-3 mt-3" (submit)="$event.preventDefault(); upload()" aria-label="Cargar archivo">
+          <label class="file-label">Archivo .xlsx <input type="file" accept=".xlsx" data-testid="file-input" (change)="pick($event)" /></label>
+          <p-button type="submit" label="Subir y procesar" icon="pi pi-upload" [disabled]="!file() || !!warning() || sending()" [loading]="sending()" data-testid="upload-btn" />
         </form>
-        @if (warning(); as w) { <p class="notice warn" role="alert" data-testid="file-warning">{{ w }}</p> }
-        @if (uploadError(); as e) { <p class="notice danger" role="alert" data-testid="upload-error">{{ e }}</p> }
-        @if (reusedNote()) { <p class="notice info" data-testid="reused-note">Este archivo ya había sido enviado: se sigue el mismo trabajo, no se duplica.</p> }
-      </section>
+        @if (warning(); as w) { <p-message severity="warn" [text]="w" role="alert" data-testid="file-warning" styleClass="w-full mt-3" /> }
+        @if (uploadError(); as e) { <p-message severity="error" [text]="e" role="alert" data-testid="upload-error" styleClass="w-full mt-3" /> }
+        @if (reusedNote()) { <p-message severity="info" text="Este archivo ya había sido enviado: se sigue el mismo trabajo, no se duplica." data-testid="reused-note" styleClass="w-full mt-3" /> }
+      </p-panel>
       <h2>2. Revisar el resultado</h2>
       <app-jobs-panel [jobs]="board.jobs()" [listError]="board.listError()" [pollError]="board.pollError()" (openImport)="openById($event)" />
     } @else {
       <app-page-header title="Datos cargados" lead="Archivos de ventas que ya se cargaron en la aplicación." />
-      <p class="notice info" data-testid="readonly-note">Esta pantalla es de solo lectura: muestra los archivos ya cargados. Solo el administrador puede cargar archivos.</p>
+      <p-message severity="info" text="Esta pantalla es de solo lectura: muestra los archivos ya cargados. Solo el administrador puede cargar archivos." data-testid="readonly-note" styleClass="w-full mb-3" />
     }
+
     <h2>Archivos cargados</h2>
     <app-state-panel [state]="l.state()" emptyText="Todavía no hay archivos cargados." (retry)="l.reload()">
       @if (data(); as d) {
-        <div class="table-wrap" tabindex="0" role="region" aria-label="Tabla de archivos cargados">
-        <table data-testid="imports-table">
-          <thead><tr><th scope="col">Archivo</th><th scope="col">Mes</th><th scope="col">Estado</th><th scope="col" class="num">Ventas aceptadas</th><th scope="col" class="num">Rechazadas</th><th scope="col"><span class="sr-only">Acción</span></th></tr></thead>
-          <tbody>
-            @for (r of d.items; track r.import_id) {
-              <tr>
-                <td>{{ r.archivo }}</td><td>{{ r.mes }}</td><td>{{ r.estado }}</td>
-                <td class="num">{{ int(r.ventas_aceptadas) }}</td><td class="num">{{ int(r.rechazadas) }}</td>
-                <td><button type="button" class="secondary small" (click)="open(r)" [attr.aria-label]="'Ver detalle de ' + r.archivo">Ver detalle</button></td>
-              </tr>
-            }
-          </tbody>
-        </table>
-        </div>
+        <p-table [value]="d.items" styleClass="p-datatable-sm p-datatable-striped" data-testid="imports-table">
+          <ng-template #header>
+            <tr>
+              <th>Archivo</th><th>Mes</th><th>Estado</th>
+              <th class="text-right">Ventas aceptadas</th><th class="text-right">Rechazadas</th><th><span class="sr-only">Acción</span></th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-r>
+            <tr>
+              <td>{{ r.archivo }}</td><td>{{ r.mes }}</td><td>{{ r.estado }}</td>
+              <td class="text-right">{{ int(r.ventas_aceptadas) }}</td><td class="text-right">{{ int(r.rechazadas) }}</td>
+              <td><p-button label="Ver detalle" icon="pi pi-eye" [text]="true" size="small" (onClick)="open(r)" [attr.aria-label]="'Ver detalle de ' + r.archivo" /></td>
+            </tr>
+          </ng-template>
+        </p-table>
         <app-pager [page]="d.page" [pageSize]="d.page_size" [total]="d.total" [hasMore]="d.has_more" (go)="go($event)" />
       }
     </app-state-panel>
@@ -98,15 +108,17 @@ export function uploadErrorText(e: AppError): string {
     }
   `,
   styles: `
-    .stepper { display: grid; gap: 0.4rem; list-style: none; padding: 0; margin: 0.6rem 0 1rem; }
-    .stepper li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.5rem 0.9rem; }
+    .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .stepper { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.8rem 0 1rem; }
+    .step { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.5rem 1rem; flex: 1; min-width: 12rem; display: flex; align-items: center; gap: 0.5rem; }
+    .step-num { background: var(--accent); color: var(--accent-ink); width: 1.6rem; height: 1.6rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+    .file-label { font-weight: 600; }
   `,
 })
 export class ImportsPage {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
-  /** Solo cosmético: el servidor rechaza igual cualquier escritura del lector. */
   isAdmin = this.auth.isAdmin;
   file = signal<File | null>(null);
   warning = signal<string | null>(null);
@@ -119,9 +131,7 @@ export class ImportsPage {
   pageSize = 50;
   l = load<Page<ImportItem>>(() => this.api.imports(this.page(), this.pageSize), (d) => d.items.length === 0);
   data = computed(() => { const s = this.l.state(); return s.kind === 'data' ? s.data : null; });
-  /** Etiqueta mostrada del detalle abierto y su id. */
   selected = signal<string | null>(null);
-  /** Fila de la lista del detalle abierto (null si se abrió desde un trabajo). */
   row = signal<ImportItem | null>(null);
   private selectedId = signal<string | null>(null);
   detail = load<ImportDetail>(() => this.api.importDetail(this.selectedId()!), () => false, false);

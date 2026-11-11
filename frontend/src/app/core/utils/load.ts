@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { signal, WritableSignal } from '@angular/core';
-import { AppError, LoadState } from './models';
+import type { AppError, LoadState } from '../models';
 
 export interface Loader<T> {
   state: WritableSignal<LoadState<T>>;

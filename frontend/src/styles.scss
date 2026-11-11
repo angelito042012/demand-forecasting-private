@@ -1,3 +1,13 @@
+/* PrimeNG icons — SCSS @use must precede all other rules */
+@use "primeicons/primeicons.css";
+
+/* CSS layer ordering: Tailwind base < PrimeNG < Tailwind utilities.
+   Without this, Tailwind's unlayered preflight resets override PrimeNG's layered styles. */
+@layer tailwind-base, primeng, tailwind-utilities;
+@import "tailwindcss/preflight" layer(tailwind-base);
+@import "tailwindcss/theme" layer(tailwind-base);
+@import "tailwindcss/utilities" layer(tailwind-utilities);
+
 /* UX01: sistema de diseño común. Una sola tipografía (sistema), cuerpo ≥ 16 px, fondo neutro, acento sobrio, foco visible.
    Las clases heredadas (.filters, .tech, .badge, .state, .plain, .steps, .num, .kv…) se conservan para los componentes que las usan. */
 :root {
@@ -44,8 +54,10 @@ small { font-size: 0.9rem; }
 .skip-link:focus { left: 0.5rem; top: 0.5rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Botones: una acción principal por pantalla (.primary); el resto secundarios */
-button, .btn {
+/* Botones: una acción principal por pantalla (.primary); el resto secundarios.
+   Se excluyen los botones internos de PrimeNG (llevan clase p-button o están dentro de p-*). */
+button:not(.p-button):not(.p-checkbox-box):not(.p-stepper-action):not(.p-accordion-header-action):not([class*="p-"]),
+.btn {
   font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; text-decoration: none; cursor: pointer;
   background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); border-radius: var(--radius); padding: 0.5rem 1rem; min-height: 2.5rem;
   &:hover:not(:disabled) { background: #084a82; border-color: #084a82; }
@@ -58,10 +70,13 @@ a.btn { color: var(--accent-ink); }
 a.btn.secondary { color: var(--accent); }
 button.link { background: none; border: none; color: var(--link); text-decoration: underline; padding: 0; min-height: 0; display: inline; }
 
-/* Formularios */
+/* Formularios — se excluyen elementos dentro de componentes PrimeNG */
 select, input, textarea { font: inherit; color: inherit; }
-select, input:not([type='checkbox']):not([type='file']) { border: 1px solid #6b7280; border-radius: 6px; padding: 0.4rem 0.6rem; background: #fff; min-height: 2.5rem; max-width: 100%; }
-label { min-width: 0; max-width: 100%; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.25rem; font-size: 1rem; color: var(--ink); font-weight: 600; }
+select:not(.p-select-label):not(.p-inputtext),
+input:not([type='checkbox']):not([type='file']):not(.p-inputtext):not(.p-checkbox-input):not(.p-radiobutton-input):not([class*="p-"]) {
+  border: 1px solid #6b7280; border-radius: 6px; padding: 0.4rem 0.6rem; background: #fff; min-height: 2.5rem; max-width: 100%;
+}
+label:not(.p-checkbox-label):not(.p-radiobutton-label) { min-width: 0; max-width: 100%; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.25rem; font-size: 1rem; color: var(--ink); font-weight: 600; }
 label.chk { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; }
 label small { font-weight: 400; }
 .filters, .selectors { display: flex; flex-wrap: wrap; gap: 0.8rem 1rem; align-items: end; margin: 0.8rem 0 1rem; padding: 0; border: 0; }
@@ -122,6 +137,11 @@ ol.steps { padding-left: 1.4rem; } ol.steps li { margin: 0.35rem 0; }
 .state.err { border-color: #b02a37; color: #842029; border-style: solid; }
 .kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 1rem; margin: 0; }
 .kv dt { font-weight: 600; } .kv dd { margin: 0; overflow-wrap: anywhere; }
+
+/* PrimeNG fine-tuning — these are unlayered so they override PrimeNG's layered defaults */
+.p-button { font-family: inherit; }
+.p-message { margin: 0.5rem 0; }
+.p-checkbox { vertical-align: middle; }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 @media (max-width: 640px) { h1 { font-size: 1.5rem; } .kv { grid-template-columns: 1fr; } }

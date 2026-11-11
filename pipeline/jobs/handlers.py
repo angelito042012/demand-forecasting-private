@@ -173,7 +173,7 @@ def import_excel(ctx: JobContext) -> dict:
     path, sha = _resolve_upload(ctx, inp)
     month = str(inp.get("month", ""))
     if month not in pol["meses_permitidos_de_carga"]:
-        raise JobFailure("FECHAS_FUERA_DE_ALCANCE", "El mes del archivo está fuera de marzo a julio de 2026.")
+        raise JobFailure("FECHAS_FUERA_DE_ALCANCE", "El mes del archivo está fuera de enero a septiembre de 2026.")
     if sha256_file(path) != sha:
         raise JobFailure("ARCHIVO_ALTERADO", "El contenido del archivo no coincide con su sha256 registrado.")
     prev = ctx.db.imports.find_one({"sha256": sha, "estado": "completed", "noop": {"$ne": True}})
@@ -188,7 +188,7 @@ def import_excel(ctx: JobContext) -> dict:
         inspect_xlsx(path, max_entries=int(up["max_entradas_zip"]), max_expanded=int(up["tam_max_expandido_bytes"]),
                      max_rows=int(up["max_filas_hoja"]), allowed_months=tuple(pol["meses_permitidos_de_carga"]))
     except XlsxRejected as exc:
-        if exc.code in ("AGOSTO_RESERVADO", "MES_FUERA_DE_ALCANCE"):
+        if exc.code == "MES_FUERA_DE_ALCANCE":
             raise JobFailure("FECHAS_FUERA_DE_ALCANCE", exc.message) from None
         raise JobFailure("ARCHIVO_INVALIDO", f"{exc.code}: {exc.message}") from None
     ctx.check()
@@ -214,7 +214,7 @@ def import_excel(ctx: JobContext) -> dict:
                 in_month += 1
     if out_of_scope:
         raise JobFailure("FECHAS_FUERA_DE_ALCANCE",
-                         f"El archivo contiene {out_of_scope} filas con fechas fuera de marzo a julio de 2026 "
+                         f"El archivo contiene {out_of_scope} filas con fechas fuera de enero a septiembre de 2026 "
                          f"(por ejemplo {example}). No se importó nada.")
     if in_month == 0:
         raise JobFailure("MES_NO_COINCIDE", f"Ninguna fila tiene fecha del mes declarado ({month}). No se importó nada.")
@@ -238,6 +238,9 @@ def import_excel(ctx: JobContext) -> dict:
     try:
         ctx.progress("importando", {"filas_leidas": len(rows)})
         rep = import_workbook(path, ctx.db, expected_month=month, fence=fence)
+        display_name = str(inp.get("label", "")) + ".xlsx" if inp.get("label") else None
+        if display_name and display_name != path.name:
+            ctx.db.imports.update_one({"import_id": rep.import_id}, {"$set": {"archivo": display_name}})
         _close_reservation(ctx.db, resv, fence, approved=rep.estado == "completed")
     except month_lock.LostReservation:
         raise JobFailure("IMPORTACION_CONCURRENTE", "Otro intento retomó la importación de este mes; se reintentará.",

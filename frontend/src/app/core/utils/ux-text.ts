@@ -4,8 +4,8 @@
  * para tres registros concretos. Los identificadores técnicos (run_id, tipo interno) se muestran solo en «Detalles técnicos».
  */
 import { fmtDate } from './format';
-import { isFinal, isGenerated } from './run-choice';
-import { JobStatus, RunSummary } from './models';
+import { isFinal, isGenerated } from '../run-choice';
+import type { JobStatus, RunSummary } from '../models';
 
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 

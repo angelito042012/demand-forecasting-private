@@ -1,7 +1,7 @@
 // UX01: textos de lectura de la evaluación. SOLO presentación: cada cifra sale de los números que publica la API
 // (o del cociente de dos cifras publicadas, como ya hace core/final-eval.ts); nunca se sustituye por una métrica más favorable.
 import { SimBlock } from '../core/models';
-import { fmtPct, fmtPp, isNum } from '../core/format';
+import { fmtPct, fmtPp, isNum } from '../core/utils/format';
 
 export const NOT_EVALUABLE = 'no evaluable';
 

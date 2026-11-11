@@ -28,8 +28,9 @@ _ITEM_FIELDS = ("producto_id", "producto", "categoria", "unidad_reporte", "unida
 def _snapshot_view(s: dict, discrepancies: list[str]) -> dict:
     src = s.get("source", {})
     return {"snapshot_id": s["snapshot_id"], "kind": store.RECONSTRUIDO, "version": s.get("version"), "status": s.get("status"),
-            "as_of_local": s["as_of_local"], "as_of_utc": iso_utc(s.get("as_of_utc")),
-            "warehouse": {"id": s["warehouse"]["id"], "name": s["warehouse"]["name"]},
+            "as_of_local": s.get("as_of_local") or s.get("as_of_utc"), "as_of_utc": iso_utc(s.get("as_of_utc")),
+            "warehouse": {"id": (s.get("warehouse") or {}).get("id", "ALM1"),
+                          "name": (s.get("warehouse") or {}).get("name", "Almacén principal")},
             "base_count": dict(s.get("base_count") or {}), "movements": dict(s.get("movements") or {}),
             "counts": dict(s.get("counts") or {}), "rule": s.get("rule"), "supersedes": s.get("supersedes"),
             "source": {"sha256_short": str(src.get("sha256", ""))[:12], "csv_sha256_short": str(src.get("csv_sha256", ""))[:12]},

@@ -5,8 +5,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
-import { AuthService } from '../core/auth.service';
+import { apiInterceptor } from '../core/interceptors';
+import { AuthService } from '../core/services/auth.service';
 import { PlanPage } from './plan.page';
 
 const API = '/api/v1';

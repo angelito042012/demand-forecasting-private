@@ -4,9 +4,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
-import { demoInterceptor } from '../core/demo';
-import { AuthService } from '../core/auth.service';
+import { apiInterceptor } from '../core/interceptors';
+import { demoInterceptor } from '../core/interceptors';
+import { AuthService } from '../core/services/auth.service';
 import { Role, PublicJob } from '../core/models';
 import { ImportsPage, earlyWarning } from './imports.page';
 import { RunsPage } from './runs.page';
@@ -191,7 +191,7 @@ describe('Importaciones: envío multipart y seguimiento del trabajo', () => {
 describe('Trabajos: mensajes por código de error', () => {
   const failed = (code: string, message = 'texto del servidor'): PublicJob => job({ status: 'failed', error: { code, message, retryable: false } });
 
-  it('FECHAS_FUERA_DE_ALCANCE: rechazado, fechas fuera de marzo a julio', () => {
+  it('FECHAS_FUERA_DE_ALCANCE: rechazado, fechas fuera de enero a septiembre', () => {
     const s = summarize(failed('FECHAS_FUERA_DE_ALCANCE'));
     expect(s.title).toBe('Rechazado');
     expect(s.detail).toContain('fechas fuera del alcance');

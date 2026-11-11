@@ -1,7 +1,7 @@
 import { DestroyRef, signal } from '@angular/core';
 import { ApiService } from './api.service';
 import { AppError, JobStatus, JobType, PublicJob } from './models';
-import { isAppError } from './load';
+import { isAppError } from './utils/load';
 
 export const POLL_MS = 2000;
 
@@ -38,7 +38,7 @@ export const STATUS_LABELS: Record<JobStatus, string> = { queued: 'Esperando tur
 export const TYPE_LABELS: Record<JobType, string> = { import_excel: 'Carga de un archivo Excel', generate_run: 'Creación de un análisis', generate_plan: 'Cálculo de un plan de compra' };
 
 export const REJECT_MOTIVES: Record<string, string> = {
-  FECHAS_FUERA_DE_ALCANCE: 'El archivo tiene fechas fuera del alcance del proyecto (marzo a julio de 2026). No se cargó nada: revisa el mes del archivo.',
+  FECHAS_FUERA_DE_ALCANCE: 'El archivo tiene fechas fuera del alcance del proyecto (enero a septiembre de 2026). No se cargó nada: revisa el mes del archivo.',
   MES_CON_FUENTE_APROBADA:
     'Ese mes ya tiene una fuente aprobada distinta. El archivo no se cargó ni sustituyó la fuente vigente: la sustitución no se hace desde esta pantalla y sigue el procedimiento de remediación documentado (docs/REMEDIACION_FUENTES.md).',
   ARCHIVO_INVALIDO: 'El archivo no es un Excel (.xlsx) válido o no tiene la estructura esperada. Revisa que sea el archivo mensual de ventas.',

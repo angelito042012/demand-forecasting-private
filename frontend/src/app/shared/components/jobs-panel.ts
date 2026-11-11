@@ -1,8 +1,8 @@
 import { Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AppError, PublicJob } from '../core/models';
-import { STATUS_LABELS, TYPE_LABELS, stageLabel, summarize } from '../core/jobs';
-import { fmtInt } from '../core/format';
+import { AppError, PublicJob } from '../../core/models';
+import { STATUS_LABELS, TYPE_LABELS, stageLabel, summarize } from '../../core/jobs';
+import { fmtInt } from '../../core/utils/format';
 
 /** Lista de trabajos recientes con etapa, conteos reales y resultado legible. Solo muestra lo que publica la API. */
 @Component({

@@ -4,8 +4,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
-import { demoInterceptor } from '../core/demo';
+import { apiInterceptor } from '../core/interceptors';
+import { demoInterceptor } from '../core/interceptors';
 
 export interface Mounted<T> { f: ComponentFixture<T>; http: HttpTestingController; el: HTMLElement }
 

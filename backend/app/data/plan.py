@@ -174,7 +174,7 @@ def get_result(db, plan_id: str, producto_id: str) -> dict:
 # ------------------------------------------------------------------ comparacion v1/v2 (T20)
 def _plan_brief(p: dict) -> dict:
     sn = p["snapshot"]
-    return {**_plan_summary(p), "snapshot_kind": sn.get("kind") or "INFORMADO", "snapshot_as_of_local": sn["as_of_local"],
+    return {**_plan_summary(p), "snapshot_kind": sn.get("kind") or "INFORMADO", "snapshot_as_of_local": sn.get("as_of_local") or sn.get("as_of_utc"),
             "sales_cutoff": p["dates"]["sales_cutoff"], "count_date": p["dates"]["count_date"]}
 
 
@@ -251,8 +251,10 @@ def inputs(db) -> dict:
         **{k: ds[k] for k in ("base_dataset_id", "october_verification", "partial") if k in ds}}
     kind = None if sn is None else store.snapshot_kind(sn)
     snapshot = None if sn is None else {
-        "snapshot_id": sn["snapshot_id"], "kind": kind, "as_of_local": sn["as_of_local"],
-        "warehouse": {"id": sn["warehouse"]["id"], "name": sn["warehouse"]["name"]},
+        "snapshot_id": sn["snapshot_id"], "kind": kind,
+        "as_of_local": sn.get("as_of_local") or sn.get("as_of_utc"),
+        "warehouse": {"id": (sn.get("warehouse") or {}).get("id", "ALM1"),
+                       "name": (sn.get("warehouse") or {}).get("name", "Almacén principal")},
         "products": db[store.items_collection(sn)].count_documents({"snapshot_id": sn["snapshot_id"]})}
     if kind == store.RECONSTRUIDO:
         disc = sorted(d["producto_id"] for d in db[store.REC_ITEM_COLL].find(

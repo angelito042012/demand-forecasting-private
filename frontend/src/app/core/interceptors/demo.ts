@@ -3,10 +3,6 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/com
 import { inject } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
 
-/**
- * Modo demostración: SOLO con bandera explícita `?demo=1` y SOLO en compilación de desarrollo.
- * Nunca se activa por un fallo de la API ni de forma silenciosa.
- */
 @Injectable({ providedIn: 'root' })
 export class DemoMode {
   readonly enabled: boolean =
@@ -31,7 +27,6 @@ function fixture(url: string): unknown | undefined {
   return undefined;
 }
 
-/** Interceptor de demostración: responde con fixtures solo si DemoMode.enabled; si no, no hace nada. */
 export const demoInterceptor: HttpInterceptorFn = (req, next): Observable<any> => {
   if (!inject(DemoMode).enabled || !req.url.startsWith('/api/')) return next(req);
   if (req.method === 'POST' && req.url.endsWith('/auth/logout')) return of(new HttpResponse({ status: 204 }));

@@ -3,8 +3,8 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { apiInterceptor } from '../core/http.interceptor';
-import { demoInterceptor } from '../core/demo';
+import { apiInterceptor } from '../core/interceptors';
+import { demoInterceptor } from '../core/interceptors';
 import { ImportsPage } from './imports.page';
 import { RunsPage } from './runs.page';
 import { ForecastsPage } from './forecasts.page';
@@ -224,11 +224,11 @@ describe('Resumen', () => {
     expect(el(f).querySelector('[data-testid="excluded"]')?.textContent).toContain('no se informa como venta cero');
     expect(el(f).textContent).toContain('OBSERVED_EXCEL');
   });
-  it('rango en agosto -> error 422 mostrado, sin tabla', async () => {
+  it('rango fuera de alcance -> error 422 mostrado, sin tabla', async () => {
     const f = mount(SummaryPage);
-    await flush(req('/api/v1/sales/summary'), { error: { code: 'AGOSTO_RESERVADO', message: 'agosto de 2026 está reservado para la prueba final' } }, f, 422);
+    await flush(req('/api/v1/sales/summary'), { error: { code: 'FUERA_DE_RANGO', message: 'La fecha solicitada excede el último día de datos permitido.' } }, f, 422);
     expect(state(f)).toBe('error');
-    expect(el(f).textContent).toContain('agosto de 2026 está reservado');
+    expect(el(f).textContent).toContain('La fecha solicitada excede');
   });
 });
 

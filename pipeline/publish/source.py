@@ -23,7 +23,7 @@ PUBLISHER_VERSION = "t08r-1"   # t08r-1: senales exactas (R05), anclaje de refer
 CSV_COLUMNS = ["fold", "entidad", "cohorte", "fecha", "h", "evaluable", "real", "pred_promedio_28",
                "pred_referencia_fija_0531", "pred_rf_distribuido"]
 NPZ_ROLES = ("on_hand", "ordered", "received")
-LAST_ALLOWED = "2026-07-31"
+LAST_ALLOWED = "2026-09-30"
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _SKU = re.compile(r"^[A-Za-z0-9._-]{1,32}$")
@@ -144,7 +144,7 @@ def _load_forecasts(path: Path, entry: dict, manifest: dict) -> pd.DataFrame:
     if list(df.columns) != CSV_COLUMNS:
         raise SourceVerificationError("columnas de predicciones_folds inesperadas")
     if df["fecha"].max() > LAST_ALLOWED:
-        raise SourceVerificationError("el CSV contiene fechas posteriores a 2026-07-31")
+        raise SourceVerificationError(f"el CSV contiene fechas posteriores a {LAST_ALLOWED}")
     g = df[df["fold"] == entry["fold"]].copy()
     fold = manifest["folds_predictivos"][entry["fold"]]
     if fold["corte"] != entry["cutoff"]:

@@ -98,13 +98,13 @@ Responde «¿Qué tan cerca estuvieron las estimaciones de las ventas registrada
 Una versión corregida reemplaza a la anterior. Aviso rojo: «Esta versión fue reemplazada. No uses sus sugerencias», con enlace «Ver el análisis corregido» y el motivo plegado.
 
 ### 5.7 Ventas registradas (Más)
-Ventas reales ya cargadas (por defecto 01/06 a 31/07/2026): *Desde*, *Hasta*, *Agrupar por* (Mes, Día, Categoría), *Categoría* y **Consultar**. Las **notas de crédito** se informan aparte (no se restan; no se infiere devolución física) y se listan los **días excluidos del análisis**. No se entrega agosto en esta vista.
+Ventas reales ya cargadas (por defecto 01/01 a 30/09/2026): *Desde*, *Hasta*, *Agrupar por* (Mes, Día, Categoría), *Categoría* y **Consultar**. Las **notas de crédito** se informan aparte (no se restan; no se infiere devolución física) y se listan los **días excluidos del análisis**.
 
 ### 5.8 Ayuda (Más)
 Primeros pasos (con **Volver a mostrar «Cómo empezar» en Inicio**), «Qué no hace esta aplicación», «Cómo leer el error absoluto (WAPE)» y el glosario con el término técnico entre paréntesis.
 
 ### 5.9 Administración (solo administrador)
-- **Cargar datos:** 1. Elegir archivo (un `.xlsx` mensual, marzo a julio de 2026, hasta 25 MiB; agosto se rechaza) y **Subir y procesar**; 2. Revisar el resultado en los trabajos recientes (esperando turno, en curso, terminado, no se pudo completar) y **Ver detalle**; 3. Consultar las ventas registradas o la previsión. Reenviar el mismo archivo no duplica («Este archivo ya había sido enviado»). Cargar no crea análisis. El lector ve en su lugar **Datos cargados**, de solo lectura.
+- **Cargar datos:** 1. Elegir archivo (un `.xlsx` mensual, enero a septiembre de 2026, hasta 25 MiB) y **Subir y procesar**; 2. Revisar el resultado en los trabajos recientes (esperando turno, en curso, terminado, no se pudo completar) y **Ver detalle**; 3. Consultar las ventas registradas o la previsión. Reenviar el mismo archivo no duplica («Este archivo ya había sido enviado»). Cargar no crea análisis. El lector ve en su lugar **Datos cargados**, de solo lectura.
 - **Crear análisis:** elija «Ventas utilizadas hasta (fecha)» dentro del rango que indica la pantalla; período estimado (21 días siguientes) y método (promedio de los últimos 28 días) son fijos; pulse **Crear análisis**. Al terminar: «Listo: el análisis se creó», con **Ver previsión** y **Ver en Mis análisis**. No reentrena modelos. Un lector ve «Solo el administrador puede crear análisis».
 - **Estado del sistema:** funcionando / con fallas, base de datos y versión; **Volver a comprobar**.
 
@@ -177,13 +177,13 @@ No hay URL ni usuarios públicos de demostración. Los pasos de despliegue, HTTP
 |---|---|---|---|
 | Consultar Inicio, Ventas previstas, Existencias, Compra recomendada, «Entender la compra» | Sí | Sí | — |
 | Generar una versión nueva del plan con otros parámetros (decisión, plazos, reserva, mínimo, múltiplo, pedidos por recibir) | No | **Sí**: «Compra recomendada» → «Generar plan». Si todo es idéntico se reutiliza la versión existente | — |
-| Cargar un Excel mensual en «Cargar datos» | No | Sí, **solo ventas de marzo a julio de 2026** (agosto reservado; otros meses se rechazan): alimenta los análisis históricos, **no el plan de noviembre** | — |
+| Cargar un Excel mensual en «Cargar datos» | No | Sí, **solo ventas de enero a septiembre de 2026**: alimenta los análisis históricos, **no el plan de noviembre** | — |
 | «Crear análisis» | No | Sí, **solo históricos**: cortes del 01/06 al 10/07/2026, 21 días, promedio de 28 días | — |
 | Incorporar ventas o existencias posteriores al 20/10/2026 y actualizar el plan de noviembre con ellas | No | **No** (la interfaz no lo permite) | **Sí**: desde 07/11 disponible el CLI `scripts/import_operativo.py` (ver `docs/MANUAL_OPERACION.md` §10.1) para importar a MongoDB local sin mongorestore. La publicación a la nube sigue requiriendo el paso 5 de §10 (ver `docs/T22_ALCANCE_DATOS_Y_PLAN.md`) |
 | Cambiar las reglas del servidor (meses permitidos, cortes, horizonte) | No | No | Sí, con encargo aparte posterior a la evaluación final |
 | Confirmar las compras 11452/11455 y las 13 diferencias de inventario | — | — | Lo confirma la empresa; luego soporte actualiza los datos |
 - **Estado del sistema** (administrador): indica si el servicio y la base de datos responden; no depende del plan ni del inventario.
-- **Por qué «Cargar datos» y «Crear análisis» tienen límites:** son reglas del servidor para proteger la evaluación académica (agosto de 2026 es la prueba final reservada); no son textos viejos.
+- **Por qué «Cargar datos» y «Crear análisis» tienen límites:** son reglas del servidor para definir el alcance del proyecto académico; no son textos viejos.
 
 ### Documentación técnica complementaria
 

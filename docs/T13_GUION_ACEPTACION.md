@@ -72,7 +72,7 @@ La última columna queda **vacía** hasta la ejecución real. Marque en ella lo 
 | **G. Ayuda y límites** | | | |
 | 28 | Abrir «Ayuda» | Primeros pasos, «Qué no hace esta aplicación», «Cómo leer el error absoluto (WAPE)» y glosario | Cumple |
 | **H. Administrador (opcional, caso mínimo ya probado)** | | | |
-| 29 | Salir e ingresar como admin; abrir «Cargar datos» | Pasos 1-2-3; «Subir y procesar»; trabajos recientes | Cumple — pasos 1-2-3 visibles, archivos listados (marzo a julio) |
+| 29 | Salir e ingresar como admin; abrir «Cargar datos» | Pasos 1-2-3; «Subir y procesar»; trabajos recientes | Cumple — pasos 1-2-3 visibles, archivos listados (enero a septiembre) |
 | 30 | Reenviar un archivo ya aprobado (si hay uno de prueba) | «Este archivo ya había sido enviado» o «Sin cambios»; sin duplicados | Cumple — reenvió marzo.xlsx: «Sin cambios (archivo ya cargado). Este archivo ya estaba cargado; no se modificó ningún dato.» |
 | 31 | Abrir «Crear análisis» (sin crear si no es necesario) | Fecha «Ventas utilizadas hasta» con rango permitido; período estimado de 21 días y método fijos; botón «Crear análisis» | Cumple — fecha 10/07/2026, período 21 días (fijo), método promedio_28 (fijo). Milton presionó «Crear análisis» (genera análisis histórico sin consecuencias) |
 | 32 | Abrir «Estado del sistema» y salir | «funcionando», base de datos «disponible»; al salir vuelve a «Acceso» | Cumple — «Estado general: funcionando», «Base de datos: disponible», «Versión: 0.1.0» |

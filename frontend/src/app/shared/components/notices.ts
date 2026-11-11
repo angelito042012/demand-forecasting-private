@@ -1,9 +1,9 @@
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { isStaleAge, STALE_DAYS } from '../core/age';
-import { fmtDate } from '../core/format';
-import { FINAL_WARNINGS, RunQuality, SIM_NOTICE } from '../core/models';
-import { kindLabel } from '../core/run-choice';
+import { isStaleAge, STALE_DAYS } from '../../core/utils/age';
+import { fmtDate } from '../../core/utils/format';
+import { FINAL_WARNINGS, RunQuality, SIM_NOTICE } from '../../core/models';
+import { kindLabel } from '../../core/run-choice';
 
 /** Aviso obligatorio en pantallas con stock, tránsito, costos o pedidos simulados. Los identificadores van plegados. */
 @Component({

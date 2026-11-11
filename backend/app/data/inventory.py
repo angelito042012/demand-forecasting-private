@@ -28,8 +28,9 @@ _ITEM_FIELDS = ("producto_id", "producto", "categoria", "unidad_reporte", "unida
 
 def _snapshot_view(s: dict) -> dict:
     return {"snapshot_id": s["snapshot_id"], "version": s["version"], "status": s["status"],
-            "as_of_local": s["as_of_local"], "as_of_utc": iso_utc(s["as_of_utc"]), "timezone": s["timezone"],
-            "warehouse": {"id": s["warehouse"]["id"], "name": s["warehouse"]["name"]}, "nature": s["nature"],
+            "as_of_local": s.get("as_of_local") or s.get("as_of_utc"), "as_of_utc": iso_utc(s.get("as_of_utc")), "timezone": s.get("timezone", "America/Lima"),
+            "warehouse": {"id": (s.get("warehouse") or {}).get("id", "ALM1"),
+                          "name": (s.get("warehouse") or {}).get("name", "Almacén principal")}, "nature": s.get("nature", "INFORMADO"),
             "independent_verification": bool(s["independent_verification"]),
             "source": {"file": s["source"]["file"], "sha256_short": s["source"]["sha256"][:12]},
             "counts": dict(s["counts"]), "declared_unknowns": [dict(u) for u in s.get("declared_unknowns", [])],
@@ -53,7 +54,9 @@ def list_snapshots(db, page: int, page_size: int) -> dict:
     cur = db[SNAP_COLL].find(flt, {"_id": 0}).sort([("as_of_utc", -1), ("version", -1)]) \
         .skip((page - 1) * page_size).limit(page_size)
     items = [{"snapshot_id": s["snapshot_id"], "version": s["version"], "status": s["status"],
-              "as_of_local": s["as_of_local"], "warehouse": {"id": s["warehouse"]["id"], "name": s["warehouse"]["name"]},
+              "as_of_local": s.get("as_of_local") or s.get("as_of_utc"),
+              "warehouse": {"id": (s.get("warehouse") or {}).get("id", "ALM1"),
+                            "name": (s.get("warehouse") or {}).get("name", "Almacén principal")},
               "source": {"sha256_short": s["source"]["sha256"][:12]}, "imported_at": iso_utc(s.get("imported_at"))}
              for s in cur]
     return page_response(items, total, page, page_size)

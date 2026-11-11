@@ -4,16 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { CurrentPlanStore } from '../core/current-plan.store';
-import { load } from '../core/load';
+import { load } from '../core/utils/load';
 import { PlanResultsPage } from '../core/models';
-import { fmtDate } from '../core/format';
-import { longDate, monthName } from '../core/ux-text';
-import { PageHeader } from '../ui/page-header';
-import { StatePanel } from '../ui/state-panel';
-import { Pager } from '../ui/pager';
+import { fmtDate } from '../core/utils/format';
+import { longDate, monthName } from '../core/utils/ux-text';
+import { PageHeader } from '../shared/components/page-header';
+import { StatePanel } from '../shared/components/state-panel';
+import { Pager } from '../shared/components/pager';
 import { NOT_COMPUTABLE, NOT_REPORTED, qtyText } from './plan-text';
 import { localStamp } from './inventory.page';
-import { useWideMain } from '../core/wide-main';
+import { useWideMain } from '../core/utils/wide-main';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { InputTextModule } from 'primeng/inputtext';
 
 const SORTS: { value: string; label: string }[] = [
   { value: 'producto_id', label: 'Código (menor a mayor)' },
@@ -29,13 +32,15 @@ const SORTS: { value: string; label: string }[] = [
  */
 @Component({
   selector: 'app-plan-forecasts-page',
-  imports: [FormsModule, RouterLink, PageHeader, StatePanel, Pager],
+  imports: [FormsModule, RouterLink, PageHeader, StatePanel, Pager, ButtonModule, MessageModule, InputTextModule],
   template: `
     <app-page-header title="Ventas previstas" />
 
     <app-state-panel [state]="store.state()" emptyText="Todavía no se generó un plan de compra, así que no hay ventas previstas para mostrar." (retry)="store.reload()">
       @if (cur(); as c) {
-        <p class="notice info compact" data-testid="fc-notice" role="note"><strong>Plan de {{ monthText() }} vigente.</strong> La previsión es una proyección bajo supuestos, no ventas observadas.</p>
+        <p-message severity="info" data-testid="fc-notice" role="note" styleClass="w-full mb-2">
+          <strong>Plan de {{ monthText() }} vigente.</strong> La previsión es una proyección bajo supuestos, no ventas observadas.
+        </p-message>
         <section class="surface compact-card" aria-label="Plan vigente" data-testid="fc-source">
           <p data-testid="fc-version"><strong>Versión {{ c.ref.version ?? '—' }}</strong> · creado el {{ stamp(c.ref.created_at) }} · decisión de compra el {{ date(c.header.params?.decision_date ?? c.ref.decision_date) }} · mismo plan que «Compra recomendada».</p>
           <ul class="plain provenance" data-testid="fc-provenance">
@@ -49,7 +54,7 @@ const SORTS: { value: string; label: string }[] = [
     </app-state-panel>
 
     @if (forbidden()) {
-      <p class="notice danger" role="alert" data-testid="fc-forbidden">No tienes permiso para ver las ventas previstas. Ingresa con otro usuario o avisa al administrador.</p>
+      <p-message severity="error" role="alert" data-testid="fc-forbidden" text="No tienes permiso para ver las ventas previstas. Ingresa con otro usuario o avisa al administrador." styleClass="w-full mb-2" />
     } @else if (cur()) {
       <section class="toolbar compact-bar" aria-label="Filtros de ventas previstas" data-testid="fc-filters">
         <form class="filters" (ngSubmit)="search()" aria-label="Buscar productos">
@@ -59,7 +64,7 @@ const SORTS: { value: string; label: string }[] = [
               @for (o of sorts; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
             </select>
           </label>
-          <button type="submit" class="btn small" data-testid="fc-search">Buscar</button>
+          <p-button type="submit" label="Buscar" icon="pi pi-search" size="small" data-testid="fc-search" />
           <button type="button" class="link-btn legend-link" data-testid="fc-legend-open" (click)="showLegend()">Cómo leer la tabla</button>
         </form>
       </section>

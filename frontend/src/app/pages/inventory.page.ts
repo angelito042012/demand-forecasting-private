@@ -3,13 +3,16 @@ import { tap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { load } from '../core/load';
+import { load } from '../core/utils/load';
 import { ReportedInventoryPage, ReportedSnapshot, ReportedSnapshotRef, ReportedView } from '../core/models';
-import { fmtInt } from '../core/format';
-import { longDate } from '../core/ux-text';
-import { PageHeader } from '../ui/page-header';
-import { StatePanel } from '../ui/state-panel';
-import { Pager } from '../ui/pager';
+import { fmtInt } from '../core/utils/format';
+import { longDate } from '../core/utils/ux-text';
+import { PageHeader } from '../shared/components/page-header';
+import { StatePanel } from '../shared/components/state-panel';
+import { Pager } from '../shared/components/pager';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { InputTextModule } from 'primeng/inputtext';
 
 export const NOT_REPORTED = 'No informado';
 
@@ -48,16 +51,16 @@ const VIEWS: { value: ReportedView; label: string }[] = [
 /** T18: inventario informado por la empresa (solo lectura). No es inventario simulado ni se mezcla con recomendaciones. */
 @Component({
   selector: 'app-inventory-page',
-  imports: [FormsModule, RouterLink, PageHeader, StatePanel, Pager],
+  imports: [FormsModule, RouterLink, PageHeader, StatePanel, Pager, ButtonModule, MessageModule, InputTextModule],
   template: `
     <app-page-header title="Inventario informado por la empresa" [lead]="lead()" />
 
     @if (snap(); as s) {
-      <p class="notice info" data-testid="inv-strip">
+      <p-message severity="info" data-testid="inv-strip" styleClass="w-full mb-2">
         <strong>Conteo del {{ stamp() }} ({{ zone() }}) · {{ s.warehouse.name }} (almacén {{ s.warehouse.id }})</strong>
         @if (!s.independent_verification) { · Informado por la empresa; no verificado de forma independiente }
-      </p>
-      <p class="notice warn" data-testid="inv-gap">
+      </p-message>
+      <p-message severity="warn" data-testid="inv-gap" styleClass="w-full mb-2">
         Este inventario es del {{ day() }}.
         @if (salesEnd(); as e) {
           El histórico de ventas disponible termina el {{ e }}: faltan las ventas posteriores hasta el conteo (no son cero).
@@ -67,11 +70,11 @@ const VIEWS: { value: ReportedView; label: string }[] = [
         Por eso no hay una recomendación de reposición actualizada a esa fecha; las recomendaciones históricas siguen en
         <a [routerLink]="['/recomendaciones']" queryParamsHandling="preserve" data-testid="inv-to-reco">Reposición simulada</a>.
         @if (pendingOrders()) { Pedidos por recibir: <strong>no informados</strong>. }
-      </p>
+      </p-message>
     }
 
     @if (forbidden()) {
-      <p class="notice danger" role="alert" data-testid="inv-forbidden">No tienes permiso para ver el inventario informado. Ingresa con otro usuario o avisa al administrador.</p>
+      <p-message severity="error" role="alert" data-testid="inv-forbidden" text="No tienes permiso para ver el inventario informado. Ingresa con otro usuario o avisa al administrador." styleClass="w-full mb-2" />
     } @else {
       @if (snap()) {
         <section class="toolbar" aria-label="Filtros del inventario informado">
@@ -93,7 +96,7 @@ const VIEWS: { value: ReportedView; label: string }[] = [
                 @for (n of sizes; track n) { <option [ngValue]="n">{{ n }}</option> }
               </select>
             </label>
-            <button type="submit" class="btn" data-testid="inv-search">Buscar</button>
+            <p-button type="submit" label="Buscar" icon="pi pi-search" data-testid="inv-search" />
           </form>
         </section>
       }

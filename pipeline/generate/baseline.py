@@ -261,7 +261,7 @@ def build(inp: Inputs, *, now: datetime | None = None) -> Generated:
             {"predicciones_folds.csv.gz"} if inp.rf is not None else set())
         artifacts = [dict(a) for a in inp.src.artifacts if a["name"] in used]
     notes = [
-        "Ventas observadas: OBSERVED_EXCEL (Excel de la empresa, marzo a julio de 2026), solo hasta el origen.",
+        "Ventas observadas: OBSERVED_EXCEL (Excel de la empresa, enero a septiembre de 2026), solo hasta el origen.",
         (f"Pronóstico hacia adelante con promedio_28 desde el {origin:%d/%m/%Y}: no hay observaciones futuras; "
          "los valores futuros no son cero y la corrida no es evaluable."),
         ("Stock, tránsito, costos y pedidos: SYNTHETIC_NOT_REAL_INVENTORY. " + SIM_LABEL + "."

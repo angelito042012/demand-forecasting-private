@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, input, output, signal } from '@angular/core';
 import { PlanCreateBody, PlanInputs, PlanNature, PlanPendingOrder } from '../core/models';
-import { fmtDate } from '../core/format';
-import { longDate, monthName } from '../core/ux-text';
+import { fmtDate } from '../core/utils/format';
+import { longDate, monthName } from '../core/utils/ux-text';
 import { NATURE_LABELS } from './plan-text';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;

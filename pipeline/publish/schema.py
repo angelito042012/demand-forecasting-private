@@ -14,7 +14,7 @@ KIND = "historical_development"
 RUN_LABEL = "Corrida histórica de desarrollo al 10/07/2026"
 GENERATED_KIND = "generated_baseline"
 FINAL_KIND = "final_evaluation"
-LAST_HISTORIC_DATE = "2026-07-31"      # fecha objetivo maxima de las corridas historica y generada
+LAST_HISTORIC_DATE = "2026-09-30"      # fecha objetivo maxima de las corridas historica y generada
 FINAL_FIRST_DATE, FINAL_LAST_DATE = "2026-08-01", "2026-08-21"   # solo la corrida final_evaluation (T11 §1)
 GENERATED_LABEL = "Corrida de desarrollo generada por la aplicación con origen {origin}"
 PROVENANCE_SIM = "SYNTHETIC_NOT_REAL_INVENTORY"
@@ -132,7 +132,7 @@ def validate_doc(coll: str, doc: dict) -> None:
             if not FINAL_FIRST_DATE <= doc["target_date"] <= FINAL_LAST_DATE:
                 raise SchemaError("forecasts: fecha objetivo de la evaluacion final fuera de 2026-08-01..2026-08-21")
         elif doc["target_date"] > LAST_HISTORIC_DATE:
-            raise SchemaError("forecasts: fecha objetivo posterior a 2026-07-31")
+            raise SchemaError(f"forecasts: fecha objetivo posterior a {LAST_HISTORIC_DATE}")
     if coll == "recommendations":
         if doc["provenance"] != PROVENANCE_SIM:
             raise SchemaError("recommendations: provenance debe ser SYNTHETIC_NOT_REAL_INVENTORY")

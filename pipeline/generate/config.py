@@ -40,5 +40,7 @@ def check_policy(origin: date, horizon: int, method: str, cfg: dict) -> None:
         raise GenerationError("CORTE_FUERA_DE_RANGO", f"El horizonte debe estar entre 1 y {pol['horizonte_maximo']} días.")
     if method not in pol["metodos_permitidos"]:
         raise GenerationError("METODO_NO_PERMITIDO", "El método solicitado no está permitido.")
-    if origin + timedelta(days=horizon) > date.fromisoformat(pol["ultimo_dia_de_datos"]):
-        raise GenerationError("CORTE_FUERA_DE_RANGO", "Los días objetivo exceden el 31/07/2026.")
+    last = date.fromisoformat(pol["ultimo_dia_de_datos"])
+    if origin + timedelta(days=horizon) > last:
+        raise GenerationError("CORTE_FUERA_DE_RANGO",
+                              f"Los días objetivo exceden el {last:%d/%m/%Y}.")

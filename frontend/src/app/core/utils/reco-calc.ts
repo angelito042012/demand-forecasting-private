@@ -1,4 +1,4 @@
-import { Recommendation } from './models';
+import type { Recommendation } from '../models';
 import { fmtDate, fmtDec, fmtInt, fmtPen } from './format';
 
 export interface CalcStep { n: number; label: string; text: string; value: number; unit: string }

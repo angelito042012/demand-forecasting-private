@@ -3,19 +3,22 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RunChoice } from '../core/run-choice';
 import { FormsModule } from '@angular/forms';
 import { ApiService, RecoQuery } from '../core/api.service';
-import { load } from '../core/load';
+import { load } from '../core/utils/load';
 import { FINAL_UNAVAILABLE_REASON, RecoPage, Recommendation, RunSummary } from '../core/models';
-import { calcSteps, simpleSteps } from '../core/reco-calc';
-import { DASH, fmtDate, fmtInt, fmtPen } from '../core/format';
+import { calcSteps, simpleSteps } from '../core/utils/reco-calc';
+import { DASH, fmtDate, fmtInt, fmtPen } from '../core/utils/format';
 import { RunsStore } from '../core/runs-store';
-import { analysisName, productLabel } from '../core/ux-text';
-import { StatePanel } from '../ui/state-panel';
-import { Pager } from '../ui/pager';
-import { PageHeader } from '../ui/page-header';
-import { AnalysisBar } from '../ui/analysis-bar';
-import { SimNotice } from '../ui/notices';
-import { RecoReplacedNotice } from '../ui/reco-replaced-notice';
-import { isReplaced } from '../core/ux-text';
+import { analysisName, productLabel } from '../core/utils/ux-text';
+import { StatePanel } from '../shared/components/state-panel';
+import { Pager } from '../shared/components/pager';
+import { PageHeader } from '../shared/components/page-header';
+import { AnalysisBar } from '../shared/components/analysis-bar';
+import { SimNotice } from '../shared/components/notices';
+import { RecoReplacedNotice } from '../shared/components/reco-replaced-notice';
+import { isReplaced } from '../core/utils/ux-text';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { InputTextModule } from 'primeng/inputtext';
 
 /** Vistas de la lista: todas se filtran en el servidor (nunca sobre la página recibida). */
 export type RecoView = 'sugerencia' | 'sin_necesidad' | 'sin_datos';
@@ -39,22 +42,24 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
  */
 @Component({
   selector: 'app-recommendations-page',
-  imports: [StatePanel, Pager, FormsModule, SimNotice, RouterLink, PageHeader, AnalysisBar, RecoReplacedNotice],
+  imports: [StatePanel, Pager, FormsModule, SimNotice, RouterLink, PageHeader, AnalysisBar, RecoReplacedNotice, ButtonModule, MessageModule, InputTextModule],
   template: `
     <app-page-header title="Reposición simulada" lead="Cuántas unidades se sugeriría reponer de cada producto en el ejemplo, y cómo se calculó esa cantidad." />
-    <p class="notice info" role="note" data-testid="acad-header"><strong>Evaluación académica.</strong>
+    <p-message severity="info" role="note" data-testid="acad-header" styleClass="w-full mb-3">
+      <strong>Evaluación académica.</strong>
       Esta pantalla es una evaluación histórica con inventario simulado, separada del flujo principal (Ventas previstas, Existencias y Compra recomendada).
-      Para decidir una compra real use «Compra recomendada». La previsión histórica está en <a [routerLink]="['/evaluacion/ventas-previstas']" queryParamsHandling="preserve" data-testid="acad-to-forecasts">Evaluación académica: ventas previstas</a>.</p>
+      Para decidir una compra real use «Compra recomendada». La previsión histórica está en <a [routerLink]="['/evaluacion/ventas-previstas']" queryParamsHandling="preserve" data-testid="acad-to-forecasts">Evaluación académica: ventas previstas</a>.
+    </p-message>
     <app-analysis-bar [runId]="choice.id()" />
     @if (!barShowsReplaced()) { <app-reco-replaced-notice [run]="data()?.run" /> }
     <app-sim-notice [scenarioId]="scenarioId()" />
 
     @if (unavailable(); as u) {
-      <section class="notice warn" data-testid="reco-unavailable" role="note" aria-labelledby="h-na">
+      <section class="surface" data-testid="reco-unavailable" role="note" aria-labelledby="h-na" style="border-left: 4px solid var(--p-yellow-500); padding: 1rem;">
         <h2 id="h-na">Este análisis no genera pedidos</h2>
         <p data-testid="reco-unavailable-text">{{ unavailableText() }}</p>
         @if (seeRun(); as sr) {
-          <p><a class="btn" [routerLink]="['/recomendaciones']" [queryParams]="{ run: sr }" data-testid="see-run">Abrir el ejemplo con reposición simulada</a></p>
+          <p><p-button label="Abrir el ejemplo con reposición simulada" [routerLink]="['/recomendaciones']" [queryParams]="{ run: sr }" data-testid="see-run" /></p>
           <p class="muted">Cambia de análisis de forma explícita; las cifras de ambos no se mezclan.</p>
         } @else { <p class="muted" data-testid="no-see-run">La aplicación no indicó otro análisis con reposición simulada. Elige uno en «Mis análisis».</p> }
         <details class="tech">
@@ -82,7 +87,7 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
         <form class="filters" (ngSubmit)="apply()" aria-label="Filtros de recomendaciones">
           <label>Código del producto <input name="sku" [(ngModel)]="f.sku" autocomplete="off" /></label>
           <label>Categoría <input name="cat" [(ngModel)]="f.categoria" autocomplete="off" /></label>
-          <button type="submit" data-testid="reco-apply">Buscar</button>
+          <p-button type="submit" label="Buscar" icon="pi pi-search" data-testid="reco-apply" />
           <details class="help more">
             <summary>Más filtros</summary>
             <label>Orden
@@ -104,7 +109,7 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
             <h2 data-testid="detail-title">{{ product(r) }}</h2>
             @if (calc(); as c) {
               @if (!c.check.target || !c.check.position || !c.check.order) {
-                <p class="notice danger" data-testid="incoherent" role="alert">Los valores publicados no cuadran con la fórmula; revise el análisis antes de usarlos.</p>
+                <p-message severity="error" data-testid="incoherent" role="alert" text="Los valores publicados no cuadran con la fórmula; revise el análisis antes de usarlos." styleClass="w-full mb-2" />
               }
               <p class="result" data-testid="result-headline">En este ejemplo se sugieren <strong data-testid="order-result">{{ units(r.order_qty) }}</strong>
                 <span class="muted"> (hipotético; inventario simulado al cierre del {{ date(r.snapshot_date) }})</span></p>
@@ -118,7 +123,7 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
                 </ol>
               }
             } @else {
-              <p class="notice warn" data-testid="detail-nosnap"><strong>Sin datos de inventario</strong> al {{ dayMonth(r.snapshot_date) }}. Qué información falta: {{ r.reason }}. No se supone stock cero y no se calcula una cantidad sugerida.</p>
+              <p-message severity="warn" data-testid="detail-nosnap" styleClass="w-full mb-2"><strong>Sin datos de inventario</strong> al {{ dayMonth(r.snapshot_date) }}. Qué información falta: {{ r.reason }}. No se supone stock cero y no se calcula una cantidad sugerida.</p-message>
             }
             <details class="help" data-testid="full-calc">
               <summary>Ver cálculo completo y supuestos</summary>
@@ -147,7 +152,7 @@ function viewQuery(v: RecoView): Pick<RecoQuery, 'status' | 'only_orders' | 'no_
               </details>
             </details>
           }
-          <p><button type="button" class="secondary small" (click)="close()" data-testid="close-detail">Cerrar detalle</button></p>
+          <p><p-button label="Cerrar detalle" icon="pi pi-times" [outlined]="true" size="small" (onClick)="close()" data-testid="close-detail" /></p>
         </app-state-panel>
       </section>
     }
