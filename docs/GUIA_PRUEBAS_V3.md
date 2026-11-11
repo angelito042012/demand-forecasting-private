@@ -14,7 +14,7 @@
 |---|---|---|
 | **GitHub** (`master`) | Actualizado | Todos los scripts, docs y código nuevos |
 | **MongoDB local** (`df_test_local`) | Docker `mongo:8.3.8` en `localhost:27017` | 130,747 docs de ventas (ene–sep), 50 productos de stock |
-| **Azure Container Apps** | Actualizado (11/11/2026) | Imagen `v6`, revision `capstone-api--0000006`, base `demand_forecasting_pub` |
+| **Azure Container Apps** | Actualizado (11/11/2026) | Imagen `v7`, revision `capstone-api--0000007`, base `demand_forecasting_pub` |
 | **MongoDB Atlas** | Operativo | Base `demand_forecasting_pub` (~246 MB), acceso `0.0.0.0/0` vigente |
 
 **La imagen de Azure fue actualizada el 11/11/2026** con todo el código nuevo (frontend reestructurado, pipeline extendido, scripts operativos). Atlas Network Access configurado con `0.0.0.0/0` (temporal, 1 semana).
