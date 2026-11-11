@@ -142,8 +142,8 @@ def test_same_input_same_run_and_second_publication_changes_nothing(world):
 
 
 @pytest.mark.parametrize("origin,horizon,method", [
-    (date(2026, 5, 31), 21, "promedio_28"), (date(2026, 7, 11), 21, "promedio_28"),
-    (date(2026, 8, 1), 21, "promedio_28"), (ORIGIN, 22, "promedio_28"), (ORIGIN, 0, "promedio_28"),
+    (date(2026, 5, 31), 21, "promedio_28"), (date(2026, 10, 1), 21, "promedio_28"),
+    (ORIGIN, 22, "promedio_28"), (ORIGIN, 0, "promedio_28"),
     (ORIGIN, 21, "xgboost")])
 def test_origin_horizon_and_method_out_of_policy_are_rejected_before_reading_data(tmp_path, origin, horizon, method):
     with temp_db() as db:
