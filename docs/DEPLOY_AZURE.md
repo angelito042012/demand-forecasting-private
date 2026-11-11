@@ -13,16 +13,20 @@ Pasos para reconstruir y desplegar la imagen Docker en Azure.
 Desde la raiz del repositorio:
 
 ```bash
-docker build -t capstone-app:v4 .
+docker build -t capstone-app:v5 .
 ```
 
-Si falla `npm ci` por lock file desincronizado:
+**Nota:** El Dockerfile usa `npm install` (no `npm ci`) porque el lock file generado en Windows
+omite dependencias opcionales de Linux. Si se corrige el lock file en el futuro, se puede
+revertir a `npm ci` para builds reproducibles.
+
+Si falla por dependencias:
 
 ```bash
 cd frontend
 npm install
 cd ..
-docker build -t capstone-app:v4 .
+docker build -t capstone-app:v5 .
 ```
 
 ## Paso 2 — Login al registry de Azure
@@ -34,8 +38,8 @@ az acr login --name capstonecr2026
 ## Paso 3 — Tag y push
 
 ```bash
-docker tag capstone-app:v4 capstonecr2026.azurecr.io/capstone-app:v4
-docker push capstonecr2026.azurecr.io/capstone-app:v4
+docker tag capstone-app:v5 capstonecr2026.azurecr.io/capstone-app:v5
+docker push capstonecr2026.azurecr.io/capstone-app:v5
 ```
 
 ## Paso 4 — Actualizar los container apps
@@ -43,13 +47,13 @@ docker push capstonecr2026.azurecr.io/capstone-app:v4
 Worker:
 
 ```bash
-az containerapp update --name capstone-worker --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v4
+az containerapp update --name capstone-worker --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v5
 ```
 
 API:
 
 ```bash
-az containerapp update --name capstone-api --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v4
+az containerapp update --name capstone-api --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v5
 ```
 
 ## Paso 5 — Verificar
@@ -79,12 +83,14 @@ Variables requeridas en Azure (ya configuradas):
 
 ## Versionado de imagenes
 
-Para futuros deploys, incrementar la etiqueta (`v5`, `v6`, etc.) o usar el sha corto del commit:
+Ultimo deploy: **v5** (11/11/2026), revision `capstone-api--0000005`.
+
+Para futuros deploys, incrementar la etiqueta (`v6`, `v7`, etc.) o usar el sha corto del commit:
 
 ```bash
-docker build -t capstone-app:v5 .
-docker tag capstone-app:v5 capstonecr2026.azurecr.io/capstone-app:v5
-docker push capstonecr2026.azurecr.io/capstone-app:v5
-az containerapp update --name capstone-worker --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v5
-az containerapp update --name capstone-api --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v5
+docker build -t capstone-app:v6 .
+docker tag capstone-app:v6 capstonecr2026.azurecr.io/capstone-app:v6
+docker push capstonecr2026.azurecr.io/capstone-app:v6
+az containerapp update --name capstone-worker --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v6
+az containerapp update --name capstone-api --resource-group rg-capstone --image capstonecr2026.azurecr.io/capstone-app:v6
 ```

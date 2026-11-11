@@ -12,12 +12,12 @@
 
 | Entorno | Estado | Qué tiene |
 |---|---|---|
-| **GitHub** (`master`) | Actualizado (commit `1ae03cb`) | Todos los scripts, docs y código nuevos |
+| **GitHub** (`master`) | Actualizado | Todos los scripts, docs y código nuevos |
 | **MongoDB local** (`df_test_local`) | Docker `mongo:8.3.8` en `localhost:27017` | 130,747 docs de ventas (ene–sep), 50 productos de stock |
-| **Azure Container Apps** | Sin cambios | Imagen `t22g-a9119ae`, base `demand_forecasting_pub` |
-| **MongoDB Atlas** | Sin cambios | Base `demand_forecasting_pub` (~320 MB) |
+| **Azure Container Apps** | Actualizado (11/11/2026) | Imagen `v5`, revision `capstone-api--0000005`, base `demand_forecasting_pub` |
+| **MongoDB Atlas** | Operativo | Base `demand_forecasting_pub` (~246 MB), acceso `0.0.0.0/0` vigente |
 
-**La imagen de Azure y Atlas NO conocen los scripts nuevos.** Para que funcionen en la nube habría que construir una imagen nueva, desplegarla y apuntar a la base correcta. Eso NO está autorizado ni es necesario para la evaluación.
+**La imagen de Azure fue actualizada el 11/11/2026** con todo el código nuevo (frontend reestructurado, pipeline extendido, scripts operativos). Atlas Network Access configurado con `0.0.0.0/0` (temporal, 1 semana).
 
 ---
 

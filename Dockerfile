@@ -7,7 +7,7 @@
 FROM node:24-slim AS web
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 COPY frontend/angular.json frontend/tsconfig.json frontend/tsconfig.app.json ./
 COPY frontend/public ./public
 COPY frontend/src ./src
